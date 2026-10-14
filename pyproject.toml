@@ -1,0 +1,20 @@
+[project]
+name = "vacxis-capstone-fa26"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "saveBro6", email = "hungmtp1309@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "pyarrow>=26.0.0",
+    "qdrant-client>=1.19.1",
+]
+
+[project.scripts]
+vacxis-capstone-fa26 = "vacxis_capstone_fa26:main"
+
+[build-system]
+requires = ["uv_build>=0.12.15,<0.13.0"]
+build-backend = "uv_build"
