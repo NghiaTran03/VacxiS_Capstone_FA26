@@ -1,0 +1,243 @@
+"""Generate the Vietnamese golden evaluation dataset.
+
+The orchestration mirrors the original single-file script but uses the new
+:mod:`spans`, :mod:`distractors`, :mod:`multi_hop`, :mod:`validator`, and
+:mod:`refiner` modules. Output schema is unchanged.
+"""
+from __future__ import annotations
+
+import hashlib
+import random
+import re
+import sys
+from pathlib import Path
+
+from .chunks import Chunk, index_by_category, index_by_doc, index_by_vaccine
+from .distractors import sample_distractors
+from .multi_hop import pair_multi_hop
+from .refiner import SpanRefiner
+from .spans import select_evidence_span
+from .taxonomy import (
+    ANSWERABILITY_DISTRIBUTION,
+    COMPLEXITY_DISTRIBUTION,
+    DIFFICULTY_DISTRIBUTION,
+    QUERY_TYPE_DEFS,
+)
+from .validator import validate
+
+
+_PREFIX_RE = re.compile(r"^(vaccine\s+)+", re.IGNORECASE)
+
+
+def _light_paraphrase(query: str, rng: random.Random) -> str:
+    """Apply a tiny stylistic tweak so the query still reads naturally."""
+    swap = {
+        "Vaccine": ["Vacxin", "Vắc-xin"],
+        "vắc-xin": ["vaccine", "Vacxin"],
+        "như thế nào": ["ra sao", "thế nào"],
+    }
+    for src, options in swap.items():
+        if src in query and rng.random() < 0.5:
+            return query.replace(src, rng.choice(options), 1)
+    return query
+
+
+def _make_query_text(
+    template: str,
+    vaccine_name: str,
+    rng: random.Random,
+) -> tuple[str, str]:
+    query = template.format(vaccine=vaccine_name)
+    if rng.random() < 0.25:
+        query = _light_paraphrase(query, rng)
+        return query, "PARAPHRASE"
+    return query, "TEMPLATE"
+
+
+def _weighted_choice(rng: random.Random, options: list[tuple[str, float]]) -> str:
+    values, weights = zip(*options)
+    return rng.choices(values, weights=weights, k=1)[0]
+
+
+def derive_default_seed(chunks: list[Chunk], per_type: int) -> int:
+    """Deterministic seed based on the chunk content + per-type target.
+
+    Same ``chunks.parquet`` + same ``per_type`` => same dataset, without the
+    user having to remember ``--seed``.
+    """
+    h = hashlib.sha256()
+    for c in sorted(chunks, key=lambda c: c.chunk_id):
+        h.update(c.chunk_id.encode("utf-8"))
+        h.update(b"|")
+    h.update(str(per_type).encode("utf-8"))
+    return int.from_bytes(h.digest()[:4], "big")
+
+
+def _score_for_distractor(idx: int) -> int:
+    """Earlier distractors get higher scores; last one tends to 0."""
+    return max(0, 2 - idx)
+
+
+def _build_query_for_chunk(
+    chunk: Chunk,
+    type_def: dict,
+    rng: random.Random,
+    chunks: list[Chunk],
+    by_category: dict[str, list[Chunk]],
+    by_vaccine: dict[str, list[Chunk]],
+    vaccine_mapping: dict[str, str],
+    used_partner_vaccines: set[str],
+    distractors_per_query: int,
+) -> dict:
+    template = rng.choice(type_def["templates"])
+    query_text, source = _make_query_text(template, chunk.vaccine_name, rng)
+
+    start, end = select_evidence_span(chunk.text, type_def["intent_keywords"], rng)
+    evidence_chunk = {
+        "CHUNK_ID": chunk.chunk_id,
+        "TEXT": chunk.text,
+        "RELEVANCE_SCORE": 3,
+        "EVIDENCE_SPANS": [{"START": start, "END": end}],
+    }
+
+    distractors = sample_distractors(
+        chunk, chunks, by_category, rng, distractors_per_query,
+    )
+    relevant_docs = [chunk.doc_id]
+    extra_relevant: list[dict] = []
+
+    complexity = _weighted_choice(rng, COMPLEXITY_DISTRIBUTION)
+    if complexity == "MULTI_HOP":
+        partner = pair_multi_hop(
+            chunk, type_def, by_category, by_vaccine,
+            vaccine_mapping, used_partner_vaccines, rng,
+        )
+        if partner.secondary is not None:
+            extra_relevant.append(
+                {
+                    "CHUNK_ID": partner.secondary.chunk_id,
+                    "TEXT": partner.secondary.text,
+                    "RELEVANCE_SCORE": 3,
+                    "EVIDENCE_SPANS": [],
+                }
+            )
+            if partner.cross_doc:
+                relevant_docs.append(partner.secondary.doc_id)
+            relevant_docs = sorted(set(relevant_docs))
+
+    relevant_chunks = [evidence_chunk] + extra_relevant + [
+        {
+            "CHUNK_ID": d.chunk_id,
+            "TEXT": d.text,
+            "RELEVANCE_SCORE": _score_for_distractor(idx),
+            "EVIDENCE_SPANS": [],
+        }
+        for idx, d in enumerate(distractors)
+    ]
+
+    answerability = _weighted_choice(rng, ANSWERABILITY_DISTRIBUTION)
+    if answerability == "UNANSWERABLE":
+        relevant_chunks_payload: list[dict] = []
+        evidence_completeness = "NOT_ASSESSED"
+    elif answerability == "PARTIALLY_ANSWERABLE":
+        relevant_chunks_payload = [evidence_chunk]
+        evidence_completeness = "PARTIAL"
+    else:
+        relevant_chunks_payload = relevant_chunks
+        evidence_completeness = "COMPLETE"
+
+    difficulty = _weighted_choice(rng, DIFFICULTY_DISTRIBUTION)
+
+    entities: dict[str, str] = {"vaccine": chunk.vaccine_name}
+    if complexity == "MULTI_HOP" and extra_relevant:
+        # Surface the partner vaccine so reviewers can verify pairing.
+        for c in chunks:
+            if c.chunk_id == extra_relevant[0]["CHUNK_ID"]:
+                entities["related_vaccine"] = c.vaccine_name
+                break
+
+    return {
+        "QUERY_ID": "",  # stamped after shuffle
+        "QUERY": query_text,
+        "QUERY_DIFFICULTY": difficulty,
+        "QUERY_TYPE": type_def["type"],
+        "QUERY_SOURCE": source,
+        "QUERY_COMPLEXITY": complexity,
+        "ENTITIES": entities,
+        "CONSTRAINTS": {},
+        "ANSWERABILITY": answerability,
+        "RELEVANT_DOCS": relevant_docs,
+        "RELEVANT_CHUNKS": relevant_chunks_payload,
+        "REQUIRED_EVIDENCE_GROUPS": type_def["evidence_groups"],
+        "EVIDENCE_COMPLETENESS": evidence_completeness,
+        "REFERENCE_ANSWER": None,
+        "CLAIM_EVIDENCE_MAP": [],
+        "SOURCE_VERSION": "PI_VERSION_ID",
+        "VERIFIED": False,
+        "ANNOTATOR_IDS": ["GEN"],
+        "ADJUDICATED": False,
+        "VERIFICATION_NOTES": None,
+    }
+
+
+def generate_dataset(
+    chunks: list[Chunk],
+    rng: random.Random,
+    per_type: int,
+    distractors_per_query: int,
+    vaccine_mapping: dict[str, str] | None = None,
+    refiner: SpanRefiner | None = None,
+) -> list[dict]:
+    by_category = index_by_category(chunks)
+    by_vaccine = index_by_vaccine(chunks)
+    queries: list[dict] = []
+    used_partner_vaccines: set[str] = set()
+    mapping = vaccine_mapping or {}
+
+    for type_def in QUERY_TYPE_DEFS:
+        category = type_def["category"]
+        pool = by_category.get(category, [])
+        if not pool:
+            print(
+                f"[WARN] No chunks found for category '{category}' "
+                f"(QUERY_TYPE={type_def['type']})",
+                file=sys.stderr,
+            )
+            continue
+        sampled = rng.sample(pool, min(per_type, len(pool)))
+        for chunk in sampled:
+            q = _build_query_for_chunk(
+                chunk, type_def, rng, chunks, by_category, by_vaccine,
+                mapping, used_partner_vaccines, distractors_per_query,
+            )
+            queries.append(q)
+
+    rng.shuffle(queries)
+    for i, q in enumerate(queries, start=1):
+        q["QUERY_ID"] = f"VAX_Q_{i:04d}"
+
+    if refiner is not None:
+        refiner.refine(queries)
+
+    return queries
+
+
+def generate_and_validate(
+    chunks: list[Chunk],
+    rng: random.Random,
+    per_type: int,
+    distractors_per_query: int,
+    vaccine_mapping: dict[str, str] | None = None,
+    refiner: SpanRefiner | None = None,
+    expected_per_type: int = 0,
+) -> tuple[list[dict], object]:
+    queries = generate_dataset(
+        chunks, rng, per_type, distractors_per_query, vaccine_mapping, refiner,
+    )
+    by_category = index_by_category(chunks)
+    rpt = validate(
+        queries, chunks, by_category,
+        expected_per_type=expected_per_type,
+        expected_types=[t["type"] for t in QUERY_TYPE_DEFS],
+    )
+    return queries, rpt
