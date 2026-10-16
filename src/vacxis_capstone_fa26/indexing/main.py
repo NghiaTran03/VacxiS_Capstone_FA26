@@ -11,6 +11,7 @@ from .storage import write_chunks_to_parquet
 def run_indexing_pipeline(
     project_root: Path | None = None,
     output_path: Path | None = None,
+    mapping_path: Path | None = None,
     min_tokens: int = 80,
     max_tokens: int = 600,
 ) -> Path:
@@ -20,7 +21,7 @@ def run_indexing_pipeline(
     if output_path is None:
         output_path = project_root / "chunks_storage" / "chunks.parquet"
 
-    documents = discover_documents(project_root)
+    documents = discover_documents(project_root, mapping_path=mapping_path)
     print(f"Found {len(documents)} vaccine documents to process.")
 
     all_rows: list[dict] = []

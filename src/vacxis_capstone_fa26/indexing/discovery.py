@@ -39,7 +39,9 @@ def discover_documents(
 ) -> list[VaccineDocument]:
     """Scan CLEANED directories and return list of discovered documents."""
     if mapping_path is None:
-        mapping_path = project_root / "vaccine_name_mapping.json"
+        mapping_path = project_root / "75_vaccine_names_mapping.json"
+        if not mapping_path.exists():
+            mapping_path = project_root / "vaccine_name_mapping.json"
 
     with open(mapping_path, "r", encoding="utf-8") as f:
         name_mapping: dict[str, str] = json.load(f)
