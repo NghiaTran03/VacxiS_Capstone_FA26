@@ -13,3 +13,8 @@ tasks_ocr/
 *.pdf
 *.PDF
 *.docx
+
+#local
+pr-review/
+table.md
+scripts/
