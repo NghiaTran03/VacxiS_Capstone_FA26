@@ -18,7 +18,7 @@ from .taxonomy import QUERY_TYPE_DEFS
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_CHUNKS_PATH = PROJECT_ROOT / "chunks_storage" / "chunks.parquet"
-DEFAULT_MAPPING_PATH = PROJECT_ROOT / "vaccine_name_mapping.json"
+DEFAULT_MAPPING_PATH = PROJECT_ROOT / "75_vaccine_names_mapping.json"
 DEFAULT_OUTPUT_PATH = PROJECT_ROOT / "test_dataset.json"
 
 
@@ -36,7 +36,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--mapping",
         type=Path,
         default=DEFAULT_MAPPING_PATH,
-        help="Path to vaccine_name_mapping.json",
+        help="Path to vaccine name mapping JSON (id -> name)",
     )
     p.add_argument(
         "--out",

@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 from .chunks import Chunk, index_by_category, index_by_doc, index_by_vaccine
-from .distractors import sample_distractors
+from .distractors import sample_distractors, score_for
 from .multi_hop import pair_multi_hop
 from .refiner import SpanRefiner
 from .spans import select_evidence_span
@@ -73,11 +73,6 @@ def derive_default_seed(chunks: list[Chunk], per_type: int) -> int:
     return int.from_bytes(h.digest()[:4], "big")
 
 
-def _score_for_distractor(idx: int) -> int:
-    """Earlier distractors get higher scores; last one tends to 0."""
-    return max(0, 2 - idx)
-
-
 def _build_query_for_chunk(
     chunk: Chunk,
     type_def: dict,
@@ -105,6 +100,8 @@ def _build_query_for_chunk(
     )
     relevant_docs = [chunk.doc_id]
     extra_relevant: list[dict] = []
+    secondary_evidence_groups: list[str] = []
+    partner_vaccine_name: str | None = None
 
     complexity = _weighted_choice(rng, COMPLEXITY_DISTRIBUTION)
     if complexity == "MULTI_HOP":
@@ -121,18 +118,25 @@ def _build_query_for_chunk(
                     "EVIDENCE_SPANS": [],
                 }
             )
+            secondary_evidence_groups = list(partner.secondary_evidence_groups)
             if partner.cross_doc:
                 relevant_docs.append(partner.secondary.doc_id)
             relevant_docs = sorted(set(relevant_docs))
+            partner_vaccine_name = partner.secondary.vaccine_name
+        else:
+            # Review-1 finding 4: if the multi-hop partner couldn't be
+            # found, the query is effectively single-hop. Downgrade the
+            # label rather than ship a MULTI_HOP query with one chunk.
+            complexity = "SINGLE_HOP"
 
     relevant_chunks = [evidence_chunk] + extra_relevant + [
         {
-            "CHUNK_ID": d.chunk_id,
-            "TEXT": d.text,
-            "RELEVANCE_SCORE": _score_for_distractor(idx),
+            "CHUNK_ID": d.chunk.chunk_id,
+            "TEXT": d.chunk.text,
+            "RELEVANCE_SCORE": score_for(d.kind),
             "EVIDENCE_SPANS": [],
         }
-        for idx, d in enumerate(distractors)
+        for d in distractors
     ]
 
     answerability = _weighted_choice(rng, ANSWERABILITY_DISTRIBUTION)
@@ -140,7 +144,14 @@ def _build_query_for_chunk(
         relevant_chunks_payload: list[dict] = []
         evidence_completeness = "NOT_ASSESSED"
     elif answerability == "PARTIALLY_ANSWERABLE":
-        relevant_chunks_payload = [evidence_chunk]
+        # Keep the multi-hop partner in the payload so a PARTIALLY_ANSWERABLE
+        # multi-hop query still has both primary chunks. If there is no
+        # partner, downgrade to SINGLE_HOP.
+        if extra_relevant:
+            relevant_chunks_payload = [evidence_chunk] + extra_relevant
+        else:
+            relevant_chunks_payload = [evidence_chunk]
+            complexity = "SINGLE_HOP"
         evidence_completeness = "PARTIAL"
     else:
         relevant_chunks_payload = relevant_chunks
@@ -149,12 +160,13 @@ def _build_query_for_chunk(
     difficulty = _weighted_choice(rng, DIFFICULTY_DISTRIBUTION)
 
     entities: dict[str, str] = {"vaccine": chunk.vaccine_name}
-    if complexity == "MULTI_HOP" and extra_relevant:
-        # Surface the partner vaccine so reviewers can verify pairing.
-        for c in chunks:
-            if c.chunk_id == extra_relevant[0]["CHUNK_ID"]:
-                entities["related_vaccine"] = c.vaccine_name
-                break
+    if complexity == "MULTI_HOP" and partner_vaccine_name is not None:
+        entities["related_vaccine"] = partner_vaccine_name
+
+    required_evidence_groups = list(type_def["evidence_groups"])
+    for g in secondary_evidence_groups:
+        if g not in required_evidence_groups:
+            required_evidence_groups.append(g)
 
     return {
         "QUERY_ID": "",  # stamped after shuffle
@@ -168,7 +180,7 @@ def _build_query_for_chunk(
         "ANSWERABILITY": answerability,
         "RELEVANT_DOCS": relevant_docs,
         "RELEVANT_CHUNKS": relevant_chunks_payload,
-        "REQUIRED_EVIDENCE_GROUPS": type_def["evidence_groups"],
+        "REQUIRED_EVIDENCE_GROUPS": required_evidence_groups,
         "EVIDENCE_COMPLETENESS": evidence_completeness,
         "REFERENCE_ANSWER": None,
         "CLAIM_EVIDENCE_MAP": [],

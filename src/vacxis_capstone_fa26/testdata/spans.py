@@ -87,15 +87,30 @@ def select_evidence_span(
         4. Fall back to the first non-empty sentence if nothing scores.
     """
     candidates = _split_sentences(text)
-    if not candidates:
-        return 0, min(len(text), min_span_len)
+    if candidates:
+        scored = sorted(
+            candidates,
+            key=lambda se: (_score(text[se[0]:se[1]], intent_keywords, text), se[1] - se[0]),
+            reverse=True,
+        )
+        start, end = scored[0]
+        if end - start < min_span_len and end < len(text):
+            end = min(len(text), start + min_span_len)
+        return start, end
 
-    scored = sorted(
-        candidates,
-        key=lambda se: (_score(text[se[0]:se[1]], intent_keywords, text), se[1] - se[0]),
-        reverse=True,
-    )
-    start, end = scored[0]
-    if end - start < min_span_len and end < len(text):
-        end = min(len(text), start + min_span_len)
-    return start, end
+    # Fallback when the chunk has no scorable sentences (e.g. table-only).
+    # Skip the synthetic ``[CHỦ ĐỀ: ...] > [MỤC: ...]`` header so the span
+    # doesn't land on the artificial prefix (review-1 finding 5c).
+    body_start = _body_start(text)
+    if body_start >= len(text):
+        body_start = 0
+    end = min(len(text), body_start + min_span_len)
+    return body_start, end
+
+
+def _body_start(text: str) -> int:
+    """Return the index right after the first newline (the body of the chunk)."""
+    nl = text.find("\n")
+    if nl == -1:
+        return 0
+    return nl + 1

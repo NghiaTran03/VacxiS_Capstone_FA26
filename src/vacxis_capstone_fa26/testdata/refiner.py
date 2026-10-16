@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from typing import Iterable, Protocol
 
@@ -21,11 +22,19 @@ import litellm
 
 
 SYSTEM_PROMPT = (
-    "Bạn là một trợ lý trích xuất bằng chứng. Với mỗi câu hỏi và đoạn văn, "
-    "hãy trả về JSON hợp lệ duy nhất với khóa 'start' (int) và 'end' (int) "
-    "là chỉ số ký tự trong `text` của câu trả lời trực tiếp nhất cho câu hỏi. "
-    "Khoảng [start, end) phải là một câu con của `text` và phải nằm hoàn toàn "
-    "trong `text`. Chỉ trả về JSON, không có văn bản nào khác."
+    "Bạn là một trợ lý trích xuất bằng chứng. Với mỗi mục được cung cấp, hãy trả về "
+    "CHÍNH XÁC một phần tử JSON trong một mảng, theo đúng thứ tự. Mỗi phần tử có dạng "
+    '{"start": int, "end": int} với [start, end) là chỉ số ký tự trong `text` của câu '
+    "trả lời trực tiếp nhất cho câu hỏi. Khoảng phải là một câu con hợp lệ của `text`, "
+    "không được trả về 0, không được trả về số âm. Nếu không tìm thấy, hãy chọn câu "
+    "gần nhất. Trả về JSON hợp lệ, không kèm văn bản nào khác, không dùng markdown fence.\n\n"
+    "Ví dụ:\n"
+    "CÂU HỎI: Vaccine Gardasil được chỉ định cho những đối tượng nào?\n"
+    "TEXT:\n[CHỦ ĐỀ: Gardasil] > [MỤC: CHỈ ĐỊNH]\nGARDASIL là vắc-xin được chỉ định cho "
+    "bé gái và phụ nữ từ 9 đến 26 tuổi để phòng ngừa ung thư cổ tử cung.\n"
+    "Đáp án đúng: [37, 130)  (khoảng này bao gồm cả tiêu đề MỤC: CHỈ ĐỊNH, miễn là "
+    "nó nằm trong `text`)\n"
+    'Trả về: [{"start": 37, "end": 130}]'
 )
 
 
@@ -57,7 +66,7 @@ class LiteLLMRefiner:
     def __init__(
         self,
         model: str | None = None,
-        batch_size: int = 8,
+        batch_size: int = 4,
         max_retries: int = 1,
     ) -> None:
         self.model = model or os.environ.get("VACXIS_LLM_MODEL", "claude-haiku-4-5")
@@ -110,13 +119,19 @@ class LiteLLMRefiner:
                         ),
                     },
                 ],
-                response_format={"type": "json_object"},
             )
             content = response.choices[0].message.content
-            data = json.loads(content)
-            spans = data.get("spans") or data.get("results") or data
-            if isinstance(spans, dict):
-                spans = list(spans.values())
+            data = _parse_json_content(content)
+            if isinstance(data, list):
+                spans = data
+            else:
+                spans = data.get("spans") or data.get("results") or data
+            if not isinstance(spans, list):
+                raise ValueError(f"refiner: expected list, got {type(spans).__name__}")
+            if len(spans) != len(payload):
+                raise ValueError(
+                    f"refiner: got {len(spans)} spans for {len(payload)} queries"
+                )
             for q, p, sp in zip(batch, payload, spans):
                 if not isinstance(sp, dict):
                     continue
@@ -133,11 +148,33 @@ class LiteLLMRefiner:
 
 
 def _valid_span(start: object, end: object, text: str) -> bool:
-    return (
-        isinstance(start, int)
-        and isinstance(end, int)
-        and 0 <= start < end <= len(text)
-    )
+    if not (isinstance(start, int) and isinstance(end, int)):
+        return False
+    if not (0 <= start < end <= len(text)):
+        return False
+    # Skip the synthetic ``[CHỦ ĐỀ: ...] > [MỤC: ...]`` header that every
+    # chunk starts with. A span that begins at offset 0 (or right at the
+    # first newline) almost always lands on this header rather than the
+    # actual answer sentence.
+    snippet = text[start:end]
+    first_line = snippet.split("\n", 1)[0]
+    if first_line.startswith("[CHỦ ĐỀ:") and "MỤC:" in first_line:
+        return False
+    return True
+
+
+_FENCE_RE = re.compile(r"^```(?:json)?\s*|\s*```$", re.MULTILINE)
+
+
+def _parse_json_content(content: str) -> dict:
+    """Parse JSON from an LLM response, stripping markdown fences if present."""
+    text = _FENCE_RE.sub("", content).strip()
+    # Some gateways wrap the whole array without an outer key. Try the object
+    # form first, then fall back to a list wrapper.
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        return {"spans": json.loads(text)}
 
 
 def _chunks(seq: list, size: int) -> Iterable[list]:

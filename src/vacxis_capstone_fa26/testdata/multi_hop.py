@@ -40,6 +40,24 @@ SAME_VACCINE_PARTNER_CATEGORY: dict[str, tuple[str, ...]] = {
     "SPECIAL_POPULATION": ("cảnh báo và thận trọng", "tác dụng không mong muốn"),
 }
 
+# Map Vietnamese chunk categories to the SCHEMA_REQ evidence groups they
+# satisfy. Used to populate ``secondary_evidence_groups`` so the
+# ``REQUIRED_EVIDENCE_GROUPS`` field reflects the full multi-hop requirement
+# (review-1 finding 5b).
+CATEGORY_TO_EVIDENCE_GROUPS: dict[str, tuple[str, ...]] = {
+    "chỉ định": ("INDICATIONS",),
+    "liều lượng và cách dùng": (
+        "NUMBER_OF_DOSES", "DOSING_INTERVAL", "ADMINISTRATION_ROUTE",
+    ),
+    "chống chỉ định": ("CONTRAINDICATIONS",),
+    "tác dụng không mong muốn": ("ADVERSE_EFFECTS",),
+    "thành phần": ("COMPOSITION",),
+    "bảo quản": ("STORAGE",),
+    "cảnh báo và thận trọng": ("PRECAUTIONS",),
+    "tương tác thuốc": ("INTERACTIONS",),
+    "thai kỳ và cho con bú": ("SPECIAL_POPULATIONS",),
+}
+
 
 @dataclass
 class MultiHopResult:
@@ -82,18 +100,25 @@ def pair_multi_hop(
     for cat in preferred:
         matching = [c for c in candidates if c.category == cat]
         if matching:
-            return MultiHopResult(
-                secondary=rng.choice(matching),
-                secondary_evidence_groups=[],
-                cross_doc=False,
-            )
+            return _result(matching, rng, cross_doc=False)
     if candidates:
-        return MultiHopResult(
-            secondary=rng.choice(candidates),
-            secondary_evidence_groups=[],
-            cross_doc=False,
-        )
+        return _result(candidates, rng, cross_doc=False)
     return MultiHopResult(secondary=None, secondary_evidence_groups=[], cross_doc=False)
+
+
+def _result(
+    candidates: list[Chunk],
+    rng: random.Random,
+    cross_doc: bool,
+) -> MultiHopResult:
+    """Pick a chunk and derive its evidence groups from the chunk category."""
+    secondary = rng.choice(candidates)
+    groups = list(CATEGORY_TO_EVIDENCE_GROUPS.get(secondary.category, ()))
+    return MultiHopResult(
+        secondary=secondary,
+        secondary_evidence_groups=groups,
+        cross_doc=cross_doc,
+    )
 
 
 def _pair_interaction(
@@ -120,15 +145,7 @@ def _pair_interaction(
     for cat in INTERACTION_PARTNER_CATEGORIES:
         matching = [c for c in partner_chunks if c.category == cat]
         if matching:
-            return MultiHopResult(
-                secondary=rng.choice(matching),
-                secondary_evidence_groups=[],
-                cross_doc=True,
-            )
+            return _result(matching, rng, cross_doc=True)
     if partner_chunks:
-        return MultiHopResult(
-            secondary=rng.choice(partner_chunks),
-            secondary_evidence_groups=[],
-            cross_doc=True,
-        )
+        return _result(partner_chunks, rng, cross_doc=True)
     return MultiHopResult(secondary=None, secondary_evidence_groups=[], cross_doc=True)
