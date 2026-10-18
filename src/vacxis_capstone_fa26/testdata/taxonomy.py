@@ -216,3 +216,101 @@ INTERACTION_PARTNER_CATEGORIES: tuple[str, ...] = (
     "tương tác thuốc",
     "liều lượng và cách dùng",
 )
+
+# Specific templates for MULTI_HOP queries pairing a primary QUERY_TYPE with a secondary chunk category
+MULTI_HOP_TEMPLATES: dict[tuple[str, str], list[str]] = {
+    ("INDICATION", "chống chỉ định"): [
+        "Vaccine {vaccine} được chỉ định cho những đối tượng nào và trường hợp nào chống chỉ định?",
+        "Ai có thể tiêm vaccine {vaccine} và những đối tượng nào tuyệt đối không được dùng?",
+    ],
+    ("INDICATION", "cảnh báo và thận trọng"): [
+        "Vaccine {vaccine} dùng để phòng ngừa bệnh gì và cần lưu ý thận trọng điều gì khi tiêm?",
+        "Đối tượng nào được chỉ định tiêm {vaccine} và người có bệnh nền cần chú ý gì?",
+    ],
+    ("DOSAGE", "chống chỉ định"): [
+        "Lịch tiêm liều dùng của vaccine {vaccine} như thế nào và trường hợp nào chống chỉ định tiêm?",
+        "Vaccine {vaccine} cần tiêm bao nhiêu liều và đối tượng nào không được tiêm?",
+    ],
+    ("DOSAGE", "cảnh báo và thận trọng"): [
+        "Liều lượng và lịch tiêm của {vaccine} ra sao và cần theo dõi thận trọng điều gì sau tiêm?",
+    ],
+    ("ADMINISTRATION_ROUTE", "cảnh báo và thận trọng"): [
+        "Vaccine {vaccine} được tiêm theo đường nào và cần lưu ý thận trọng gì về thao tác hoặc vị trí tiêm?",
+    ],
+    ("ADMINISTRATION_ROUTE", "liều lượng và cách dùng"): [
+        "Đường dùng và liều lượng khuyến cáo của vaccine {vaccine} là bao nhiêu?",
+    ],
+    ("CONTRAINDICATION", "cảnh báo và thận trọng"): [
+        "Vaccine {vaccine} chống chỉ định cho ai và các trường hợp nào cần đặc biệt thận trọng khi tiêm?",
+    ],
+    ("CONTRAINDICATION", "thành phần"): [
+        "Thành phần hoạt chất của {vaccine} là gì và những ai bị dị ứng thành phần này sẽ chống chỉ định?",
+    ],
+    ("ADVERSE_EFFECT", "cảnh báo và thận trọng"): [
+        "Sau khi tiêm {vaccine} có thể gặp tác dụng phụ nào và cần theo dõi cảnh báo gì?",
+        "Những phản ứng phụ nào có thể xảy ra khi tiêm {vaccine} và dấu hiệu nào cần đưa đi viện gấp?",
+    ],
+    ("ADVERSE_EFFECT", "thành phần"): [
+        "Thành phần của vaccine {vaccine} gồm những gì và các thành phần này có thể gây phản ứng phụ nào?",
+    ],
+    ("COMPOSITION", "tác dụng không mong muốn"): [
+        "Vaccine {vaccine} chứa những thành phần gì và có thể gây ra tác dụng không mong muốn nào?",
+    ],
+    ("COMPOSITION", "cảnh báo và thận trọng"): [
+        "Hoạt chất và tá dược trong {vaccine} gồm những gì và cần thận trọng lưu ý gì khi sử dụng?",
+    ],
+    ("STORAGE", "quy cách đóng gói"): [
+        "Quy cách đóng gói và điều kiện bảo quản của vaccine {vaccine} như thế nào?",
+    ],
+    ("PRECAUTION", "chống chỉ định"): [
+        "Khi tiêm {vaccine} cần thận trọng những gì và trường hợp nào chống chỉ định hoàn toàn?",
+    ],
+    ("PRECAUTION", "tác dụng không mong muốn"): [
+        "Cần lưu ý thận trọng điều gì khi tiêm {vaccine} và những phản ứng phụ nào thường gặp sau tiêm?",
+    ],
+    ("SPECIAL_POPULATION", "cảnh báo và thận trọng"): [
+        "Phụ nữ mang thai hoặc cho con bú có dùng được {vaccine} không và cần lưu ý cảnh báo gì?",
+    ],
+    ("SPECIAL_POPULATION", "tác dụng không mong muốn"): [
+        "Phụ nữ mang thai tiêm {vaccine} có an toàn không và có nguy cơ gặp phản ứng phụ nào?",
+    ],
+}
+
+CROSS_VACCINE_TEMPLATES: list[str] = [
+    "Vaccine {vaccine} có thể tiêm cùng lúc hoặc có tương tác gì với vaccine {related_vaccine} không?",
+    "Tôi có thể tiêm đồng thời vaccine {vaccine} và {related_vaccine} được không?",
+    "Có lưu ý hoặc tương tác thuốc nào khi dùng {vaccine} cùng với {related_vaccine} không?",
+    "Vaccine {vaccine} và {related_vaccine} có phác đồ tiêm phối hợp hoặc tương tác ra sao?",
+]
+
+UNANSWERABLE_TEMPLATES: list[dict[str, str]] = [
+    {
+        "query": "Vaccine Covid-19 Comirnaty của Pfizer có phác đồ tiêm cho trẻ em như thế nào?",
+        "reason": "Vaccine ngoài danh mục tài liệu hướng dẫn sử dụng",
+    },
+    {
+        "query": "Vaccine sốt xuất huyết Qdenga cần tiêm bao nhiêu mũi và chỉ định từ độ tuổi nào?",
+        "reason": "Vaccine ngoài danh mục tài liệu hướng dẫn sử dụng",
+    },
+    {
+        "query": "Vaccine zona thần kinh Shingrix có những tác dụng phụ nào thường gặp?",
+        "reason": "Vaccine ngoài danh mục tài liệu hướng dẫn sử dụng",
+    },
+    {
+        "query": "Chi phí tiêm trọn gói 1 mũi vaccine {vaccine} tại trung tâm tiêm chủng là bao nhiêu tiền?",
+        "reason": "Thông tin giá cả dịch vụ không thuộc phạm vi hướng dẫn sử dụng thuốc",
+    },
+    {
+        "query": "Tôi có thể đặt mua online vaccine {vaccine} về nhà tự tiêm qua trang web nào?",
+        "reason": "Tài liệu HDSD không cung cấp thông tin bán lẻ hay giao hàng tại nhà",
+    },
+    {
+        "query": "Địa chỉ trung tâm tiêm chủng gần nhất hiện có sẵn vaccine {vaccine} là ở đâu?",
+        "reason": "Địa chỉ phòng tiêm và tình trạng tồn kho không có trong hướng dẫn sử dụng",
+    },
+    {
+        "query": "Vaccine {vaccine} có khả năng điều trị khỏi dứt điểm bệnh ung thư giai đoạn muộn không?",
+        "reason": "Thông tin không có căn cứ y khoa trong hướng dẫn sử dụng thuốc",
+    },
+]
+

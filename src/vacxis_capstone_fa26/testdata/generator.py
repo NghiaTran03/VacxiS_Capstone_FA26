@@ -12,6 +12,7 @@ import re
 import sys
 from pathlib import Path
 
+from .answer_generator import AnswerGenerator
 from .chunks import Chunk, index_by_category, index_by_doc, index_by_vaccine
 from .distractors import sample_distractors, score_for
 from .multi_hop import pair_multi_hop
@@ -20,8 +21,11 @@ from .spans import select_evidence_span
 from .taxonomy import (
     ANSWERABILITY_DISTRIBUTION,
     COMPLEXITY_DISTRIBUTION,
+    CROSS_VACCINE_TEMPLATES,
     DIFFICULTY_DISTRIBUTION,
+    MULTI_HOP_TEMPLATES,
     QUERY_TYPE_DEFS,
+    UNANSWERABLE_TEMPLATES,
 )
 from .validator import validate
 
@@ -110,12 +114,15 @@ def _build_query_for_chunk(
             vaccine_mapping, used_partner_vaccines, rng,
         )
         if partner.secondary is not None:
+            sec_start, sec_end = select_evidence_span(
+                partner.secondary.text, type_def.get("intent_keywords", []), rng,
+            )
             extra_relevant.append(
                 {
                     "CHUNK_ID": partner.secondary.chunk_id,
                     "TEXT": partner.secondary.text,
                     "RELEVANCE_SCORE": 3,
-                    "EVIDENCE_SPANS": [],
+                    "EVIDENCE_SPANS": [{"START": sec_start, "END": sec_end}],
                 }
             )
             secondary_evidence_groups = list(partner.secondary_evidence_groups)
@@ -123,6 +130,21 @@ def _build_query_for_chunk(
                 relevant_docs.append(partner.secondary.doc_id)
             relevant_docs = sorted(set(relevant_docs))
             partner_vaccine_name = partner.secondary.vaccine_name
+
+            # Format multi-hop query to naturally incorporate both categories/vaccines
+            if partner.cross_doc and partner_vaccine_name:
+                cross_tmpl = rng.choice(CROSS_VACCINE_TEMPLATES)
+                query_text = cross_tmpl.format(
+                    vaccine=chunk.vaccine_name,
+                    related_vaccine=partner_vaccine_name,
+                )
+                source = "MULTI_HOP_TEMPLATE"
+            else:
+                pair_key = (type_def["type"], partner.secondary.category)
+                pair_tmpls = MULTI_HOP_TEMPLATES.get(pair_key)
+                if pair_tmpls:
+                    query_text = rng.choice(pair_tmpls).format(vaccine=chunk.vaccine_name)
+                    source = "MULTI_HOP_TEMPLATE"
         else:
             # Review-1 finding 4: if the multi-hop partner couldn't be
             # found, the query is effectively single-hop. Downgrade the
@@ -141,8 +163,13 @@ def _build_query_for_chunk(
 
     answerability = _weighted_choice(rng, ANSWERABILITY_DISTRIBUTION)
     if answerability == "UNANSWERABLE":
-        relevant_chunks_payload: list[dict] = []
+        unans_item = rng.choice(UNANSWERABLE_TEMPLATES)
+        query_text = unans_item["query"].format(vaccine=chunk.vaccine_name)
+        source = "UNANSWERABLE_TEMPLATE"
+        relevant_chunks_payload = []
+        relevant_docs = []
         evidence_completeness = "NOT_ASSESSED"
+        extra_relevant = []
     elif answerability == "PARTIALLY_ANSWERABLE":
         # Keep the multi-hop partner in the payload so a PARTIALLY_ANSWERABLE
         # multi-hop query still has both primary chunks. If there is no
@@ -199,6 +226,7 @@ def generate_dataset(
     distractors_per_query: int,
     vaccine_mapping: dict[str, str] | None = None,
     refiner: SpanRefiner | None = None,
+    answer_generator: AnswerGenerator | None = None,
 ) -> list[dict]:
     by_category = index_by_category(chunks)
     by_vaccine = index_by_vaccine(chunks)
@@ -231,6 +259,9 @@ def generate_dataset(
     if refiner is not None:
         refiner.refine(queries)
 
+    if answer_generator is not None:
+        answer_generator.generate_answers(queries)
+
     return queries
 
 
@@ -241,10 +272,12 @@ def generate_and_validate(
     distractors_per_query: int,
     vaccine_mapping: dict[str, str] | None = None,
     refiner: SpanRefiner | None = None,
+    answer_generator: AnswerGenerator | None = None,
     expected_per_type: int = 0,
 ) -> tuple[list[dict], object]:
     queries = generate_dataset(
         chunks, rng, per_type, distractors_per_query, vaccine_mapping, refiner,
+        answer_generator=answer_generator,
     )
     by_category = index_by_category(chunks)
     rpt = validate(
