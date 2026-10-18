@@ -6,6 +6,7 @@ warnings. The output JSON schema is unchanged from the original pipeline.
 """
 from __future__ import annotations
 
+import re
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import Iterable
@@ -116,6 +117,32 @@ def validate(
                 rpt.failures.append(
                     f"{qid} distractor references unknown CHUNK_ID {d.get('CHUNK_ID')!r}"
                 )
+
+        # Validate REFERENCE_ANSWER if present
+        ref_ans = q.get("REFERENCE_ANSWER")
+        if ref_ans is not None:
+            if not isinstance(ref_ans, str) or not ref_ans.strip():
+                rpt.failures.append(f"{qid} REFERENCE_ANSWER is present but empty or not a string")
+            elif answerability == "ANSWERABLE":
+                citations = re.findall(r"\[([a-zA-Z0-9_\-]+)\]", ref_ans)
+                relevant_cids = {c.get("CHUNK_ID") for c in relevant}
+                for cite in citations:
+                    if cite not in relevant_cids and cite not in by_id:
+                        rpt.warnings.append(
+                            f"{qid} citation [{cite}] in REFERENCE_ANSWER not in RELEVANT_CHUNKS"
+                        )
+
+        # Validate CLAIM_EVIDENCE_MAP if present
+        claim_map = q.get("CLAIM_EVIDENCE_MAP")
+        if claim_map:
+            relevant_cids = {c.get("CHUNK_ID") for c in relevant}
+            for cl in claim_map:
+                if not isinstance(cl, dict) or not cl.get("claim"):
+                    rpt.warnings.append(f"{qid} malformed claim entry: {cl!r}")
+                elif cl.get("chunk_id") and cl.get("chunk_id") not in relevant_cids:
+                    rpt.warnings.append(
+                        f"{qid} claim chunk_id {cl.get('chunk_id')!r} not in RELEVANT_CHUNKS"
+                    )
 
     for t in expected_types:
         if type_counts.get(t, 0) == 0:

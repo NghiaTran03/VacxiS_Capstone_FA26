@@ -3,10 +3,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 import sys
 from pathlib import Path
 
+from .answer_generator import (
+    ExtractiveAnswerGenerator,
+    LiteLLMAnswerGenerator,
+    NoOpAnswerGenerator,
+)
 from .chunks import load_chunks
 from .generator import (
     derive_default_seed,
@@ -75,6 +81,25 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         ),
     )
     p.add_argument(
+        "--generate-answers",
+        action="store_true",
+        help=(
+            "Opt-in: generate REFERENCE_ANSWER and CLAIM_EVIDENCE_MAP. "
+            "Uses LiteLLM if API keys are available, otherwise falls back to extractive generator."
+        ),
+    )
+    p.add_argument(
+        "--answers-model",
+        type=str,
+        default=None,
+        help="Model name for answer generation (e.g. gpt-4o-mini, gemini/gemini-1.5-flash)",
+    )
+    p.add_argument(
+        "--dry-run-answers",
+        action="store_true",
+        help="Force offline extractive answer generator (no external API calls)",
+    )
+    p.add_argument(
         "--no-validate",
         action="store_true",
         help="Skip the post-write validation pass.",
@@ -113,6 +138,19 @@ def main(argv: list[str] | None = None) -> int:
 
     refiner = LiteLLMRefiner() if args.refine_spans else noop_refiner()
 
+    if args.generate_answers:
+        if args.dry_run_answers:
+            ans_gen = ExtractiveAnswerGenerator()
+        else:
+            has_key = bool(
+                os.environ.get("OPENAI_API_KEY")
+                or os.environ.get("ANTHROPIC_API_KEY")
+                or os.environ.get("GEMINI_API_KEY")
+            )
+            ans_gen = LiteLLMAnswerGenerator(model=args.answers_model) if has_key else ExtractiveAnswerGenerator()
+    else:
+        ans_gen = NoOpAnswerGenerator()
+
     print(
         f"Generating {args.per_type} query/QUERY_TYPE with {args.distractors} "
         f"distractors per query ..."
@@ -121,6 +159,7 @@ def main(argv: list[str] | None = None) -> int:
         chunks, rng, args.per_type, args.distractors,
         vaccine_mapping=vaccine_mapping,
         refiner=refiner,
+        answer_generator=ans_gen,
         expected_per_type=args.per_type,
     )
     print(f"  -> {len(queries)} queries generated")
