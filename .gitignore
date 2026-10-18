@@ -18,3 +18,4 @@ tasks_ocr/
 pr-review/
 table.md
 scripts/
+.bin/
