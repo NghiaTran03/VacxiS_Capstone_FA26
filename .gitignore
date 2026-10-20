@@ -19,3 +19,6 @@ pr-review/
 table.md
 scripts/
 .bin/
+
+#models
+models/
