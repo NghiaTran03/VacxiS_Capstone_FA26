@@ -102,6 +102,11 @@ def main() -> None:
     """Run retrieval CLI entrypoint."""
     args = parse_args()
 
+    query = args.query.strip()
+    if not query:
+        logger.error("Query cannot be empty or whitespace-only.")
+        sys.exit(1)
+
     config = RetrievalConfig(
         collection_name=args.collection_name,
         qdrant_host=args.qdrant_host,
@@ -117,7 +122,7 @@ def main() -> None:
 
     with VacxisRetriever(config=config) as retriever:
         results = retriever.retrieve(
-            query=args.query,
+            query=query,
             top_k=args.top_k,
             top_k_dense=args.top_k_dense,
             top_k_sparse=args.top_k_sparse,
@@ -130,7 +135,7 @@ def main() -> None:
         print(json.dumps(data, ensure_ascii=False, indent=2))
         return
 
-    print(f"Query: {args.query}")
+    print(f"Query: {query}")
     print(f"Total retrieved: {len(results)}")
     for idx, chunk in enumerate(results, start=1):
         score_info = f"Score: {chunk.score:.4f}"
