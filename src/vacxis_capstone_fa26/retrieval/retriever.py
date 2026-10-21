@@ -122,6 +122,15 @@ class VacxisRetriever:
         k_rrf = rrf_top_k if rrf_top_k is not None else self.config.rrf_top_k
         should_skip_rerank = skip_rerank if skip_rerank is not None else self.config.skip_rerank
 
+        effective_rrf_top_k = max(k_rrf, k)
+        if k_rrf < k:
+            logger.warning(
+                "rrf_top_k (%d) is smaller than top_k (%d). Automatically adjusting rrf_top_k to %d.",
+                k_rrf,
+                k,
+                effective_rrf_top_k,
+            )
+
         # 1. Encode query with BGE-M3
         embed_output = self.embed_model.encode(
             [query],
@@ -140,7 +149,7 @@ class VacxisRetriever:
             sparse_weights=sparse_weights,
             top_k_dense=k_dense,
             top_k_sparse=k_sparse,
-            rrf_top_k=k_rrf,
+            rrf_top_k=effective_rrf_top_k,
         )
 
         if not candidates:
@@ -205,13 +214,22 @@ class VacxisRetriever:
         k_rrf = rrf_top_k if rrf_top_k is not None else self.config.rrf_top_k
         should_skip_rerank = skip_rerank if skip_rerank is not None else self.config.skip_rerank
 
+        effective_rrf_top_k = max(k_rrf, k)
+        if k_rrf < k:
+            logger.warning(
+                "rrf_top_k (%d) is smaller than top_k (%d). Automatically adjusting rrf_top_k to %d.",
+                k_rrf,
+                k,
+                effective_rrf_top_k,
+            )
+
         for i, q_text in enumerate(query_list):
             candidates = self.searcher.search(
                 dense_vec=dense_vecs[i].tolist(),
                 sparse_weights=sparse_weights_list[i],
                 top_k_dense=k_dense,
                 top_k_sparse=k_sparse,
-                rrf_top_k=k_rrf,
+                rrf_top_k=effective_rrf_top_k,
             )
             if not candidates:
                 results.append([])
