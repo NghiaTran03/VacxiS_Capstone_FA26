@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from unittest.mock import MagicMock
+import numpy as np
 import pytest
 from qdrant_client import models
 
@@ -270,6 +271,97 @@ def test_retriever_auto_adjusts_rrf_top_k():
     mock_searcher.search.assert_called_once()
     call_kwargs = mock_searcher.search.call_args[1]
     assert call_kwargs["rrf_top_k"] == 10
+
+
+def test_reranker_handles_numpy_scalar_and_0d_array():
+    """Verify reranker handles np.float32 and 0-d numpy arrays without error."""
+    mock_model = MagicMock()
+    reranker = BGEReranker.__new__(BGEReranker)
+    reranker.model = mock_model
+    reranker.use_fp16 = False
+    reranker.model_path = "mock-reranker"
+
+    cand = RetrievedChunk(
+        chunk_id="c1",
+        doc_id="d1",
+        doc_title="Doc 1",
+        category="cat",
+        parent_header="",
+        header="",
+        content_type="text",
+        text="Sample text",
+        score=0.1,
+        rrf_score=0.1,
+    )
+
+    # 1. np.float32 scalar
+    mock_model.compute_score.return_value = np.float32(0.77)
+    res = reranker.rerank("q", [cand], top_k=1)
+    assert len(res) == 1
+    assert pytest.approx(res[0].score, rel=1e-3) == 0.77
+
+    # 2. 0-d numpy array
+    mock_model.compute_score.return_value = np.array(0.88)
+    res = reranker.rerank("q", [cand], top_k=1)
+    assert len(res) == 1
+    assert pytest.approx(res[0].score, rel=1e-3) == 0.88
+
+
+def test_batch_search_and_batch_rerank():
+    """Verify batched search and batched rerank logic across multiple queries."""
+    # Test batch_search on HybridSearcher
+    mock_client = MagicMock()
+    p1 = MagicMock(id=1, payload={"chunk_id": "c1", "text": "t1", "doc_title": "d1"})
+    p2 = MagicMock(id=2, payload={"chunk_id": "c2", "text": "t2", "doc_title": "d2"})
+
+    res1 = MagicMock(points=[p1])
+    res2 = MagicMock(points=[p2])
+    mock_client.query_batch_points.return_value = [res1, res2]
+
+    searcher = HybridSearcher(client=mock_client)
+    batch_results = searcher.batch_search(
+        dense_vecs=[[0.1] * 1024, [0.2] * 1024],
+        sparse_weights_list=[None, None],
+        top_k_dense=5,
+        top_k_sparse=0,
+        rrf_top_k=5,
+    )
+    assert len(batch_results) == 2
+    assert batch_results[0][0].chunk_id == "c1"
+    assert batch_results[1][0].chunk_id == "c2"
+
+    # Test batch_rerank on BGEReranker
+    mock_model = MagicMock()
+    # compute_score receives 2 pairs total across 2 queries
+    mock_model.compute_score.return_value = [0.35, 0.95]
+    reranker = BGEReranker.__new__(BGEReranker)
+    reranker.model = mock_model
+    reranker.use_fp16 = False
+    reranker.model_path = "mock-reranker"
+
+    reranked_batch = reranker.batch_rerank(
+        queries=["q1", "q2"],
+        candidates_list=[batch_results[0], batch_results[1]],
+        top_k=1,
+    )
+    assert len(reranked_batch) == 2
+    assert reranked_batch[0][0].score == 0.35
+    assert reranked_batch[1][0].score == 0.95
+
+
+def test_retriever_empty_query():
+    """Verify retrieve() returns empty list immediately for blank/empty query."""
+    retriever = VacxisRetriever(lazy_load=True)
+    assert retriever.retrieve("") == []
+    assert retriever.retrieve("   ") == []
+
+
+def test_retriever_lazy_load_default():
+    """Verify VacxisRetriever defaults to lazy_load=True and does not eagerly load models."""
+    retriever = VacxisRetriever()
+    assert retriever._embed_model is None
+    assert retriever._searcher is None
+    assert retriever._reranker is None
 
 
 @pytest.mark.integration
