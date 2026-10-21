@@ -23,7 +23,7 @@ class VacxisRetriever:
         embed_model: BGEM3FlagModel | None = None,
         reranker: BGEReranker | None = None,
         hybrid_searcher: HybridSearcher | None = None,
-        lazy_load: bool = False,
+        lazy_load: bool = True,
     ) -> None:
         """Initialize retrieval pipeline components.
 
@@ -116,6 +116,10 @@ class VacxisRetriever:
         Returns:
             List of top-k RetrievedChunk items.
         """
+        if not query or not query.strip():
+            logger.warning("Empty or whitespace-only query provided to retrieve().")
+            return []
+
         k = top_k if top_k is not None else self.config.top_k
         k_dense = top_k_dense if top_k_dense is not None else self.config.top_k_dense
         k_sparse = top_k_sparse if top_k_sparse is not None else self.config.top_k_sparse
@@ -204,10 +208,9 @@ class VacxisRetriever:
             return_sparse=True,
             return_colbert_vecs=False,
         )
-        dense_vecs = embed_output["dense_vecs"]
-        sparse_weights_list = embed_output["lexical_weights"]
+        dense_vecs = [v.tolist() for v in embed_output["dense_vecs"]]
+        sparse_weights_list = list(embed_output["lexical_weights"])
 
-        results: list[list[RetrievedChunk]] = []
         k = top_k if top_k is not None else self.config.top_k
         k_dense = top_k_dense if top_k_dense is not None else self.config.top_k_dense
         k_sparse = top_k_sparse if top_k_sparse is not None else self.config.top_k_sparse
@@ -223,30 +226,24 @@ class VacxisRetriever:
                 effective_rrf_top_k,
             )
 
-        for i, q_text in enumerate(query_list):
-            candidates = self.searcher.search(
-                dense_vec=dense_vecs[i].tolist(),
-                sparse_weights=sparse_weights_list[i],
-                top_k_dense=k_dense,
-                top_k_sparse=k_sparse,
-                rrf_top_k=effective_rrf_top_k,
+        # 1. Batched hybrid search across all queries in single Qdrant batch
+        all_candidates = self.searcher.batch_search(
+            dense_vecs=dense_vecs,
+            sparse_weights_list=sparse_weights_list,
+            top_k_dense=k_dense,
+            top_k_sparse=k_sparse,
+            rrf_top_k=effective_rrf_top_k,
+        )
+
+        # 2. Batched cross-encoder reranking across all candidate pairs
+        if not should_skip_rerank:
+            return self.reranker.batch_rerank(
+                queries=query_list,
+                candidates_list=all_candidates,
+                top_k=k,
             )
-            if not candidates:
-                results.append([])
-                continue
 
-            if not should_skip_rerank:
-                top_chunks = self.reranker.rerank(
-                    query=q_text,
-                    candidates=candidates,
-                    top_k=k,
-                )
-            else:
-                top_chunks = candidates[:k]
-
-            results.append(top_chunks)
-
-        return results
+        return [cands[:k] for cands in all_candidates]
 
     def close(self) -> None:
         """Release resources and connections."""
