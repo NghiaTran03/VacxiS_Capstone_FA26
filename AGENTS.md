@@ -1,7 +1,7 @@
 # Agent Directive
 
 ## Environment & Runtime (Python)
-- **Tooling Mandate**: You must strictly use `uv` for all Python operations. Do not use standard `pip`, `venv`, `conda`, or `poetry` unless explicitly instructed otherwise.
+- **Tooling Mandate**: You must strictly use `uv` for all Python operations. Do not use standard `python3`, `python`, `pip`, `venv`, `conda`, or `poetry` unless explicitly instructed otherwise.
 - **Execution Rules**:
   - Run scripts using: `uv run <script_name>.py` or `uv run python -c ...`
   - Request install new dependencies if not found using: `uv add <package>` or `uv pip install <package>`
@@ -19,6 +19,6 @@
    import pyarrow.compute as pc
    ```
 
-## Output Style
-- Do not print separator lines, banner dividers, or rows of equal signs (=====).
-- Keep terminal and chat outputs clean and concise.
+## Coding & Output Style
+- Do not use separator lines, banner dividers, or rows of equal signs (=====).
+- Keep the code, terminal and chat outputs clean and concise.
