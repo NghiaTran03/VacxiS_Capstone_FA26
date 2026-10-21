@@ -19,6 +19,7 @@ pr-review/
 table.md
 scripts/
 .bin/
+bugs-review/
 
 #models
 models/
