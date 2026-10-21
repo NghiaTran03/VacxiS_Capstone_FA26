@@ -179,6 +179,99 @@ def test_reranker_sorting():
     assert reranked[1].score == 0.25
 
 
+def test_reranker_immutability():
+    """Verify reranker does not mutate original candidate chunk objects."""
+    mock_model = MagicMock()
+    mock_model.compute_score.return_value = [0.99]
+
+    reranker = BGEReranker.__new__(BGEReranker)
+    reranker.model = mock_model
+    reranker.use_fp16 = False
+    reranker.model_path = "mock-reranker"
+
+    original_chunk = RetrievedChunk(
+        chunk_id="c1",
+        doc_id="d1",
+        doc_title="Doc 1",
+        category="chỉ định",
+        parent_header="",
+        header="",
+        content_type="text",
+        text="Passage 1",
+        score=0.015,
+        rrf_score=0.015,
+        rerank_score=None,
+    )
+    candidates = [original_chunk]
+    reranked = reranker.rerank(query="query", candidates=candidates, top_k=1)
+
+    assert reranked[0].score == 0.99
+    assert reranked[0].rerank_score == 0.99
+    # Original chunk must remain unmodified
+    assert original_chunk.score == 0.015
+    assert original_chunk.rerank_score is None
+
+
+def test_hybrid_searcher_empty_sparse_skips_sparse_query():
+    """Verify empty sparse dict or empty dense vector does not create invalid QueryRequest."""
+    mock_client = MagicMock()
+    mock_res = MagicMock()
+    mock_res.points = []
+    mock_client.query_batch_points.return_value = [mock_res]
+
+    searcher = HybridSearcher(client=mock_client)
+
+    # Empty sparse_weights should only issue dense query
+    searcher.search(
+        dense_vec=[0.1] * 1024,
+        sparse_weights={},
+        top_k_dense=10,
+        top_k_sparse=10,
+    )
+    assert mock_client.query_batch_points.call_count == 1
+    requests = mock_client.query_batch_points.call_args[1]["requests"]
+    assert len(requests) == 1
+    assert requests[0].using == "dense"
+
+    # Both empty should return [] immediately without calling client
+    mock_client.reset_mock()
+    res = searcher.search(dense_vec=[], sparse_weights={}, top_k_dense=10, top_k_sparse=10)
+    assert res == []
+    mock_client.query_batch_points.assert_not_called()
+
+
+def test_retriever_auto_adjusts_rrf_top_k():
+    """Verify retriever automatically elevates rrf_top_k if top_k > rrf_top_k."""
+    mock_embed = MagicMock()
+    mock_embed.encode.return_value = {
+        "dense_vecs": MagicMock(tolist=lambda: [[0.1] * 1024]),
+        "lexical_weights": [{"1": 0.5}],
+    }
+    # For single query, embed_output["dense_vecs"][0].tolist()
+    dense_mock = MagicMock()
+    dense_mock.tolist.return_value = [0.1] * 1024
+    mock_embed.encode.return_value = {
+        "dense_vecs": [dense_mock],
+        "lexical_weights": [{"1": 0.5}],
+    }
+
+    mock_searcher = MagicMock()
+    mock_searcher.search.return_value = []
+
+    retriever = VacxisRetriever.__new__(VacxisRetriever)
+    retriever.config = RetrievalConfig(top_k=5, rrf_top_k=3)
+    retriever._embed_model = mock_embed
+    retriever._searcher = mock_searcher
+    retriever._reranker = MagicMock()
+
+    retriever.retrieve(query="test", top_k=10, rrf_top_k=5)
+
+    # Searcher must have been called with effective rrf_top_k = 10
+    mock_searcher.search.assert_called_once()
+    call_kwargs = mock_searcher.search.call_args[1]
+    assert call_kwargs["rrf_top_k"] == 10
+
+
 @pytest.mark.integration
 def test_full_pipeline_integration():
     """End-to-end integration test with live Qdrant and local models."""
