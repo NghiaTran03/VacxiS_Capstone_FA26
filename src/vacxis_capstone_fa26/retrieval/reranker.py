@@ -1,6 +1,7 @@
 """Reranker module using BGE-reranker-v2-m3."""
 from __future__ import annotations
 
+from dataclasses import replace
 import logging
 from pathlib import Path
 from typing import Sequence
@@ -75,17 +76,22 @@ class BGEReranker:
             normalize=normalize,
         )
 
-        if isinstance(scores, (int, float)):
+        if hasattr(scores, "tolist"):
+            scores = scores.tolist()
+        if isinstance(scores, (int, float)) or (hasattr(scores, "item") and getattr(scores, "ndim", 0) == 0):
             scores = [float(scores)]
 
-        # Associate scores with candidates
+        # Associate scores with candidates without mutating original objects
         reranked_chunks: list[RetrievedChunk] = []
         for chunk, score in zip(candidates, scores):
             score_float = float(score)
-            # Create a copy or update fields
-            chunk.rerank_score = score_float
-            chunk.score = score_float
-            reranked_chunks.append(chunk)
+            reranked_chunks.append(
+                replace(
+                    chunk,
+                    score=score_float,
+                    rerank_score=score_float,
+                )
+            )
 
         # Sort descending by rerank score
         reranked_chunks.sort(key=lambda c: c.score, reverse=True)
