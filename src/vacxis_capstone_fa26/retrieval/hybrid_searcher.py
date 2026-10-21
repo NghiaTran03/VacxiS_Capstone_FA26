@@ -92,7 +92,7 @@ class HybridSearcher:
         requests: list[models.QueryRequest] = []
         stream_meta: list[tuple[str, float]] = []
 
-        if dense_vec is not None and top_k_dense > 0:
+        if dense_vec is not None and len(dense_vec) > 0 and top_k_dense > 0:
             requests.append(
                 models.QueryRequest(
                     query=dense_vec,
@@ -103,17 +103,18 @@ class HybridSearcher:
             )
             stream_meta.append(("dense", dense_weight))
 
-        if sparse_weights is not None and top_k_sparse > 0:
+        if sparse_weights and top_k_sparse > 0:
             sparse_vec = convert_sparse_to_qdrant(sparse_weights)
-            requests.append(
-                models.QueryRequest(
-                    query=sparse_vec,
-                    using="sparse",
-                    limit=top_k_sparse,
-                    with_payload=True,
+            if sparse_vec.indices:
+                requests.append(
+                    models.QueryRequest(
+                        query=sparse_vec,
+                        using="sparse",
+                        limit=top_k_sparse,
+                        with_payload=True,
+                    )
                 )
-            )
-            stream_meta.append(("sparse", sparse_weight))
+                stream_meta.append(("sparse", sparse_weight))
 
         if not requests:
             return []
