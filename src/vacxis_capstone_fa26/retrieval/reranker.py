@@ -64,14 +64,54 @@ class BGEReranker:
         Returns:
             List of top-k RetrievedChunk sorted by rerank score descending.
         """
-        if not candidates:
+        results = self.batch_rerank(
+            queries=[query],
+            candidates_list=[candidates],
+            top_k=top_k,
+            batch_size=batch_size,
+            normalize=normalize,
+        )
+        return results[0] if results else []
+
+    def batch_rerank(
+        self,
+        queries: Sequence[str],
+        candidates_list: Sequence[Sequence[RetrievedChunk]],
+        top_k: int = 5,
+        batch_size: int = 32,
+        normalize: bool = True,
+    ) -> list[list[RetrievedChunk]]:
+        """Compute cross-encoder relevance scores across multiple queries in a batched manner.
+
+        Args:
+            queries: Sequence of user search query strings.
+            candidates_list: Sequence of candidate chunk sequences per query.
+            top_k: Number of highest-ranked chunks to return per query.
+            batch_size: Batch size for cross-encoder inference.
+            normalize: Whether to apply sigmoid/normalization to scores (range [0, 1]).
+
+        Returns:
+            List of top-k RetrievedChunk lists for each query.
+        """
+        num_queries = len(queries)
+        if num_queries == 0:
             return []
 
-        # Build query-passage pairs
-        pairs = [[query, chunk.text] for chunk in candidates]
+        all_pairs: list[list[str]] = []
+        query_slices: list[int] = []
+
+        for q_idx, q_text in enumerate(queries):
+            cands = candidates_list[q_idx] if q_idx < len(candidates_list) else []
+            count = len(cands)
+            query_slices.append(count)
+            for chunk in cands:
+                all_pairs.append([q_text, chunk.text])
+
+        if not all_pairs:
+            return [[] for _ in range(num_queries)]
 
         scores = self.model.compute_score(
-            pairs,
+            all_pairs,
             batch_size=batch_size,
             normalize=normalize,
         )
@@ -81,18 +121,30 @@ class BGEReranker:
         if isinstance(scores, (int, float)) or (hasattr(scores, "item") and getattr(scores, "ndim", 0) == 0):
             scores = [float(scores)]
 
-        # Associate scores with candidates without mutating original objects
-        reranked_chunks: list[RetrievedChunk] = []
-        for chunk, score in zip(candidates, scores):
-            score_float = float(score)
-            reranked_chunks.append(
-                replace(
-                    chunk,
-                    score=score_float,
-                    rerank_score=score_float,
-                )
-            )
+        results: list[list[RetrievedChunk]] = []
+        offset = 0
+        for q_idx in range(num_queries):
+            count = query_slices[q_idx]
+            if count == 0:
+                results.append([])
+                continue
 
-        # Sort descending by rerank score
-        reranked_chunks.sort(key=lambda c: c.score, reverse=True)
-        return reranked_chunks[:top_k]
+            q_cands = candidates_list[q_idx]
+            q_scores = scores[offset : offset + count]
+            offset += count
+
+            reranked: list[RetrievedChunk] = []
+            for chunk, score in zip(q_cands, q_scores):
+                score_float = float(score)
+                reranked.append(
+                    replace(
+                        chunk,
+                        score=score_float,
+                        rerank_score=score_float,
+                    )
+                )
+
+            reranked.sort(key=lambda c: c.score, reverse=True)
+            results.append(reranked[:top_k])
+
+        return results
