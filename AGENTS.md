@@ -18,3 +18,7 @@
    import pyarrow.parquet as pq
    import pyarrow.compute as pc
    ```
+
+## Output Style
+- Do not print separator lines, banner dividers, or rows of equal signs (=====).
+- Keep terminal and chat outputs clean and concise.
