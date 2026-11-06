@@ -3187,6 +3187,7 @@ source = { editable = "." }
 dependencies = [
     { name = "flagembedding" },
     { name = "litellm" },
+    { name = "openai" },
     { name = "pyarrow" },
     { name = "qdrant-client" },
 ]
@@ -3200,6 +3201,7 @@ dev = [
 requires-dist = [
     { name = "flagembedding", specifier = ">=1.4.2" },
     { name = "litellm", specifier = ">=1.105.1" },
+    { name = "openai", specifier = ">=2.54.0" },
     { name = "pyarrow", specifier = ">=26.0.0" },
     { name = "qdrant-client", specifier = ">=1.19.1" },
 ]
