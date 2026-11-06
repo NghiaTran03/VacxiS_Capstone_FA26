@@ -1,14 +1,13 @@
 """End-to-End VacxiS RAG Pipeline coupling Retrieval with Medical Generation."""
 from __future__ import annotations
 
-import logging
+from itertools import zip_longest
 from types import TracebackType
 from typing import Any, Sequence
 
 from vacxis_capstone_fa26.generation.generator import MedicalGenerator
 from vacxis_capstone_fa26.generation.schemas import GeneratedAnswer, GenerationConfig
-
-logger = logging.getLogger("vacxis.generation.pipeline")
+from vacxis_capstone_fa26.query import Clarification, ClarifyPlan, QueryPlanner
 
 
 class VacxisRAGPipeline:
@@ -20,6 +19,8 @@ class VacxisRAGPipeline:
         generator: MedicalGenerator | None = None,
         retrieval_config: Any | None = None,
         generation_config: GenerationConfig | None = None,
+        *,
+        query_planner: QueryPlanner | None = None,
     ) -> None:
         if retriever is None:
             # Lazy import so generation does not require torch unless retriever is initialized
@@ -29,6 +30,7 @@ class VacxisRAGPipeline:
             self.retriever = retriever
 
         self.generator = generator or MedicalGenerator(config=generation_config)
+        self.query_planner = query_planner
 
     def __enter__(self) -> VacxisRAGPipeline:
         if hasattr(self.retriever, "__enter__"):
@@ -43,6 +45,55 @@ class VacxisRAGPipeline:
     ) -> None:
         if hasattr(self.retriever, "__exit__"):
             self.retriever.__exit__(exc_type, exc_val, exc_tb)
+
+    def run_turn(
+        self,
+        original_query: str,
+        *,
+        clarifications: Sequence[Clarification] = (),
+        top_k: int | None = None,
+        skip_rerank: bool | None = None,
+    ) -> GeneratedAnswer | ClarifyPlan:
+        """Plan and execute one turn, or return a question for the caller to ask."""
+        if self.query_planner is None:
+            raise ValueError("run_turn requires a query planner.")
+        if top_k is not None and (type(top_k) is not int or top_k < 1):
+            raise ValueError("top_k must be a positive integer.")
+
+        plan = self.query_planner.plan(original_query, clarifications)
+        if isinstance(plan, ClarifyPlan):
+            return plan
+
+        if len(plan.search_queries) == 1:
+            chunks = self.retriever.retrieve(
+                query=plan.original_query, top_k=top_k, skip_rerank=skip_rerank,
+            )
+        else:
+            limit = top_k if top_k is not None else self.retriever.config.top_k
+            groups = self.retriever.batch_retrieve(
+                queries=plan.search_queries, top_k=limit, skip_rerank=skip_rerank,
+            )
+            chunks = self._merge_query_results(groups, limit)
+
+        generation_query = plan.original_query
+        if clarifications:
+            clarification_text = "\n".join(
+                f"Câu hỏi làm rõ: {turn.question}\nNgười dùng trả lời: {turn.answer}"
+                for turn in clarifications
+            )
+            generation_query = f"{generation_query}\n\n{clarification_text}"
+        return self.generator.generate(query=generation_query, chunks=chunks)
+
+    @staticmethod
+    def _merge_query_results(groups: Sequence[Sequence[Any]], limit: int) -> list[Any]:
+        chunks: dict[str, Any] = {}
+        for rank in zip_longest(*groups):
+            for chunk in rank:
+                if chunk is not None:
+                    chunks.setdefault(chunk.chunk_id, chunk)
+                    if len(chunks) >= limit:
+                        return list(chunks.values())
+        return list(chunks.values())
 
     def answer(
         self,

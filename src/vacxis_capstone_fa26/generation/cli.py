@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 import json
 import logging
 import os
@@ -14,6 +14,7 @@ from vacxis_capstone_fa26.generation.generator import MedicalGenerator
 from vacxis_capstone_fa26.generation.pipeline import VacxisRAGPipeline
 from vacxis_capstone_fa26.generation.prompts import get_chunk_field
 from vacxis_capstone_fa26.generation.schemas import GenerationConfig
+from vacxis_capstone_fa26.query import Clarification, ClarifyPlan, QueryPlanner
 
 logging.basicConfig(
     level=logging.INFO,
@@ -50,6 +51,17 @@ def parse_args() -> argparse.Namespace:
         type=str,
         default=None,
         help="LLM model name for generation (e.g. gpt-4o-mini, gemini/gemini-1.5-flash, claude-3-5-haiku-20241022)",
+    )
+    parser.add_argument(
+        "--query-planner-model",
+        help="Override VACXIS_QUERY_PLANNER_MODEL for a single online query (requires JSON output support)",
+    )
+    parser.add_argument(
+        "--clarification",
+        action="append",
+        nargs=2,
+        metavar=("QUESTION", "ANSWER"),
+        help="Resume the original query with a prior clarification question and user answer; repeat as needed",
     )
     parser.add_argument(
         "--temperature",
@@ -105,19 +117,33 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Limit number of queries processed from input file",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    single_online_query = not (args.input_file or args.use_ground_truth_chunks or args.dry_run)
+    if args.query_planner_model is not None:
+        if not args.query_planner_model.strip():
+            parser.error("--query-planner-model must not be blank")
+        if not single_online_query:
+            parser.error("--query-planner-model requires a single online query")
+    elif single_online_query:
+        args.query_planner_model = os.environ.get("VACXIS_QUERY_PLANNER_MODEL", "").strip() or None
+    if args.clarification:
+        if not args.query_planner_model:
+            parser.error("--clarification requires VACXIS_QUERY_PLANNER_MODEL or --query-planner-model")
+        if any(not text.strip() for pair in args.clarification for text in pair):
+            parser.error("--clarification requires a non-blank question and answer")
+    return args
 
 
 def main() -> None:
     """Run generation CLI entrypoint."""
     args = parse_args()
 
-    model_name = args.model if args.model is not None else os.environ.get("VACXIS_LLM_MODEL", "gpt-4o-mini")
     gen_config = GenerationConfig(
-        model=model_name,
         temperature=args.temperature,
         dry_run=args.dry_run,
     )
+    if args.model is not None:
+        gen_config.model = args.model
     generator = MedicalGenerator(config=gen_config)
 
     # Mode 1: Batch process from input file (e.g. test_dataset.json)
@@ -186,7 +212,7 @@ def main() -> None:
         logger.error("Please provide either --query or --input-file.")
         sys.exit(1)
 
-    query = args.query.strip()
+    query = args.query
     try:
         from vacxis_capstone_fa26.retrieval.retriever import VacxisRetriever
         from vacxis_capstone_fa26.retrieval.schemas import RetrievalConfig
@@ -197,8 +223,25 @@ def main() -> None:
     ret_config = RetrievalConfig(top_k=args.top_k, skip_rerank=args.skip_rerank)
 
     with VacxisRetriever(config=ret_config) as retriever:
-        pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
-        answer_obj = pipeline.answer(query=query, top_k=args.top_k, skip_rerank=args.skip_rerank)
+        if args.query_planner_model:
+            pipeline = VacxisRAGPipeline(
+                retriever=retriever,
+                generator=generator,
+                query_planner=QueryPlanner(args.query_planner_model),
+            )
+            answer_obj = pipeline.run_turn(
+                original_query=query,
+                clarifications=tuple(Clarification(*pair) for pair in (args.clarification or ())),
+                top_k=args.top_k,
+                skip_rerank=args.skip_rerank,
+            )
+        else:
+            pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
+            answer_obj = pipeline.answer(query=query.strip(), top_k=args.top_k, skip_rerank=args.skip_rerank)
+
+    if isinstance(answer_obj, ClarifyPlan):
+        print(json.dumps(asdict(answer_obj), ensure_ascii=False, indent=2) if args.json else answer_obj.clarification_question)
+        return
 
     if args.json:
         print(json.dumps(answer_obj.to_dict(), ensure_ascii=False, indent=2))

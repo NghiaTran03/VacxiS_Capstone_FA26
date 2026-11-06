@@ -9,6 +9,11 @@ wheels/
 # Virtual environments
 .venv
 
+# Local LLM configuration and credentials
+/.env
+/.env.*
+!/.env.example
+
 tasks_ocr/
 *.pdf
 *.PDF
