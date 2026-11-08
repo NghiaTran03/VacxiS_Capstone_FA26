@@ -19,17 +19,15 @@ def test_clarify_skips_retrieval_and_generation():
     assert generator.mock_calls == []
 
 
-def test_fallback_retrieves_only_the_original():
+def test_provider_error_stops_retrieval_and_generation():
+    from vacxis_capstone_fa26.llm import LLMError
     retriever, generator = Mock(), Mock()
-    complete = Mock(side_effect=TimeoutError)
-    planner = QueryPlanner("fixture", completion=complete)
+    planner = QueryPlanner("fixture", completion=Mock(side_effect=TimeoutError))
     pipeline = VacxisRAGPipeline(retriever, generator, query_planner=planner)
-
-    original = "  Verorab là gì?  "
-    assert pipeline.run_turn(original) is generator.generate.return_value
-    retriever.retrieve.assert_called_once_with(query=original, top_k=None, skip_rerank=None)
-    retriever.batch_retrieve.assert_not_called()
-    generator.generate.assert_called_once_with(query=original, chunks=retriever.retrieve.return_value)
+    with pytest.raises(LLMError):
+        pipeline.run_turn("Verorab là gì?")
+    retriever.retrieve.assert_not_called()
+    generator.generate.assert_not_called()
 
 
 def test_batch_searches_original_and_merges_unique_chunks_round_robin():
@@ -65,44 +63,26 @@ def test_batch_handles_empty_groups_and_caps_final_chunks():
     generator.generate.assert_called_once_with(query="Original", chunks=[chunk])
 
 
-@pytest.mark.parametrize(("model_flags", "planner_model", "generation_model"), [
-    ([], "planner-from-env", "generation-from-env"),
-    (["--query-planner-model", "planner-from-cli", "--model", "generation-from-cli"],
-     "planner-from-cli", "generation-from-cli"),
-])
-def test_cli_outputs_clarify_and_passes_verbatim_query(
-    monkeypatch, capsys, model_flags, planner_model, generation_model,
-):
+def test_cli_ignores_planner_env_for_online_queries(monkeypatch, capsys):
     from vacxis_capstone_fa26.generation import cli
     from vacxis_capstone_fa26.retrieval import retriever
-
-    original = "  Bé 14 tháng tiêm loại này được không?  "
+    from vacxis_capstone_fa26.generation.schemas import GeneratedAnswer
     monkeypatch.setenv("VACXIS_QUERY_PLANNER_MODEL", "planner-from-env")
-    monkeypatch.setenv("VACXIS_LLM_MODEL", "generation-from-env")
-    monkeypatch.setattr("sys.argv", [
-        "vacxis-generation", "--query", original, "--json", *model_flags,
-        "--clarification", "Bạn đã xác định được sản phẩm chưa?", "Chưa",
-    ])
+    monkeypatch.setenv("VACXIS_GENERATION_MODEL", "generation-from-env")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake")
+    monkeypatch.setattr("sys.argv", ["vacxis-generation", "--query", "Verorab là gì?", "--json"])
     monkeypatch.setattr(retriever, "VacxisRetriever", Mock(return_value=Mock(
         __enter__=Mock(), __exit__=Mock(return_value=False),
     )))
     pipeline = Mock()
-    pipeline.run_turn.return_value = ClarifyPlan("Bạn đang hỏi về vắc xin nào?")
-    build_pipeline = Mock(return_value=pipeline)
-    monkeypatch.setattr(cli, "VacxisRAGPipeline", build_pipeline)
-
+    pipeline.answer.return_value = GeneratedAnswer(query="Verorab là gì?", answer="Answer")
+    factory = Mock(return_value=pipeline)
+    monkeypatch.setattr(cli, "VacxisRAGPipeline", factory)
     main()
-
-    assert build_pipeline.call_args.kwargs["query_planner"].model == planner_model
-    assert build_pipeline.call_args.kwargs["generator"].config.model == generation_model
-    pipeline.run_turn.assert_called_once_with(
-        original_query=original,
-        clarifications=(Clarification("Bạn đã xác định được sản phẩm chưa?", "Chưa"),),
-        top_k=4, skip_rerank=False,
-    )
-    assert json.loads(capsys.readouterr().out) == {
-        "action": "clarify", "clarification_question": "Bạn đang hỏi về vắc xin nào?",
-    }
+    assert "query_planner" not in factory.call_args.kwargs
+    assert factory.call_args.kwargs["generator"].config.model == "generation-from-env"
+    pipeline.run_turn.assert_not_called()
+    assert json.loads(capsys.readouterr().out)["answer"] == "Answer"
 
 
 @pytest.mark.parametrize("arguments", [
@@ -127,4 +107,4 @@ def test_cli_ignores_planner_env_outside_single_online_mode(monkeypatch, argumen
     monkeypatch.setenv("VACXIS_QUERY_PLANNER_MODEL", "planner-from-env")
     monkeypatch.setattr("sys.argv", ["vacxis-generation", *arguments])
 
-    assert parse_args().query_planner_model is None
+    assert not hasattr(parse_args(), "query_planner_model")

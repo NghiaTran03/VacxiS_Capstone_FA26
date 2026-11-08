@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Sequence
 
 import torch
-from FlagEmbedding import FlagReranker
 
 from vacxis_capstone_fa26.retrieval.schemas import RetrievedChunk
 
@@ -41,6 +40,7 @@ class BGEReranker:
             self.model_path,
             self.use_fp16,
         )
+        from FlagEmbedding import FlagReranker
         self.model = FlagReranker(self.model_path, use_fp16=self.use_fp16)
         logger.info("BGE-Reranker loaded successfully.")
 
@@ -93,6 +93,8 @@ class BGEReranker:
         Returns:
             List of top-k RetrievedChunk lists for each query.
         """
+        if len(queries) != len(candidates_list):
+            raise ValueError("Expected one candidate group per query.")
         num_queries = len(queries)
         if num_queries == 0:
             return []
@@ -121,6 +123,8 @@ class BGEReranker:
         if isinstance(scores, (int, float)) or (hasattr(scores, "item") and getattr(scores, "ndim", 0) == 0):
             scores = [float(scores)]
 
+        if len(scores) != len(all_pairs):
+            raise ValueError("Expected one reranker score per candidate.")
         results: list[list[RetrievedChunk]] = []
         offset = 0
         for q_idx in range(num_queries):

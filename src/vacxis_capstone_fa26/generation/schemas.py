@@ -21,7 +21,7 @@ class GenerationConfig:
     """Configuration options for generation and LLM inference."""
 
     model: str = field(
-        default_factory=lambda: os.environ.get("VACXIS_LLM_MODEL", "gpt-4o-mini")
+        default_factory=lambda: os.getenv("VACXIS_GENERATION_MODEL", "").strip()
     )
     temperature: float = 0.0
     max_tokens: int = 1024

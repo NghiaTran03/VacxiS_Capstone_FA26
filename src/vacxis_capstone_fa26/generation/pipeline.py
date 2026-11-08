@@ -6,6 +6,7 @@ from types import TracebackType
 from typing import Any, Sequence
 
 from vacxis_capstone_fa26.generation.generator import MedicalGenerator
+from vacxis_capstone_fa26.generation.prompts import get_chunk_field
 from vacxis_capstone_fa26.generation.schemas import GeneratedAnswer, GenerationConfig
 from vacxis_capstone_fa26.query import Clarification, ClarifyPlan, QueryPlanner
 
@@ -43,8 +44,12 @@ class VacxisRAGPipeline:
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        if hasattr(self.retriever, "__exit__"):
-            self.retriever.__exit__(exc_type, exc_val, exc_tb)
+        try:
+            if hasattr(self.retriever, "__exit__"):
+                self.retriever.__exit__(exc_type, exc_val, exc_tb)
+        finally:
+            if hasattr(self.generator, "close"):
+                self.generator.close()
 
     def run_turn(
         self,
@@ -73,6 +78,8 @@ class VacxisRAGPipeline:
             groups = self.retriever.batch_retrieve(
                 queries=plan.search_queries, top_k=limit, skip_rerank=skip_rerank,
             )
+            if len(groups) != len(plan.search_queries):
+                raise ValueError("Expected one retrieval group per search query.")
             chunks = self._merge_query_results(groups, limit)
 
         generation_query = plan.original_query
@@ -90,7 +97,7 @@ class VacxisRAGPipeline:
         for rank in zip_longest(*groups):
             for chunk in rank:
                 if chunk is not None:
-                    chunks.setdefault(chunk.chunk_id, chunk)
+                    chunks.setdefault(str(get_chunk_field(chunk, "chunk_id", "")), chunk)
                     if len(chunks) >= limit:
                         return list(chunks.values())
         return list(chunks.values())
@@ -141,4 +148,9 @@ class VacxisRAGPipeline:
                 skip_rerank=skip_rerank,
             )
 
-        return self.generator.generate_batch(queries=queries, chunks_per_query=chunks_batch)
+        if len(chunks_batch) != len(queries):
+            raise ValueError("Expected one chunk group per query.")
+        answers = self.generator.generate_batch(queries=queries, chunks_per_query=chunks_batch)
+        if len(answers) != len(queries):
+            raise ValueError("Expected one generated answer per query.")
+        return answers

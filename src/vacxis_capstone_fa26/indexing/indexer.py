@@ -7,6 +7,9 @@ and upserts them into a Qdrant collection with hybrid search capability.
 from __future__ import annotations
 
 import argparse
+from contextlib import ExitStack
+from uuid import NAMESPACE_URL, uuid5
+from vacxis_capstone_fa26.retrieval.schemas import RetrievalConfig
 import logging
 from pathlib import Path
 import time
@@ -18,9 +21,7 @@ from qdrant_client import QdrantClient, models
 import torch
 from tqdm import tqdm
 
-# ──────────────────────────────────────────────────────────────────────
 # Logging
-# ──────────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
@@ -28,14 +29,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger("vacxis.indexer")
 
-# ──────────────────────────────────────────────────────────────────────
 # Constants & Defaults
-# ──────────────────────────────────────────────────────────────────────
-DEFAULT_COLLECTION_NAME = "VacxiS_Capstone_FA26"
+DEFAULT_COLLECTION_NAME = RetrievalConfig.collection_name
 DEFAULT_PARQUET_PATH = "chunks_storage/chunks.parquet"
-DEFAULT_MODEL_PATH = "./models/bge-m3/"
-DEFAULT_QDRANT_HOST = "localhost"
-DEFAULT_QDRANT_PORT = 6333
+DEFAULT_MODEL_PATH = RetrievalConfig.embed_model_path
+DEFAULT_QDRANT_HOST = RetrievalConfig.qdrant_host
+DEFAULT_QDRANT_PORT = RetrievalConfig.qdrant_port
 
 DENSE_DIM = 1024
 EMBEDDING_BATCH_SIZE = 16
@@ -69,7 +68,7 @@ def convert_sparse_to_qdrant(
 def init_qdrant_collection(
     client: QdrantClient,
     collection_name: str = DEFAULT_COLLECTION_NAME,
-    recreate: bool = True,
+    recreate: bool = False,
     dense_dim: int = DENSE_DIM,
 ) -> None:
     """Check and create Qdrant collection configured for hybrid search.
@@ -143,11 +142,14 @@ def ingest_to_qdrant(
     collection_name: str = DEFAULT_COLLECTION_NAME,
     qdrant_host: str = DEFAULT_QDRANT_HOST,
     qdrant_port: int = DEFAULT_QDRANT_PORT,
-    recreate: bool = True,
+    recreate: bool = False,
     embedding_batch_size: int = EMBEDDING_BATCH_SIZE,
     mega_batch_size: int = MEGA_BATCH_SIZE,
     embedding_max_length: int = EMBEDDING_MAX_LENGTH,
     upsert_batch_size: int = QDRANT_UPSERT_BATCH,
+    *,
+    client: QdrantClient | None = None,
+    embed_model: Any | None = None,
 ) -> int:
     """Generate BGE-M3 dense + sparse embeddings and upsert into Qdrant.
 
@@ -166,12 +168,16 @@ def ingest_to_qdrant(
     Returns:
         Total number of points upserted.
     """
-    logger.info("═" * 60)
     logger.info("QDRANT VECTOR STORE INGESTION (HYBRID DENSE + SPARSE)")
-    logger.info("═" * 60)
 
     # 1. Load records from Parquet using PyArrow
+    if any(type(value) is not int or value < 1 for value in
+           (embedding_batch_size, mega_batch_size, embedding_max_length, upsert_batch_size)):
+        raise ValueError("Indexing batch sizes and max length must be positive integers.")
     records = load_chunks_from_parquet(parquet_path)
+    ids = [row.get("chunk_id") for row in records]
+    if any(not isinstance(cid, str) or not cid.strip() for cid in ids) or len(set(ids)) != len(ids):
+        raise ValueError("Chunks must have unique, nonblank chunk IDs.")
     total_rows = len(records)
     if total_rows == 0:
         logger.warning("No records found in %s. Ingestion aborted.", parquet_path)
@@ -179,116 +185,121 @@ def ingest_to_qdrant(
 
     # 2. Connect to Qdrant
     logger.info("Connecting to Qdrant at %s:%d ...", qdrant_host, qdrant_port)
-    client = QdrantClient(host=qdrant_host, port=qdrant_port)
-    client.get_collections()
-    logger.info("Qdrant connection: OK")
+    with ExitStack() as stack:
+        if client is None:
+            client = QdrantClient(host=qdrant_host, port=qdrant_port)
+            stack.callback(client.close)
+        client.get_collections()
+        logger.info("Qdrant connection: OK")
 
-    # 3. Setup Collection
-    init_qdrant_collection(
-        client=client,
-        collection_name=collection_name,
-        recreate=recreate,
-        dense_dim=DENSE_DIM,
-    )
-
-    # 4. Load BGE-M3 Model
-    use_fp16 = torch.cuda.is_available()
-    logger.info(
-        "Loading BGE-M3 model from '%s' (use_fp16=%s, cuda=%s)...",
-        model_path,
-        use_fp16,
-        torch.cuda.is_available(),
-    )
-    from FlagEmbedding import BGEM3FlagModel
-
-    model = BGEM3FlagModel(str(model_path), use_fp16=use_fp16)
-    logger.info("BGE-M3 model loaded successfully.")
-
-    # 5. Process in mega-batches: encode -> convert -> upsert
-    total_upserted = 0
-    num_mega_batches = (total_rows + mega_batch_size - 1) // mega_batch_size
-
-    pbar = tqdm(total=total_rows, desc="Qdrant Hybrid Upsert", unit="pts")
-
-    for mega_idx in range(num_mega_batches):
-        start = mega_idx * mega_batch_size
-        end = min(start + mega_batch_size, total_rows)
-        batch_records = records[start:end]
-        current_batch_size = len(batch_records)
-
-        # 5a. Prepare texts to encode
-        texts: list[str] = []
-        for rec in batch_records:
-            text = str(rec.get("text", "")).strip()
-            texts.append(text)
-
-        # 5b. Generate Dense + Sparse embeddings
-        output = model.encode(
-            texts,
-            batch_size=embedding_batch_size,
-            max_length=embedding_max_length,
-            return_dense=True,
-            return_sparse=True,
-            return_colbert_vecs=False,
+        # 3. Setup Collection
+        init_qdrant_collection(
+            client=client,
+            collection_name=collection_name,
+            recreate=recreate,
+            dense_dim=DENSE_DIM,
         )
 
-        dense_vecs = output["dense_vecs"]
-        sparse_weights = output["lexical_weights"]
+        # 4. Load BGE-M3 Model
+        use_fp16 = torch.cuda.is_available()
+        logger.info(
+            "Loading BGE-M3 model from '%s' (use_fp16=%s, cuda=%s)...",
+            model_path,
+            use_fp16,
+            torch.cuda.is_available(),
+        )
+        model = embed_model
+        if model is None:
+            from FlagEmbedding import BGEM3FlagModel
+            model = BGEM3FlagModel(str(model_path), use_fp16=use_fp16)
+        logger.info("BGE-M3 model loaded successfully.")
 
-        # 5c. Build PointStruct list
-        points: list[models.PointStruct] = []
-        for i in range(current_batch_size):
-            global_idx = start + i
-            rec = batch_records[i]
+        # 5. Process in mega-batches: encode -> convert -> upsert
+        total_upserted = 0
+        num_mega_batches = (total_rows + mega_batch_size - 1) // mega_batch_size
 
-            sparse_vec = convert_sparse_to_qdrant(sparse_weights[i])
+        pbar = stack.enter_context(tqdm(total=total_rows, desc="Qdrant Hybrid Upsert", unit="pts"))
 
-            payload: dict[str, Any] = {
-                "chunk_id": str(rec.get("chunk_id", "")),
-                "doc_id": str(rec.get("doc_id", "")),
-                "doc_title": str(rec.get("doc_title", "")),
-                "category": str(rec.get("category", "")),
-                "parent_header": str(rec.get("parent_header", "")),
-                "header": str(rec.get("header", "")),
-                "content_type": str(rec.get("content_type", "")),
-                "text": str(rec.get("text", "")),
-                "metadata": rec.get("metadata") or {},
-            }
+        for mega_idx in range(num_mega_batches):
+            start = mega_idx * mega_batch_size
+            end = min(start + mega_batch_size, total_rows)
+            batch_records = records[start:end]
+            current_batch_size = len(batch_records)
 
-            point = models.PointStruct(
-                id=global_idx,
-                vector={
-                    "dense": dense_vecs[i].tolist(),
-                    "sparse": sparse_vec,
-                },
-                payload=payload,
+            # 5a. Prepare texts to encode
+            texts: list[str] = []
+            for rec in batch_records:
+                text = str(rec.get("text", "")).strip()
+                texts.append(text)
+
+            # 5b. Generate Dense + Sparse embeddings
+            output = model.encode(
+                texts,
+                batch_size=embedding_batch_size,
+                max_length=embedding_max_length,
+                return_dense=True,
+                return_sparse=True,
+                return_colbert_vecs=False,
             )
-            points.append(point)
 
-        # 5d. Upsert in sub-batches
-        for upsert_start in range(0, len(points), upsert_batch_size):
-            upsert_end = min(upsert_start + upsert_batch_size, len(points))
-            sub_points = points[upsert_start:upsert_end]
-            client.upsert(
-                collection_name=collection_name,
-                points=sub_points,
-            )
-            total_upserted += len(sub_points)
+            dense_vecs = output["dense_vecs"]
+            sparse_weights = output["lexical_weights"]
+            if len(dense_vecs) != current_batch_size or len(sparse_weights) != current_batch_size:
+                raise ValueError("Embedding output count does not match chunk count.")
 
-        pbar.update(current_batch_size)
+            # 5c. Build PointStruct list
+            points: list[models.PointStruct] = []
+            for i in range(current_batch_size):
+                rec = batch_records[i]
 
-    pbar.close()
+                sparse_vec = convert_sparse_to_qdrant(sparse_weights[i])
 
-    # 6. Verify collection info
-    collection_info = client.get_collection(collection_name)
-    logger.info(
-        "Qdrant ingestion complete: %d points upserted, collection has %d points.",
-        total_upserted,
-        collection_info.points_count,
-    )
+                payload: dict[str, Any] = {
+                    "chunk_id": str(rec.get("chunk_id", "")),
+                    "doc_id": str(rec.get("doc_id", "")),
+                    "doc_title": str(rec.get("doc_title", "")),
+                    "category": str(rec.get("category", "")),
+                    "parent_header": str(rec.get("parent_header", "")),
+                    "header": str(rec.get("header", "")),
+                    "content_type": str(rec.get("content_type", "")),
+                    "text": str(rec.get("text", "")),
+                    "metadata": rec.get("metadata") or {},
+                }
 
-    client.close()
-    return total_upserted
+                point = models.PointStruct(
+                    id=str(uuid5(NAMESPACE_URL, str(rec["chunk_id"]))),
+                    vector={
+                        "dense": dense_vecs[i].tolist(),
+                        "sparse": sparse_vec,
+                    },
+                    payload=payload,
+                )
+                points.append(point)
+
+            # 5d. Upsert in sub-batches
+            for upsert_start in range(0, len(points), upsert_batch_size):
+                upsert_end = min(upsert_start + upsert_batch_size, len(points))
+                sub_points = points[upsert_start:upsert_end]
+                client.upsert(
+                    collection_name=collection_name,
+                    points=sub_points,
+                    wait=True,
+                )
+                total_upserted += len(sub_points)
+
+            pbar.update(current_batch_size)
+
+        pbar.close()
+
+        # 6. Verify collection info
+        collection_info = client.get_collection(collection_name)
+        logger.info(
+            "Qdrant ingestion complete: %d points upserted, collection has %d points.",
+            total_upserted,
+            collection_info.points_count,
+        )
+
+        return total_upserted
 
 
 def parse_args() -> argparse.Namespace:
@@ -348,7 +359,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--recreate",
         action=argparse.BooleanOptionalAction,
-        default=True,
+        default=False,
         help="Recreate collection if it already exists.",
     )
     return parser.parse_args()
@@ -359,9 +370,6 @@ def main() -> None:
     args = parse_args()
     start_time = time.time()
 
-    logger.info("╔" + "═" * 58 + "╗")
-    logger.info("║  VACXIS INDEXING: Qdrant Hybrid Vector Store             ║")
-    logger.info("╚" + "═" * 58 + "╝")
     logger.info("Parquet    : %s", args.parquet_path)
     logger.info("Model      : %s", args.model_path)
     logger.info("Collection : %s", args.collection_name)
@@ -381,14 +389,12 @@ def main() -> None:
     )
 
     elapsed = time.time() - start_time
-    logger.info("═" * 60)
     logger.info(
         "INDEXING COMPLETE — Total points: %d | Time: %.1f seconds (%.2f minutes)",
         points_count,
         elapsed,
         elapsed / 60,
     )
-    logger.info("═" * 60)
 
 
 if __name__ == "__main__":

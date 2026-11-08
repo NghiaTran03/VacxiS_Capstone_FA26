@@ -3,14 +3,13 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import random
 import sys
 from pathlib import Path
 
 from .answer_generator import (
     ExtractiveAnswerGenerator,
-    LiteLLMAnswerGenerator,
+    OpenRouterAnswerGenerator,
     NoOpAnswerGenerator,
 )
 from .chunks import load_chunks
@@ -18,7 +17,7 @@ from .generator import (
     derive_default_seed,
     generate_and_validate,
 )
-from .refiner import LiteLLMRefiner, noop_refiner
+from .refiner import OpenRouterRefiner, noop_refiner
 from .taxonomy import QUERY_TYPE_DEFS
 
 
@@ -75,8 +74,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--refine-spans",
         action="store_true",
         help=(
-            "Opt-in: call an LLM (LiteLLM, model from $VACXIS_LLM_MODEL, "
-            "default claude-haiku-4-5) to upgrade the primary chunk's "
+            "Opt-in: call OpenRouter (model from $VACXIS_GENERATION_MODEL) "
+            "to upgrade the primary chunk's "
             "EVIDENCE_SPAN. Requires network + provider credentials."
         ),
     )
@@ -85,14 +84,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help=(
             "Opt-in: generate REFERENCE_ANSWER and CLAIM_EVIDENCE_MAP. "
-            "Uses LiteLLM if API keys are available, otherwise falls back to extractive generator."
+            "Uses OpenRouter; --dry-run-answers selects offline extraction."
         ),
     )
     p.add_argument(
         "--answers-model",
         type=str,
         default=None,
-        help="Model name for answer generation (e.g. gpt-4o-mini, gemini/gemini-1.5-flash)",
+        help="OpenRouter model override for reference answers",
     )
     p.add_argument(
         "--dry-run-answers",
@@ -136,18 +135,15 @@ def main(argv: list[str] | None = None) -> int:
     rng = random.Random(seed)
     print(f"Using seed: {seed} ({'explicit' if args.seed is not None else 'derived from chunk content'})")
 
-    refiner = LiteLLMRefiner() if args.refine_spans else noop_refiner()
+    if args.refine_spans and args.dry_run_answers:
+        raise ValueError("--refine-spans cannot be used with --dry-run-answers.")
+    refiner = OpenRouterRefiner() if args.refine_spans else noop_refiner()
 
     if args.generate_answers:
         if args.dry_run_answers:
             ans_gen = ExtractiveAnswerGenerator()
         else:
-            has_key = bool(
-                os.environ.get("OPENAI_API_KEY")
-                or os.environ.get("ANTHROPIC_API_KEY")
-                or os.environ.get("GEMINI_API_KEY")
-            )
-            ans_gen = LiteLLMAnswerGenerator(model=args.answers_model) if has_key else ExtractiveAnswerGenerator()
+            ans_gen = OpenRouterAnswerGenerator(model=args.answers_model)
     else:
         ans_gen = NoOpAnswerGenerator()
 

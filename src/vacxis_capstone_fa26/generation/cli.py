@@ -2,10 +2,9 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 import json
 import logging
-import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -14,7 +13,6 @@ from vacxis_capstone_fa26.generation.generator import MedicalGenerator
 from vacxis_capstone_fa26.generation.pipeline import VacxisRAGPipeline
 from vacxis_capstone_fa26.generation.prompts import get_chunk_field
 from vacxis_capstone_fa26.generation.schemas import GenerationConfig
-from vacxis_capstone_fa26.query import Clarification, ClarifyPlan, QueryPlanner
 
 logging.basicConfig(
     level=logging.INFO,
@@ -50,18 +48,7 @@ def parse_args() -> argparse.Namespace:
         "--model",
         type=str,
         default=None,
-        help="LLM model name for generation (e.g. gpt-4o-mini, gemini/gemini-1.5-flash, claude-3-5-haiku-20241022)",
-    )
-    parser.add_argument(
-        "--query-planner-model",
-        help="Override VACXIS_QUERY_PLANNER_MODEL for a single online query (requires JSON output support)",
-    )
-    parser.add_argument(
-        "--clarification",
-        action="append",
-        nargs=2,
-        metavar=("QUESTION", "ANSWER"),
-        help="Resume the original query with a prior clarification question and user answer; repeat as needed",
+        help="OpenRouter model override for VACXIS_GENERATION_MODEL",
     )
     parser.add_argument(
         "--temperature",
@@ -117,25 +104,14 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Limit number of queries processed from input file",
     )
-    args = parser.parse_args()
-    single_online_query = not (args.input_file or args.use_ground_truth_chunks or args.dry_run)
-    if args.query_planner_model is not None:
-        if not args.query_planner_model.strip():
-            parser.error("--query-planner-model must not be blank")
-        if not single_online_query:
-            parser.error("--query-planner-model requires a single online query")
-    elif single_online_query:
-        args.query_planner_model = os.environ.get("VACXIS_QUERY_PLANNER_MODEL", "").strip() or None
-    if args.clarification:
-        if not args.query_planner_model:
-            parser.error("--clarification requires VACXIS_QUERY_PLANNER_MODEL or --query-planner-model")
-        if any(not text.strip() for pair in args.clarification for text in pair):
-            parser.error("--clarification requires a non-blank question and answer")
-    return args
+    from vacxis_capstone_fa26.cli import add_retrieval_arguments
+    add_retrieval_arguments(parser)
+    return parser.parse_args()
 
 
 def main() -> None:
     """Run generation CLI entrypoint."""
+    from vacxis_capstone_fa26.cli import retrieval_config
     args = parse_args()
 
     gen_config = GenerationConfig(
@@ -144,6 +120,9 @@ def main() -> None:
     )
     if args.model is not None:
         gen_config.model = args.model
+    if not args.dry_run:
+        from vacxis_capstone_fa26.llm import validate_config
+        validate_config(gen_config.model)
     generator = MedicalGenerator(config=gen_config)
 
     # Mode 1: Batch process from input file (e.g. test_dataset.json)
@@ -185,12 +164,11 @@ def main() -> None:
         else:
             try:
                 from vacxis_capstone_fa26.retrieval.retriever import VacxisRetriever
-                from vacxis_capstone_fa26.retrieval.schemas import RetrievalConfig
             except ImportError as exc:
                 logger.error("Retrieval module requires PyTorch/CUDA dependencies (%s).", exc)
                 sys.exit(1)
 
-            ret_config = RetrievalConfig(top_k=args.top_k, skip_rerank=args.skip_rerank)
+            ret_config = retrieval_config(args)
             with VacxisRetriever(config=ret_config) as retriever:
                 pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
                 for item in items:
@@ -201,6 +179,7 @@ def main() -> None:
                     results.append(res_dict)
 
         out_path = args.out_file or Path("generation_results.json")
+        out_path.parent.mkdir(parents=True, exist_ok=True)
         with open(out_path, "w", encoding="utf-8") as f:
             json.dump(results, f, ensure_ascii=False, indent=2)
 
@@ -215,33 +194,15 @@ def main() -> None:
     query = args.query
     try:
         from vacxis_capstone_fa26.retrieval.retriever import VacxisRetriever
-        from vacxis_capstone_fa26.retrieval.schemas import RetrievalConfig
     except ImportError as exc:
         logger.error("Retrieval module requires PyTorch/CUDA dependencies (%s).", exc)
         sys.exit(1)
 
-    ret_config = RetrievalConfig(top_k=args.top_k, skip_rerank=args.skip_rerank)
+    ret_config = retrieval_config(args)
 
     with VacxisRetriever(config=ret_config) as retriever:
-        if args.query_planner_model:
-            pipeline = VacxisRAGPipeline(
-                retriever=retriever,
-                generator=generator,
-                query_planner=QueryPlanner(args.query_planner_model),
-            )
-            answer_obj = pipeline.run_turn(
-                original_query=query,
-                clarifications=tuple(Clarification(*pair) for pair in (args.clarification or ())),
-                top_k=args.top_k,
-                skip_rerank=args.skip_rerank,
-            )
-        else:
-            pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
-            answer_obj = pipeline.answer(query=query.strip(), top_k=args.top_k, skip_rerank=args.skip_rerank)
-
-    if isinstance(answer_obj, ClarifyPlan):
-        print(json.dumps(asdict(answer_obj), ensure_ascii=False, indent=2) if args.json else answer_obj.clarification_question)
-        return
+        pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
+        answer_obj = pipeline.answer(query=query.strip(), top_k=args.top_k, skip_rerank=args.skip_rerank)
 
     if args.json:
         print(json.dumps(answer_obj.to_dict(), ensure_ascii=False, indent=2))

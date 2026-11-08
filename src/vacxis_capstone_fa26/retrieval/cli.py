@@ -62,31 +62,31 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--collection-name",
         type=str,
-        default="VacxiS_Capstone_FA26",
+        default=RetrievalConfig.collection_name,
         help="Qdrant collection name",
     )
     parser.add_argument(
         "--qdrant-host",
         type=str,
-        default="localhost",
+        default=RetrievalConfig.qdrant_host,
         help="Qdrant server host",
     )
     parser.add_argument(
         "--qdrant-port",
         type=int,
-        default=6333,
+        default=RetrievalConfig.qdrant_port,
         help="Qdrant server port",
     )
     parser.add_argument(
         "--model-path",
         type=str,
-        default="models/bge-m3",
+        default=RetrievalConfig.embed_model_path,
         help="Path to BGE-M3 model",
     )
     parser.add_argument(
         "--reranker-path",
         type=str,
-        default="models/bge-reranker",
+        default=RetrievalConfig.reranker_model_path,
         help="Path to BGE-reranker model",
     )
     parser.add_argument(

@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Sequence
+from typing import Sequence, TYPE_CHECKING
 
 import torch
-from FlagEmbedding import BGEM3FlagModel
+if TYPE_CHECKING:
+    from FlagEmbedding import BGEM3FlagModel
 
 from vacxis_capstone_fa26.retrieval.hybrid_searcher import HybridSearcher
 from vacxis_capstone_fa26.retrieval.reranker import BGEReranker
@@ -51,6 +52,7 @@ class VacxisRetriever:
                 self.config.embed_model_path,
                 use_fp16,
             )
+            from FlagEmbedding import BGEM3FlagModel
             self._embed_model = BGEM3FlagModel(
                 str(self.config.embed_model_path),
                 use_fp16=use_fp16,
@@ -63,11 +65,6 @@ class VacxisRetriever:
                 port=self.config.qdrant_port,
                 collection_name=self.config.collection_name,
                 rrf_k=self.config.rrf_k,
-            )
-
-        if self._reranker is None and not self.config.skip_rerank:
-            self._reranker = BGEReranker(
-                model_path=self.config.reranker_model_path,
             )
 
     @property
@@ -200,6 +197,8 @@ class VacxisRetriever:
             return []
 
         query_list = list(queries)
+        if any(not isinstance(q, str) or not q.strip() for q in query_list):
+            raise ValueError("Batch queries must be nonblank strings.")
         embed_output = self.embed_model.encode(
             query_list,
             batch_size=batch_size,
@@ -208,6 +207,8 @@ class VacxisRetriever:
             return_sparse=True,
             return_colbert_vecs=False,
         )
+        if len(embed_output["dense_vecs"]) != len(query_list) or len(embed_output["lexical_weights"]) != len(query_list):
+            raise ValueError("Expected one embedding per query.")
         dense_vecs = [v.tolist() for v in embed_output["dense_vecs"]]
         sparse_weights_list = list(embed_output["lexical_weights"])
 
@@ -234,6 +235,9 @@ class VacxisRetriever:
             top_k_sparse=k_sparse,
             rrf_top_k=effective_rrf_top_k,
         )
+
+        if len(all_candidates) != len(query_list):
+            raise ValueError("Expected one candidate group per query.")
 
         # 2. Batched cross-encoder reranking across all candidate pairs
         if not should_skip_rerank:

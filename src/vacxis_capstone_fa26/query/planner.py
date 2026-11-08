@@ -3,10 +3,11 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 from collections.abc import Callable, Sequence
 from dataclasses import asdict
 from typing import Any
+
+from vacxis_capstone_fa26.llm import LLMError, completion, resolve_model, validate_response
 
 from .schemas import Clarification, ClarifyPlan, QueryPlan, RetrievePlan
 
@@ -77,16 +78,14 @@ class QueryPlanner:
 
     def __init__(
         self,
-        model: str,
+        model: str | None = None,
         *,
         timeout: float = 20.0,
         completion: Callable[..., Any] | None = None,
     ) -> None:
-        if not _has_text(model):
-            raise ValueError("A query planner model is required.")
         if isinstance(timeout, bool) or not 0 < timeout <= 120:
             raise ValueError("Query planner timeout must be in (0, 120] seconds.")
-        self.model = model.strip()
+        self.model = resolve_model(model, planner=True)
         self.timeout = timeout
         self._completion = completion
 
@@ -100,11 +99,7 @@ class QueryPlanner:
             "original_query": original_query,
             "clarifications": [asdict(turn) for turn in clarifications],
         }
-        complete = self._completion
-        if complete is None:
-            from litellm import completion
-
-            complete = completion
+        complete = self._completion or completion
 
         kwargs: dict[str, Any] = {
             "model": self.model,
@@ -114,22 +109,15 @@ class QueryPlanner:
             ],
             "response_format": {"type": "json_object"},
             "timeout": self.timeout,
-            "num_retries": 0,
         }
-        if api_key := os.environ.get("LLM_API_KEY"):
-            kwargs["api_key"] = api_key
+        try:
+            response = validate_response(complete(**kwargs))
+        except LLMError:
+            raise
+        except Exception:
+            raise LLMError("Query planner request failed.") from None
 
         try:
-            response = complete(**kwargs)
-        except Exception as exc:
-            logger.warning("query_planner_provider_error (%s)", type(exc).__name__)
-            return _retrieve_plan(original_query)
-
-        try:
-            choice = response.choices[0]
-            if getattr(choice, "finish_reason", None) not in (None, "stop"):
-                raise ValueError("Planner response did not complete.")
-            return _parse_plan(choice.message.content, original_query)
-        except (AttributeError, LookupError, TypeError, ValueError) as exc:
-            logger.warning("query_planner_invalid_response (%s)", type(exc).__name__)
-            return _retrieve_plan(original_query)
+            return _parse_plan(response.choices[0].message.content, original_query)
+        except (AttributeError, LookupError, TypeError, ValueError):
+            raise LLMError("Query planner returned an invalid plan.") from None

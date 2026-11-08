@@ -10,6 +10,7 @@ from typing import Any
 
 from vacxis_capstone_fa26.evaluation.evaluator import (
     GenerationEvaluator,
+    align_results,
     RetrievalEvaluator,
     VacxisRAGEvaluator,
 )
@@ -145,6 +146,7 @@ def main() -> None:
 
         logger.info("Loaded %d result items from %s", len(results), args.results)
 
+        aligned = align_results(dataset, results)
         if args.eval_retrieval_only:
             evaluator = RetrievalEvaluator(k_values=k_vals)
             retrieved_lists = [
@@ -153,10 +155,10 @@ def main() -> None:
                 or []
                 for r in results
             ]
-            summary = evaluator.evaluate(queries=results, retrieved_per_query=retrieved_lists)
+            summary = evaluator.evaluate(queries=aligned, retrieved_per_query=retrieved_lists)
         elif args.eval_generation_only:
             evaluator = GenerationEvaluator()
-            summary = evaluator.evaluate(queries=results, answers=results)
+            summary = evaluator.evaluate(queries=aligned, answers=results)
         else:
             rag_evaluator = VacxisRAGEvaluator(k_values=k_vals)
             summary = rag_evaluator.evaluate_results(dataset_items=dataset, generation_results=results)

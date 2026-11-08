@@ -4,6 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from vacxis_capstone_fa26.llm import LLMError
 from vacxis_capstone_fa26.query import Clarification, ClarifyPlan, QueryPlanner, RetrievePlan
 
 
@@ -25,7 +26,7 @@ def test_original_is_verbatim_first_and_deduplicated():
     )
     complete.assert_called_once()
     request = complete.call_args.kwargs
-    assert request["num_retries"] == 0
+    assert "num_retries" not in request
     assert request["response_format"] == {"type": "json_object"}
     assert json.loads(request["messages"][1]["content"]) == {
         "original_query": original, "clarifications": [],
@@ -80,21 +81,21 @@ def test_clarification_then_retrieval_with_original_and_resolved_query():
     SimpleNamespace(choices=[]),
     SimpleNamespace(choices={}),
 ])
-def test_invalid_response_falls_back_once(output, caplog):
+def test_invalid_response_raises_once(output, caplog):
     complete = Mock(return_value=output)
     original = "  Câu hỏi gốc  "
-    assert QueryPlanner("fixture", completion=complete).plan(original) == RetrievePlan(original, (original,))
+    with pytest.raises(LLMError):
+        QueryPlanner("fixture", completion=complete).plan(original)
     complete.assert_called_once()
-    assert "query_planner_invalid_response" in caplog.text
     assert original not in caplog.text
 
 
-def test_provider_failure_falls_back_once_without_logging_provider_data(caplog):
+def test_provider_failure_raises_without_logging_provider_data(caplog):
     complete = Mock(side_effect=TimeoutError("private provider data"))
     original = "Câu hỏi gốc"
-    assert QueryPlanner("fixture", completion=complete).plan(original) == RetrievePlan(original, (original,))
+    with pytest.raises(LLMError, match="request failed"):
+        QueryPlanner("fixture", completion=complete).plan(original)
     complete.assert_called_once()
-    assert "query_planner_provider_error" in caplog.text
     assert "private provider data" not in caplog.text
 
 

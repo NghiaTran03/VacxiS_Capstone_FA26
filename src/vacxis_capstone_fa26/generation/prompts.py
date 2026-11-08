@@ -84,7 +84,7 @@ def build_messages(
     include_metadata: bool = True,
     enforce_citations: bool = True,
 ) -> list[dict[str, str]]:
-    """Construct messages payload compatible with LiteLLM/OpenAI format."""
+    """Construct messages payload compatible with OpenAI chat format."""
     sys_prompt = system_prompt or DEFAULT_MEDICAL_SYSTEM_PROMPT
     context_str = format_context(chunks, include_metadata=include_metadata)
 

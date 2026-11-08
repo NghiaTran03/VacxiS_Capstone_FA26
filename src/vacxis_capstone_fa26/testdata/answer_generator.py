@@ -1,7 +1,7 @@
 """Reference answer generator and claim-evidence mapper for Vaccine RAG.
 
 Supports two operational modes:
-1. LLM-based generation via LiteLLM (when credentials / network are available)
+1. LLM-based generation via OpenRouter (explicit online mode)
 2. Extractive grounded fallback (offline, deterministic, dry-run friendly)
 
 Both modes generate:
@@ -13,13 +13,12 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import sys
 from pathlib import Path
 from typing import Any, Iterable, Protocol
 
-import litellm
+from vacxis_capstone_fa26.llm import LLMError, completion, resolve_model
 
 
 UNANSWERABLE_FALLBACK_ANSWER = (
@@ -129,8 +128,8 @@ class ExtractiveAnswerGenerator:
             q["CLAIM_EVIDENCE_MAP"] = []
 
 
-class LiteLLMAnswerGenerator:
-    """Generates golden reference answers with citations and claim maps via LiteLLM."""
+class OpenRouterAnswerGenerator:
+    """Generates golden reference answers with citations and claim maps via OpenRouter."""
 
     def __init__(
         self,
@@ -138,22 +137,13 @@ class LiteLLMAnswerGenerator:
         batch_size: int = 2,
         temperature: float = 0.0,
     ) -> None:
-        self.model = model or os.environ.get("VACXIS_LLM_MODEL", "gpt-4o-mini")
+        self.model = resolve_model(model)
         self.batch_size = batch_size
         self.temperature = temperature
-        self._fallback = ExtractiveAnswerGenerator()
 
     def generate_answers(self, queries: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        for i, q in enumerate(queries):
-            try:
-                self._generate_single(q)
-            except Exception as exc:  # noqa: BLE001
-                print(
-                    f"[WARN] LiteLLMAnswerGenerator failed on query {q.get('QUERY_ID', i)}: {exc}. "
-                    "Falling back to extractive generator.",
-                    file=sys.stderr,
-                )
-                self._fallback._generate_single(q)
+        for q in queries:
+            self._generate_single(q)
         return queries
 
     def _generate_single(self, q: dict[str, Any]) -> None:
@@ -184,32 +174,42 @@ class LiteLLMAnswerGenerator:
             "và phân rã claim_evidence_map dưới dạng JSON."
         )
 
-        response = litellm.completion(
+        response = completion(
             model=self.model,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_content},
             ],
             temperature=self.temperature,
+            response_format={"type": "json_object"},
         )
 
         raw_content = response.choices[0].message.content
-        data = _parse_json(raw_content)
+        try:
+            data = _parse_json(raw_content)
+        except (ValueError, TypeError, AttributeError):
+            raise LLMError("Reference answer returned invalid JSON.") from None
 
-        ref_answer = data.get("reference_answer", "").strip()
-        claims = data.get("claim_evidence_map", [])
-
-        if not ref_answer:
-            self._fallback._generate_single(q)
-            return
-
-        # Ensure all citations correspond to actual chunk IDs
-        valid_cids = {c.get("CHUNK_ID") for c in relevant}
-        q["REFERENCE_ANSWER"] = ref_answer
-        q["CLAIM_EVIDENCE_MAP"] = [
-            cl for cl in claims
-            if isinstance(cl, dict) and cl.get("chunk_id") in valid_cids
-        ] or claims
+        if not isinstance(data, dict):
+            raise LLMError("Reference answer must be a JSON object.")
+        ref_answer = data.get("reference_answer")
+        claims = data.get("claim_evidence_map")
+        if not isinstance(ref_answer, str) or not ref_answer.strip() or not isinstance(claims, list):
+            raise LLMError("Reference answer response has invalid fields.")
+        valid_chunks = {c["CHUNK_ID"]: c["TEXT"] for c in relevant}
+        for claim in claims:
+            if (not isinstance(claim, dict)
+                    or not isinstance(claim.get("claim"), str) or not claim["claim"].strip()
+                    or claim.get("chunk_id") not in valid_chunks
+                    or not isinstance(claim.get("evidence_quote"), str)
+                    or not claim["evidence_quote"].strip()
+                    or claim["evidence_quote"] not in valid_chunks[claim["chunk_id"]]):
+                raise LLMError("Reference answer contains invalid claim evidence.")
+        citations = re.findall(r"\[([^\[\]]+)\]", ref_answer)
+        if not claims or not citations or any(cid not in valid_chunks for cid in citations):
+            raise LLMError("Reference answer contains missing or invalid citations.")
+        q["REFERENCE_ANSWER"] = ref_answer.strip()
+        q["CLAIM_EVIDENCE_MAP"] = claims
 
 
 def _parse_json(raw: str) -> dict[str, Any]:
@@ -232,12 +232,7 @@ def enrich_dataset(
 ) -> list[dict[str, Any]]:
     """Enrich an existing list of queries with reference answers and claim maps."""
     if generator is None:
-        has_key = bool(
-            os.environ.get("OPENAI_API_KEY")
-            or os.environ.get("ANTHROPIC_API_KEY")
-            or os.environ.get("GEMINI_API_KEY")
-        )
-        generator = LiteLLMAnswerGenerator() if has_key else ExtractiveAnswerGenerator()
+        generator = OpenRouterAnswerGenerator()
 
     to_process: list[dict[str, Any]] = []
     for q in queries:
@@ -270,7 +265,7 @@ def main(argv: list[str] | None = None) -> int:
         "--model",
         type=str,
         default=None,
-        help="Model name for LiteLLM (e.g. gpt-4o-mini, gemini/gemini-1.5-flash)",
+        help="OpenRouter model override",
     )
     parser.add_argument(
         "--dry-run",
@@ -306,21 +301,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.dry_run:
         generator = ExtractiveAnswerGenerator()
     else:
-        has_key = bool(
-            os.environ.get("OPENAI_API_KEY")
-            or os.environ.get("ANTHROPIC_API_KEY")
-            or os.environ.get("GEMINI_API_KEY")
-        )
-        if has_key:
-            generator = LiteLLMAnswerGenerator(model=args.model)
-        else:
-            print("[INFO] No LLM API key detected in environment. Using extractive offline generator.")
-            generator = ExtractiveAnswerGenerator()
+        generator = OpenRouterAnswerGenerator(model=args.model)
 
     print(f"Enriching {len(target_queries)} queries ...")
     enrich_dataset(target_queries, generator=generator, overwrite=args.overwrite)
 
     out_path = args.out or args.input
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 

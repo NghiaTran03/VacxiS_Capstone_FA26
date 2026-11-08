@@ -2,12 +2,11 @@
 from __future__ import annotations
 
 import logging
-import os
 import re
 import time
 from typing import Any, Sequence
 
-import litellm
+from vacxis_capstone_fa26.llm import completion
 
 from vacxis_capstone_fa26.generation.prompts import (
     DEFAULT_MEDICAL_SYSTEM_PROMPT,
@@ -49,33 +48,7 @@ class MedicalGenerator:
 
         start_time = time.perf_counter()
 
-        has_api_credentials = bool(
-            os.environ.get("LLM_API_KEY")
-            or os.environ.get("OPENAI_API_KEY")
-            or os.environ.get("ANTHROPIC_API_KEY")
-            or os.environ.get("GEMINI_API_KEY")
-            or os.environ.get("GOOGLE_API_KEY")
-            or os.environ.get("AZURE_API_KEY")
-            or os.environ.get("GROQ_API_KEY")
-            or os.environ.get("DEEPSEEK_API_KEY")
-            or os.environ.get("MISTRAL_API_KEY")
-            or os.environ.get("COHERE_API_KEY")
-            or os.environ.get("VERTEX_PROJECT")
-            or os.environ.get("OPENAI_BASE_URL")
-            or os.environ.get("OPENAI_API_BASE")
-            or self.config.model.startswith("ollama/")
-            or self.config.model.startswith("local/")
-            or self.config.model.startswith("vllm/")
-        )
-
-        if self.config.dry_run or not has_api_credentials:
-            if self.config.dry_run:
-                logger.info("Dry-run mode enabled. Falling back to extractive synthesis.")
-            else:
-                logger.warning(
-                    "No LLM API credentials found in environment (e.g. LLM_API_KEY, OPENAI_API_KEY, etc.). "
-                    "Falling back to extractive synthesis."
-                )
+        if self.config.dry_run:
             answer_text = self._extractive_fallback(query, chunks)
             latency = time.perf_counter() - start_time
             valid_cits, invalid_cits, cited_chunks = self._validate_citations(answer_text, chunks)
@@ -103,33 +76,16 @@ class MedicalGenerator:
         )
 
         model_used = self.config.model
-        try:
-            litellm_kwargs: dict[str, Any] = {
-                "model": self.config.model,
-                "messages": messages,
-                "temperature": self.config.temperature,
-                "max_tokens": self.config.max_tokens,
-                "timeout": self.config.timeout,
-            }
-            if os.environ.get("LLM_API_KEY"):
-                litellm_kwargs["api_key"] = os.environ["LLM_API_KEY"]
-
-            response = litellm.completion(**litellm_kwargs)
-            raw_answer = response.choices[0].message.content or ""
-            answer_text = raw_answer.strip()
-            usage = {
-                "prompt_tokens": getattr(response.usage, "prompt_tokens", 0),
-                "completion_tokens": getattr(response.usage, "completion_tokens", 0),
-                "total_tokens": getattr(response.usage, "total_tokens", 0),
-            }
-        except Exception as exc:  # noqa: BLE001
-            logger.warning(
-                "LiteLLM completion failed (%s). Falling back to extractive synthesis.",
-                exc,
-            )
-            answer_text = self._extractive_fallback(query, chunks)
-            usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
-            model_used = "extractive-fallback"
+        response = completion(
+            model=self.config.model, messages=messages,
+            temperature=self.config.temperature, max_tokens=self.config.max_tokens,
+            timeout=self.config.timeout,
+        )
+        answer_text = response.choices[0].message.content.strip()
+        usage = {
+            name: getattr(getattr(response, "usage", None), name, 0) or 0
+            for name in ("prompt_tokens", "completion_tokens", "total_tokens")
+        }
 
         latency = time.perf_counter() - start_time
         valid_cits, invalid_cits, cited_chunks = self._validate_citations(answer_text, chunks)
@@ -154,6 +110,8 @@ class MedicalGenerator:
         chunks_per_query: Sequence[Sequence[Any]],
     ) -> list[GeneratedAnswer]:
         """Generate answers for a batch of queries."""
+        if len(queries) != len(chunks_per_query):
+            raise ValueError("Expected one chunk group per query.")
         return [
             self.generate(q, c_list)
             for q, c_list in zip(queries, chunks_per_query)

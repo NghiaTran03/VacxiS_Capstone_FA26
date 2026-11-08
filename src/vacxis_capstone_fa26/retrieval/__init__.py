@@ -1,26 +1,15 @@
-"""Retrieval package for VacxiS Capstone.
+"""Public retrieval interfaces, loaded lazily to avoid loading model libraries at import."""
+from importlib import import_module
 
-Provides Hybrid Search (Dense + Sparse), Reciprocal Rank Fusion (RRF),
-and Cross-Encoder Reranking using BGE-M3 and BGE-reranker-v2-m3.
-"""
-from __future__ import annotations
+_EXPORTS = {
+    "HybridSearcher": ".hybrid_searcher", "convert_sparse_to_qdrant": ".hybrid_searcher",
+    "BGEReranker": ".reranker", "VacxisRetriever": ".retriever",
+    "RetrievalConfig": ".schemas", "RetrievedChunk": ".schemas",
+}
+__all__ = list(_EXPORTS)
 
-from vacxis_capstone_fa26.retrieval.hybrid_searcher import (
-    HybridSearcher,
-    convert_sparse_to_qdrant,
-)
-from vacxis_capstone_fa26.retrieval.reranker import BGEReranker
-from vacxis_capstone_fa26.retrieval.retriever import VacxisRetriever
-from vacxis_capstone_fa26.retrieval.schemas import (
-    RetrievalConfig,
-    RetrievedChunk,
-)
 
-__all__ = [
-    "BGEReranker",
-    "HybridSearcher",
-    "RetrievalConfig",
-    "RetrievedChunk",
-    "VacxisRetriever",
-    "convert_sparse_to_qdrant",
-]
+def __getattr__(name: str):
+    if name not in _EXPORTS:
+        raise AttributeError(name)
+    return getattr(import_module(_EXPORTS[name], __name__), name)

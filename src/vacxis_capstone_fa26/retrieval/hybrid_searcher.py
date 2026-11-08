@@ -108,6 +108,8 @@ class HybridSearcher:
         Returns:
             List of candidate chunk lists, one per input query.
         """
+        if len(dense_vecs) != len(sparse_weights_list):
+            raise ValueError("Dense and sparse query counts must match.")
         num_queries = len(dense_vecs)
         if num_queries == 0:
             return []

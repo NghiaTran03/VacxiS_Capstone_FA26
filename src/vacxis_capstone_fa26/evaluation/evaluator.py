@@ -31,6 +31,31 @@ def _get_key(d: dict[str, Any], *keys: str, default: Any = "") -> Any:
     return default
 
 
+def validate_query_ids(items: Sequence[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Reject missing and duplicate IDs before joining benchmark records."""
+    by_id: dict[str, dict[str, Any]] = {}
+    for item in items:
+        if not isinstance(item, dict):
+            raise ValueError("Query records must be objects.")
+        raw = _get_key(item, "QUERY_ID", "query_id", default=None)
+        if raw is None or not str(raw).strip():
+            raise ValueError("Every query record must have a nonblank QUERY_ID.")
+        qid = str(raw)
+        if qid in by_id:
+            raise ValueError("Duplicate QUERY_ID in evaluation records.")
+        by_id[qid] = item
+    return by_id
+
+
+def align_results(dataset_items, generation_results):
+    """Join complete result sets to the dataset while preserving result order."""
+    items = validate_query_ids(dataset_items)
+    results = validate_query_ids(generation_results)
+    if items.keys() != results.keys():
+        raise ValueError("Dataset and result QUERY_ID sets must match.")
+    return [items[qid] for qid in results]
+
+
 def compute_metric_aggregates(
     metric_records: Sequence[dict[str, float]],
 ) -> tuple[dict[str, float], dict[str, MetricAggregate]]:
@@ -97,6 +122,8 @@ class RetrievalEvaluator:
         retrieved_per_query: Sequence[Sequence[Any]],
     ) -> EvaluationSummary:
         """Run retrieval evaluation across all queries."""
+        if len(queries) != len(retrieved_per_query):
+            raise ValueError("Expected one retrieval group per query.")
         per_query_results: list[QueryRetrievalResult] = []
         metrics_list: list[dict[str, float]] = []
 
@@ -153,6 +180,8 @@ class GenerationEvaluator:
         answers: Sequence[Any],
     ) -> EvaluationSummary:
         """Run generation evaluation across all queries."""
+        if len(queries) != len(answers):
+            raise ValueError("Expected one answer per query.")
         per_query_results: list[QueryGenerationResult] = []
         metrics_list: list[dict[str, float]] = []
 
@@ -248,18 +277,13 @@ class VacxisRAGEvaluator:
         generation_results: Sequence[dict[str, Any]],
     ) -> EvaluationSummary:
         """Evaluate precomputed generation results against golden dataset."""
-        # Align dataset items with results by QUERY_ID
-        items_by_id = {
-            str(_get_key(item, "QUERY_ID", "query_id")): item for item in dataset_items
-        }
+        aligned = align_results(dataset_items, generation_results)
 
         matched_queries: list[dict[str, Any]] = []
         matched_answers: list[dict[str, Any]] = []
         retrieved_lists: list[list[Any]] = []
 
-        for res in generation_results:
-            qid = str(_get_key(res, "QUERY_ID", "query_id"))
-            query_item = items_by_id.get(qid, res)
+        for query_item, res in zip(aligned, generation_results, strict=True):
             matched_queries.append(query_item)
             matched_answers.append(res)
 
@@ -274,7 +298,11 @@ class VacxisRAGEvaluator:
         gen_summary = self.generation_evaluator.evaluate(matched_queries, matched_answers)
 
         # If retrieved chunks are present, also evaluate retrieval
-        has_retrieval = any(bool(r) for r in retrieved_lists)
+        has_retrieval = any(
+            "retrieved_chunks" in res.get("GENERATED_ANSWER", res)
+            or "retrieved_chunk_ids" in res.get("GENERATED_ANSWER", res)
+            for res in generation_results
+        )
         if has_retrieval:
             ret_summary = self.retrieval_evaluator.evaluate(matched_queries, retrieved_lists)
             # Combine metrics
