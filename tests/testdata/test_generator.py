@@ -4,7 +4,6 @@ from __future__ import annotations
 import random
 
 from vacxis_capstone_fa26.testdata.generator import generate_dataset
-from vacxis_capstone_fa26.testdata.refiner import noop_refiner
 from vacxis_capstone_fa26.testdata.taxonomy import QUERY_TYPE_DEFS
 
 from .conftest import make_chunk
@@ -26,7 +25,6 @@ def test_distractor_score_is_stable_per_kind() -> None:
     rng = random.Random(0)
     queries = generate_dataset(
         _build_corpus(), rng, per_type=1, distractors_per_query=2,
-        refiner=noop_refiner(),
     )
     assert queries, "expected at least one query"
     q = queries[0]
@@ -47,7 +45,6 @@ def test_multi_hop_downgrades_to_single_hop_when_no_partner() -> None:
     rng = random.Random(0)
     queries = generate_dataset(
         chunks, rng, per_type=1, distractors_per_query=0,
-        refiner=noop_refiner(),
     )
     assert queries
     # If the original draw was MULTI_HOP, the generator should have
@@ -69,7 +66,6 @@ def test_required_evidence_groups_merges_secondary() -> None:
     rng = random.Random(0)
     queries = generate_dataset(
         chunks, rng, per_type=1, distractors_per_query=0,
-        refiner=noop_refiner(),
     )
     # Find any multi-hop query (whatever the actual partner pairing).
     mh = [q for q in queries if q["QUERY_COMPLEXITY"] == "MULTI_HOP"]
@@ -88,3 +84,9 @@ def test_required_evidence_groups_merges_secondary() -> None:
         # At least one entry in REQUIRED_EVIDENCE_GROUPS must be a group
         # *not* in the primary's set — proving the merge happened.
         assert set(q["REQUIRED_EVIDENCE_GROUPS"]) - set(primary_groups)
+
+
+def test_generated_spans_are_always_null():
+    queries = generate_dataset(_build_corpus(), random.Random(0), 3, 2)
+    assert queries
+    assert all(c["EVIDENCE_SPANS"] is None for q in queries for c in q["RELEVANT_CHUNKS"])

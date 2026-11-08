@@ -17,7 +17,6 @@ from .generator import (
     derive_default_seed,
     generate_and_validate,
 )
-from .refiner import OpenRouterRefiner, noop_refiner
 from .taxonomy import QUERY_TYPE_DEFS
 
 
@@ -68,15 +67,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=(
             "Random seed for reproducibility. If omitted, a deterministic "
             "seed is derived from the chunk content so re-runs are stable."
-        ),
-    )
-    p.add_argument(
-        "--refine-spans",
-        action="store_true",
-        help=(
-            "Opt-in: call OpenRouter (model from $VACXIS_GENERATION_MODEL) "
-            "to upgrade the primary chunk's "
-            "EVIDENCE_SPAN. Requires network + provider credentials."
         ),
     )
     p.add_argument(
@@ -135,10 +125,6 @@ def main(argv: list[str] | None = None) -> int:
     rng = random.Random(seed)
     print(f"Using seed: {seed} ({'explicit' if args.seed is not None else 'derived from chunk content'})")
 
-    if args.refine_spans and args.dry_run_answers:
-        raise ValueError("--refine-spans cannot be used with --dry-run-answers.")
-    refiner = OpenRouterRefiner() if args.refine_spans else noop_refiner()
-
     if args.generate_answers:
         if args.dry_run_answers:
             ans_gen = ExtractiveAnswerGenerator()
@@ -154,7 +140,6 @@ def main(argv: list[str] | None = None) -> int:
     queries, rpt = generate_and_validate(
         chunks, rng, args.per_type, args.distractors,
         vaccine_mapping=vaccine_mapping,
-        refiner=refiner,
         answer_generator=ans_gen,
         expected_per_type=args.per_type,
     )

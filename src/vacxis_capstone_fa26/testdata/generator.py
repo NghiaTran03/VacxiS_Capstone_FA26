@@ -2,7 +2,7 @@
 
 The orchestration mirrors the original single-file script but uses the new
 :mod:`spans`, :mod:`distractors`, :mod:`multi_hop`, :mod:`validator`, and
-:mod:`refiner` modules. Output schema is unchanged.
+reference answer generation modules. Evidence spans are null.
 """
 from __future__ import annotations
 
@@ -16,8 +16,6 @@ from .answer_generator import AnswerGenerator
 from .chunks import Chunk, index_by_category, index_by_doc, index_by_vaccine
 from .distractors import sample_distractors, score_for
 from .multi_hop import pair_multi_hop
-from .refiner import SpanRefiner
-from .spans import select_evidence_span
 from .taxonomy import (
     ANSWERABILITY_DISTRIBUTION,
     COMPLEXITY_DISTRIBUTION,
@@ -91,12 +89,11 @@ def _build_query_for_chunk(
     template = rng.choice(type_def["templates"])
     query_text, source = _make_query_text(template, chunk.vaccine_name, rng)
 
-    start, end = select_evidence_span(chunk.text, type_def["intent_keywords"], rng)
     evidence_chunk = {
         "CHUNK_ID": chunk.chunk_id,
         "TEXT": chunk.text,
         "RELEVANCE_SCORE": 3,
-        "EVIDENCE_SPANS": [{"START": start, "END": end}],
+        "EVIDENCE_SPANS": None,
     }
 
     distractors = sample_distractors(
@@ -114,15 +111,12 @@ def _build_query_for_chunk(
             vaccine_mapping, used_partner_vaccines, rng,
         )
         if partner.secondary is not None:
-            sec_start, sec_end = select_evidence_span(
-                partner.secondary.text, type_def.get("intent_keywords", []), rng,
-            )
             extra_relevant.append(
                 {
                     "CHUNK_ID": partner.secondary.chunk_id,
                     "TEXT": partner.secondary.text,
                     "RELEVANCE_SCORE": 3,
-                    "EVIDENCE_SPANS": [{"START": sec_start, "END": sec_end}],
+                    "EVIDENCE_SPANS": None,
                 }
             )
             secondary_evidence_groups = list(partner.secondary_evidence_groups)
@@ -156,7 +150,7 @@ def _build_query_for_chunk(
             "CHUNK_ID": d.chunk.chunk_id,
             "TEXT": d.chunk.text,
             "RELEVANCE_SCORE": score_for(d.kind),
-            "EVIDENCE_SPANS": [],
+            "EVIDENCE_SPANS": None,
         }
         for d in distractors
     ]
@@ -225,7 +219,6 @@ def generate_dataset(
     per_type: int,
     distractors_per_query: int,
     vaccine_mapping: dict[str, str] | None = None,
-    refiner: SpanRefiner | None = None,
     answer_generator: AnswerGenerator | None = None,
 ) -> list[dict]:
     by_category = index_by_category(chunks)
@@ -256,9 +249,6 @@ def generate_dataset(
     for i, q in enumerate(queries, start=1):
         q["QUERY_ID"] = f"VAX_Q_{i:04d}"
 
-    if refiner is not None:
-        refiner.refine(queries)
-
     if answer_generator is not None:
         answer_generator.generate_answers(queries)
 
@@ -271,12 +261,11 @@ def generate_and_validate(
     per_type: int,
     distractors_per_query: int,
     vaccine_mapping: dict[str, str] | None = None,
-    refiner: SpanRefiner | None = None,
     answer_generator: AnswerGenerator | None = None,
     expected_per_type: int = 0,
 ) -> tuple[list[dict], object]:
     queries = generate_dataset(
-        chunks, rng, per_type, distractors_per_query, vaccine_mapping, refiner,
+        chunks, rng, per_type, distractors_per_query, vaccine_mapping,
         answer_generator=answer_generator,
     )
     by_category = index_by_category(chunks)

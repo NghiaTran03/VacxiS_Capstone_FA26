@@ -47,14 +47,14 @@ def validate_response(response: Any) -> Any:
 
 
 def completion(*, model: str, messages: list[dict[str, str]], timeout: float = 30.0,
-               **kwargs: Any) -> Any:
+               extra_body: dict[str, Any] | None = None, **kwargs: Any) -> Any:
     """Make one bounded SDK request and close the client on every exit path."""
     resolved = validate_config(model)
     try:
         with OpenAI(base_url=BASE_URL, api_key=os.getenv("OPENROUTER_API_KEY"),
                     timeout=timeout, max_retries=0) as client:
             response = client.chat.completions.create(
-                model=resolved, messages=messages, extra_body={}, **kwargs,
+                model=resolved, messages=messages, extra_body=extra_body or {}, **kwargs,
             )
     except Exception:
         raise LLMError("OpenRouter request failed; check credentials, service and timeout.") from None

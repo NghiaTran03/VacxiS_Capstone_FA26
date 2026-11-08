@@ -130,3 +130,12 @@ def test_validator_with_reference_answer() -> None:
     }
     rpt = validate([q], CHUNKS, by_category={"chỉ định": [CHUNKS[0]]}, expected_per_type=1, expected_types=["INDICATION"])
     assert rpt.ok, rpt.render()
+
+
+def test_extractive_answer_handles_null_spans():
+    q = {"ANSWERABILITY": "ANSWERABLE", "RELEVANT_CHUNKS": [
+        {"CHUNK_ID": "c1", "TEXT": "[CHỦ ĐỀ: Vax A]\nEvidence.",
+         "RELEVANCE_SCORE": 3, "EVIDENCE_SPANS": None},
+    ]}
+    ExtractiveAnswerGenerator().generate_answers([q])
+    assert q["REFERENCE_ANSWER"] == "Theo hướng dẫn sử dụng: Evidence. [c1]"

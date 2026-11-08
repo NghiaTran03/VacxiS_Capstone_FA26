@@ -332,7 +332,8 @@ def evaluate_generation_query(
     metrics["citation_validity"] = citation_validity(
         citations, retrieved_chunk_ids or [], invalid_citations
     )
-    metrics["evidence_span_coverage"] = evidence_span_coverage(citations, raw_relevant)
+    if any(isinstance(c, dict) and c.get("EVIDENCE_SPANS") for c in raw_relevant):
+        metrics["evidence_span_coverage"] = evidence_span_coverage(citations, raw_relevant)
 
     # Refusal
     metrics["refusal_correctness"] = refusal_correctness(is_refusal, expected_answerability)

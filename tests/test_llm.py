@@ -11,7 +11,6 @@ from vacxis_capstone_fa26.generation.generator import MedicalGenerator
 from vacxis_capstone_fa26.generation.schemas import GenerationConfig
 from vacxis_capstone_fa26.query import QueryPlanner
 from vacxis_capstone_fa26.testdata.answer_generator import OpenRouterAnswerGenerator
-from vacxis_capstone_fa26.testdata.refiner import OpenRouterRefiner
 
 
 def chat_response(content="Answer [c1].", finish_reason="stop"):
@@ -132,7 +131,7 @@ def test_planner_uses_shared_transport(router):
     assert body["response_format"] == {"type": "json_object"}
 
 
-def test_reference_answer_and_span_refiner_use_shared_transport(router):
+def test_reference_answer_uses_strict_schema_and_routing(router):
     result, requests, _ = router
     item = {"QUERY": "Question", "ANSWERABILITY": "ANSWERABLE", "RELEVANT_CHUNKS": [
         {"CHUNK_ID": "c1", "TEXT": "Evidence.", "RELEVANCE_SCORE": 3},
@@ -144,27 +143,59 @@ def test_reference_answer_and_span_refiner_use_shared_transport(router):
     }))
     OpenRouterAnswerGenerator().generate_answers([item])
     assert item["REFERENCE_ANSWER"] == "Evidence [c1]."
-    result["body"] = chat_response('[{"start":0,"end":8}]')
-    no_chunks = {"QUERY": "Unanswerable", "RELEVANT_CHUNKS": []}
-    OpenRouterRefiner().refine([no_chunks, item])
-    assert item["RELEVANT_CHUNKS"][0]["EVIDENCE_SPANS"] == [{"START": 0, "END": 8}]
-    assert no_chunks["RELEVANT_CHUNKS"] == []
-    assert all(json.loads(r.content)["model"] == "fixture/generation" for r in requests)
+    body = json.loads(requests[0].content)
+    assert body["provider"] == {"require_parameters": True}
+    fmt = body["response_format"]
+    assert fmt["type"] == "json_schema"
+    assert fmt["json_schema"]["strict"] is True
+    schema = fmt["json_schema"]["schema"]
+    assert schema["additionalProperties"] is False
+    assert set(schema["required"]) == {"reference_answer", "claim_evidence_map"}
+    assert schema["properties"]["claim_evidence_map"]["items"]["additionalProperties"] is False
 
 
-@pytest.mark.parametrize("content", [
-    "[]", '{"reference_answer":"","claim_evidence_map":[]}',
-    '{"reference_answer":"Answer [bad]","claim_evidence_map":[]}',
-])
-def test_reference_answer_rejects_invalid_schema(router, content):
+@pytest.mark.parametrize("content", ["not json", "{}", "[]"])
+def test_reference_answer_errors_include_query_context(router, content):
     result, _, _ = router
     result["body"] = chat_response(content)
-    item = {"QUERY": "Question", "RELEVANT_CHUNKS": [
+    item = {"QUERY_ID": "Q42", "QUERY": "Question", "RELEVANT_CHUNKS": [
         {"CHUNK_ID": "c1", "TEXT": "Evidence.", "RELEVANCE_SCORE": 3},
     ]}
-    with pytest.raises(llm.LLMError):
+    with pytest.raises(llm.LLMError, match="QUERY_ID=Q42 model=fixture/generation"):
         OpenRouterAnswerGenerator().generate_answers([item])
     assert "REFERENCE_ANSWER" not in item
+
+
+def test_schema_response_is_not_checked_against_corpus(router):
+    result, _, _ = router
+    result["body"] = chat_response(json.dumps({
+        "reference_answer": "Answer [unknown].", "claim_evidence_map": [
+            {"claim": "Unsupported claim", "chunk_id": "unknown", "evidence_quote": "Absent quote"},
+        ],
+    }))
+    item = {"QUERY": "Question", "ANSWERABILITY": "PARTIALLY_ANSWERABLE", "RELEVANT_CHUNKS": [
+        {"CHUNK_ID": "c1", "TEXT": "Evidence.", "RELEVANCE_SCORE": 3},
+    ]}
+    OpenRouterAnswerGenerator().generate_answers([item])
+    assert item["REFERENCE_ANSWER"] == "Answer [unknown]."
+    assert item["ANSWERABILITY"] == "PARTIALLY_ANSWERABLE"
+
+
+def test_provider_schema_failure_has_context(router):
+    result, _, _ = router
+    result.update(status=400, body={"error": {"message": "Unsupported schema"}})
+    item = {"QUERY_ID": "Q7", "QUERY": "Question", "RELEVANT_CHUNKS": [
+        {"CHUNK_ID": "c1", "TEXT": "Evidence", "RELEVANCE_SCORE": 3},
+    ]}
+    with pytest.raises(llm.LLMError, match="QUERY_ID=Q7"):
+        OpenRouterAnswerGenerator().generate_answers([item])
+
+
+def test_removed_refine_flag_is_rejected():
+    from vacxis_capstone_fa26.testdata.cli import parse_args
+    with pytest.raises(SystemExit) as exc:
+        parse_args(["--refine-spans"])
+    assert exc.value.code == 2
 
 
 @pytest.mark.integration

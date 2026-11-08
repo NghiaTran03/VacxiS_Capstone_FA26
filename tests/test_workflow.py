@@ -65,6 +65,7 @@ def test_full_offline_workflow(config, monkeypatch, online):
         chunk_ids = {row["chunk_id"] for row in rows}
         items = workflow.create_dataset(config)
         assert items and all(item["REFERENCE_ANSWER"] for item in items)
+        assert all(c["EVIDENCE_SPANS"] is None for item in items for c in item["RELEVANT_CHUNKS"])
         assert all(c["CHUNK_ID"] in chunk_ids for item in items for c in item["RELEVANT_CHUNKS"])
         searcher = HybridSearcher(client=client, collection_name=config.retrieval.collection_name)
         retriever = VacxisRetriever(config.retrieval, embed_model=embedder, reranker=reranker,
@@ -91,6 +92,7 @@ def test_full_offline_workflow(config, monkeypatch, online):
         assert [r["QUERY_ID"] for r in results] == [q["QUERY_ID"] for q in items]
         assert summary.num_queries == len(items)
         assert summary.task == "rag"
+        assert "evidence_span_coverage" not in summary.overall_metrics
         assert config.report_json.is_file() and config.report_md.is_file()
         assert reranker.batch_rerank.called
         for result in results:

@@ -14,7 +14,7 @@ cp .env.example .env
 | Biến | Công dụng |
 | --- | --- |
 | `OPENROUTER_API_KEY` | Key OpenRouter dùng chung cho mọi lời gọi LLM. |
-| `VACXIS_GENERATION_MODEL` | Model trả lời, reference answer và span refiner. `--model` hoặc `--answers-model` ghi đè theo CLI tương ứng. |
+| `VACXIS_GENERATION_MODEL` | Model trả lời và reference answer. `--model` hoặc `--answers-model` ghi đè theo CLI tương ứng. |
 | `VACXIS_QUERY_PLANNER_MODEL` | Model planner cho backend website gọi `run_turn()`. CLI và batch không gọi planner. |
 
 Ứng dụng chỉ đọc biến môi trường bằng `os.getenv()`, không đọc `.env` hay gọi `load_dotenv()`. `uv run --env-file .env ...` nạp biến vào môi trường tiến trình. Mọi lời gọi LLM dùng OpenAI SDK tại `https://openrouter.ai/api/v1`; không còn backend hay alias LiteLLM.
@@ -57,7 +57,7 @@ Artifact mặc định:
 
 Collection được giữ mặc định; chỉ `--recreate` mới xóa và tạo lại. Point ID dùng UUID ổn định từ chunk ID, nên ingest lại cùng corpus không nhân đôi point. Collection cũ dùng ID số hoặc corpus đã xóa/đổi chunk cần rebuild có chủ đích bằng `prepare --recreate` để loại point cũ. Pipeline không tự chạy bước phụ thuộc sau khi một bước lỗi.
 
-Các CLI `vacxis-generation`, `vacxis-retrieval`, `vacxis-eval`, `vacxis-evaluation` và `generate-test-dataset` vẫn được giữ. `vacxis-generation` không còn các cờ planner/làm rõ; dành chức năng đó cho API Python bên dưới. Tên lớp mới trong testdata là `OpenRouterAnswerGenerator` và `OpenRouterRefiner`, không có alias cho tên lớp cũ.
+Các CLI `vacxis-generation`, `vacxis-retrieval`, `vacxis-eval`, `vacxis-evaluation` và `generate-test-dataset` vẫn được giữ. `vacxis-generation` không còn các cờ planner/làm rõ; dành chức năng đó cho API Python bên dưới. Tên lớp mới trong testdata là `OpenRouterAnswerGenerator`, không có alias cho tên lớp cũ.
 
 ## Backend cho website demo
 
@@ -86,3 +86,9 @@ uv run --env-file .env pytest -m integration
 ```
 
 Test offline không cần key thật, tải model hoặc dịch vụ ngoài. Các test dịch vụ thật là opt-in và có thể phát sinh chi phí OpenRouter. Evaluation yêu cầu ID duy nhất, bộ ID dataset/results trùng khớp; kết quả retrieval rỗng vẫn được tính điểm.
+
+## Testdata Structured Outputs
+
+Reference answer dùng JSON Schema strict và `provider.require_parameters=true` qua OpenRouter. Model/provider phải hỗ trợ structured outputs; lỗi sẽ dừng với QUERY_ID và model, không tự retry hoặc chuyển offline. Chỉ schema kiểm soát cấu trúc; quote, citation và claim không được đối chiếu với corpus. Nội dung chưa được xác minh vẫn giữ VERIFIED=false.
+
+Dataset mới luôn lưu EVIDENCE_SPANS=null ở mọi chunk. Cờ --refine-spans và API refiner đã bị xóa. Không gọi LLM hoặc thuật toán để tạo spans. Evaluation bỏ metric evidence_span_coverage khi không có spans; dataset cũ có spans vẫn được hỗ trợ.

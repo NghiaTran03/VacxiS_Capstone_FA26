@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 from typing import Any, Iterable, Protocol
@@ -27,29 +26,39 @@ UNANSWERABLE_FALLBACK_ANSWER = (
 )
 
 
-SYSTEM_PROMPT = """Bạn là một chuyên gia y tế tổng hợp thông tin vắc xin dựa trên tờ Hướng dẫn sử dụng (Product Insert).
-Nhiệm vụ: Dựa DUY NHẤT vào các đoạn văn bản (CHUNKS) được cung cấp dưới đây, hãy soạn thảo câu trả lời tham chiếu (REFERENCE_ANSWER) chính xác, ngắn gọn và trung thực.
-
-Quy tắc bắt buộc:
-1. Tuyệt đối không suy diễn hoặc đưa thông tin nằm ngoài các đoạn CHUNKS được cung cấp.
-2. Trích dẫn nguồn: Sau mỗi khẳng định hoặc câu trong câu trả lời, BẮT BUỘC chèn mã định danh chunk dạng `[CHUNK_ID]`.
-3. Phân rã khẳng định (CLAIM_EVIDENCE_MAP): Liệt kê từng luận điểm/khẳng định nhỏ (claim), mã chunk tương ứng (chunk_id), và đoạn trích dẫn nguyên văn từ chunk làm bằng chứng (evidence_quote).
-4. Nếu câu hỏi không thể trả lời từ các chunks (hoặc chunks rỗng), hãy trả lời:
-   "Tài liệu hướng dẫn sử dụng không cung cấp thông tin cho câu hỏi này. Bạn nên tham khảo ý kiến bác sĩ hoặc chuyên viên y tế tại các cơ sở tiêm chủng để được tư vấn chính xác."
-   và để claim_evidence_map là [].
-5. Trả về ĐÚNG định dạng JSON theo cấu trúc sau, không kèm bất kỳ giải thích nào khác ngoài JSON:
-
-{
-  "reference_answer": "Câu trả lời hoàn chỉnh kèm [CHUNK_ID] trích dẫn sau mỗi câu.",
-  "claim_evidence_map": [
-    {
-      "claim": "Khẳng định y khoa 1",
-      "chunk_id": "ID_CỦA_CHUNK",
-      "evidence_quote": "Đoạn văn trích nguyên văn làm bằng chứng"
-    }
-  ]
+REFERENCE_ANSWER_FORMAT = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "reference_answer", "strict": True,
+        "schema": {
+            "type": "object", "additionalProperties": False,
+            "properties": {
+                "reference_answer": {"type": "string", "description": "Vietnamese answer grounded in provided chunks, with [CHUNK_ID] citations."},
+                "claim_evidence_map": {
+                    "type": "array", "description": "Claims and their source evidence; empty for refusal.",
+                    "items": {
+                        "type": "object", "additionalProperties": False,
+                        "properties": {
+                            "claim": {"type": "string", "description": "One factual claim in the answer."},
+                            "chunk_id": {"type": "string", "description": "Source chunk identifier."},
+                            "evidence_quote": {"type": "string", "description": "Verbatim evidence from the source chunk."},
+                        },
+                        "required": ["claim", "chunk_id", "evidence_quote"],
+                    },
+                },
+            },
+            "required": ["reference_answer", "claim_evidence_map"],
+        },
+    },
 }
-"""
+
+SYSTEM_PROMPT = """Bạn tổng hợp câu trả lời tham chiếu tiếng Việt từ CHUNKS được cung cấp.
+Chỉ sử dụng thông tin trong CHUNKS, không tự suy diễn. Giữ nguyên phạm vi câu hỏi.
+Sau mỗi khẳng định, chèn [CHUNK_ID] và cung cấp claim cùng evidence_quote nguyên văn.
+ANSWERABILITY là nhãn đầu vào, không được thay đổi. Với PARTIALLY_ANSWERABLE,
+chỉ trả lời phần có bằng chứng và nêu rõ phần thiếu. Nếu không thể trả lời,
+trả lời rằng tài liệu không cung cấp thông tin và để claim_evidence_map rỗng.
+Trả JSON theo schema được cung cấp, không dùng Markdown."""
 
 
 class AnswerGenerator(Protocol):
@@ -93,7 +102,7 @@ class ExtractiveAnswerGenerator:
         for c in relevant:
             cid = c.get("CHUNK_ID", "")
             text = c.get("TEXT", "")
-            spans = c.get("EVIDENCE_SPANS", [])
+            spans = c.get("EVIDENCE_SPANS") or []
 
             evidence_text = ""
             if spans:
@@ -143,7 +152,12 @@ class OpenRouterAnswerGenerator:
 
     def generate_answers(self, queries: list[dict[str, Any]]) -> list[dict[str, Any]]:
         for q in queries:
-            self._generate_single(q)
+            try:
+                self._generate_single(q)
+            except LLMError as exc:
+                raise LLMError(f"reference_answer QUERY_ID={q.get('QUERY_ID', '<missing>')} model={self.model}: {exc}") from None
+            except (ValueError, TypeError, KeyError, AttributeError):
+                raise LLMError(f"reference_answer QUERY_ID={q.get('QUERY_ID', '<missing>')} model={self.model}: invalid structured response.") from None
         return queries
 
     def _generate_single(self, q: dict[str, Any]) -> None:
@@ -168,7 +182,7 @@ class OpenRouterAnswerGenerator:
         )
 
         user_content = (
-            f"CÂU HỎI: {q.get('QUERY')}\n\n"
+            f"ANSWERABILITY: {answerability}\nCÂU HỎI: {q.get('QUERY')}\n\n"
             f"CÁC ĐOẠN CHUNKS CUNG CẤP:\n{chunks_context}\n\n"
             "Hãy tổng hợp câu trả lời y tế chuẩn xác (có chèn [CHUNK_ID]) "
             "và phân rã claim_evidence_map dưới dạng JSON."
@@ -181,48 +195,14 @@ class OpenRouterAnswerGenerator:
                 {"role": "user", "content": user_content},
             ],
             temperature=self.temperature,
-            response_format={"type": "json_object"},
+            response_format=REFERENCE_ANSWER_FORMAT,
+            extra_body={"provider": {"require_parameters": True}},
         )
 
-        raw_content = response.choices[0].message.content
-        try:
-            data = _parse_json(raw_content)
-        except (ValueError, TypeError, AttributeError):
-            raise LLMError("Reference answer returned invalid JSON.") from None
-
-        if not isinstance(data, dict):
-            raise LLMError("Reference answer must be a JSON object.")
-        ref_answer = data.get("reference_answer")
-        claims = data.get("claim_evidence_map")
-        if not isinstance(ref_answer, str) or not ref_answer.strip() or not isinstance(claims, list):
-            raise LLMError("Reference answer response has invalid fields.")
-        valid_chunks = {c["CHUNK_ID"]: c["TEXT"] for c in relevant}
-        for claim in claims:
-            if (not isinstance(claim, dict)
-                    or not isinstance(claim.get("claim"), str) or not claim["claim"].strip()
-                    or claim.get("chunk_id") not in valid_chunks
-                    or not isinstance(claim.get("evidence_quote"), str)
-                    or not claim["evidence_quote"].strip()
-                    or claim["evidence_quote"] not in valid_chunks[claim["chunk_id"]]):
-                raise LLMError("Reference answer contains invalid claim evidence.")
-        citations = re.findall(r"\[([^\[\]]+)\]", ref_answer)
-        if not claims or not citations or any(cid not in valid_chunks for cid in citations):
-            raise LLMError("Reference answer contains missing or invalid citations.")
-        q["REFERENCE_ANSWER"] = ref_answer.strip()
+        data = json.loads(response.choices[0].message.content)
+        answer, claims = data["reference_answer"], data["claim_evidence_map"]
+        q["REFERENCE_ANSWER"] = answer
         q["CLAIM_EVIDENCE_MAP"] = claims
-
-
-def _parse_json(raw: str) -> dict[str, Any]:
-    text = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip(), flags=re.MULTILINE).strip()
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        # Try to locate the outermost braces
-        start = text.find("{")
-        end = text.rfind("}")
-        if start != -1 and end != -1 and end > start:
-            return json.loads(text[start:end + 1])
-        raise
 
 
 def enrich_dataset(

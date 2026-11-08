@@ -42,15 +42,14 @@ def test_answerable_with_span_passes() -> None:
     assert rpt.ok, rpt.render()
 
 
-def test_answerable_without_span_fails() -> None:
+def test_answerable_with_null_span_passes() -> None:
     q = _query()
-    q["RELEVANT_CHUNKS"][0]["EVIDENCE_SPANS"] = []
+    q["RELEVANT_CHUNKS"][0]["EVIDENCE_SPANS"] = None
     rpt = validate(
         [q], CHUNKS, by_category={"chỉ định": [CHUNKS[0]]},
         expected_per_type=1, expected_types=["INDICATION"],
     )
-    assert not rpt.ok
-    assert any("EVIDENCE_SPANS" in f for f in rpt.failures)
+    assert rpt.ok, rpt.render()
 
 
 def test_out_of_bounds_span_fails() -> None:
