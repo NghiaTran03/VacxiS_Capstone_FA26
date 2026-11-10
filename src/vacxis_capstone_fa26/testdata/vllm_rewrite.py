@@ -155,6 +155,21 @@ class VLLMClient:
         kwargs.update(overrides)
         return SamplingParams(**kwargs)
 
+    def render(self, messages: list[dict[str, str]]) -> str:
+        """Render a conversation to the model's chat-template string.
+
+        Newer vLLM versions only accept plain-string prompts for
+        ``LLM.generate`` in the offline batch API, so we pre-render the
+        conversation with ``apply_chat_template`` (available across
+        versions) instead of passing a dict prompt.
+        """
+        self.ensure_loaded()
+        return self.llm.apply_chat_template(
+            messages,
+            add_generation_prompt=True,
+            tokenize=False,
+        )
+
 
 _REWRITE_SYSTEM = """You are a medical query adapter. The user gives a Vietnamese
 medical question that is NOT necessarily about vaccines. Rewrite it into a
@@ -187,11 +202,9 @@ class QwenRewriter:
         client: VLLMClient,
         *,
         vaccine_names: list[str],
-        chat_template: str = "chat",
     ) -> None:
         self.client = client
         self.vaccine_names = list(vaccine_names)
-        self.chat_template = chat_template
 
     def rewrite(self, source_queries: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if not source_queries:
@@ -199,7 +212,7 @@ class QwenRewriter:
         self.client.ensure_loaded()
 
         vaccines = ", ".join(self.vaccine_names) if self.vaccine_names else "(none)"
-        prompts: list[dict[str, Any]] = []
+        prompts: list[str] = []
         for sq in source_queries:
             user = _REWRITE_USER_TMPL.format(
                 vaccines=vaccines,
@@ -215,13 +228,12 @@ class QwenRewriter:
                 "\"<short reason>\"}"
             )
             prompts.append(
-                {
-                    "prompt": [
+                self.client.render(
+                    [
                         {"role": "system", "content": _REWRITE_SYSTEM},
                         {"role": "user", "content": user},
-                    ],
-                    "chat_template": self.chat_template,
-                }
+                    ]
+                )
             )
 
         sampling = self.client.sample()
@@ -265,8 +277,6 @@ class QwenAnswerGenerator:
         return queries
 
     def _generate_single(self, q: dict[str, Any]) -> None:
-        from .answer_generator import UNANSWERABLE_FALLBACK_ANSWER
-
         self.client.ensure_loaded()
         relevant = [
             c
@@ -283,13 +293,12 @@ class QwenAnswerGenerator:
             "Trả JSON theo schema:\n"
             f"{_JSON_SCHEMA_HINT}"
         )
-        prompt = {
-            "prompt": [
+        prompt = self.client.render(
+            [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user},
-            ],
-            "chat_template": "chat",
-        }
+            ]
+        )
         sampling = self.client.sample(max_tokens=1024)
         outputs = self.client.llm.generate([prompt], sampling)
         text = outputs[0].outputs[0].text if outputs and outputs[0].outputs else ""
