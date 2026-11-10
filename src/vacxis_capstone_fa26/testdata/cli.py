@@ -177,6 +177,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="vLLM source only: answer-generation batch size (default: %(default)s).",
     )
     p.add_argument(
+        "--rewrite-batch-size",
+        type=int,
+        default=256,
+        help=(
+            "vLLM source only: rewrite batch size (default: %(default)s). "
+            "Each batch is one LLM call and one checkpoint save point."
+        ),
+    )
+    p.add_argument(
         "--no-validate",
         action="store_true",
         help="Skip the post-write validation pass.",
@@ -248,7 +257,10 @@ def _run_queries_source(
             seed=seed,
         )
         rewriter = QwenRewriter(
-            client, vaccine_names=vaccine_names, checkpoint=checkpoint
+            client,
+            vaccine_names=vaccine_names,
+            checkpoint=checkpoint,
+            rewrite_batch_size=args.rewrite_batch_size,
         )
         if args.dry_run_answers:
             ans_gen = ExtractiveAnswerGenerator()

@@ -174,6 +174,27 @@ def test_rewriter_uses_checkpoint_cache(tmp_path, monkeypatch):
     assert len(llm.calls[0]) == 1  # only the uncached id=3 hit the model
 
 
+def test_rewriter_chunks_llm_calls(tmp_path, monkeypatch):
+    """--rewrite-batch-size drives both the LLM call size and save points."""
+    import vacxis_capstone_fa26.testdata.vllm_rewrite as vr
+
+    monkeypatch.setattr(vr, "SamplingParams", lambda **kw: kw)
+    cp = VLLMCheckpoint(tmp_path / "ckpt.json", model="m", seed=1)
+    llm = _FakeLLM()
+    client = VLLMClient(llm=llm, model="m")
+    out = QwenRewriter(
+        client,
+        vaccine_names=["Vax A"],
+        checkpoint=cp,
+        rewrite_batch_size=2,
+    ).rewrite([{"id": i, "query": f"q{i}"} for i in range(5)])
+    assert [o["id"] for o in out] == [0, 1, 2, 3, 4]  # order preserved
+    # 5 queries in chunks of 2 -> 3 LLM calls of size 2, 2, 1.
+    assert [len(c) for c in llm.calls] == [2, 2, 1]
+    # One save per chunk, all five cached.
+    assert len(cp.rewrites) == 5
+
+
 def test_resume_restores_cached_answers(tmp_path, monkeypatch):
     """A resumed run must emit the cached answer text, not None (gate B1)."""
     import vacxis_capstone_fa26.testdata.vllm_rewrite as vr

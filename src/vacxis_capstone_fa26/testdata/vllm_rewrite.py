@@ -317,10 +317,34 @@ class QwenRewriter:
         *,
         vaccine_names: list[str],
         checkpoint: VLLMCheckpoint | None = None,
+        rewrite_batch_size: int = 256,
     ) -> None:
         self.client = client
         self.vaccine_names = list(vaccine_names)
         self.checkpoint = checkpoint
+        self.rewrite_batch_size = max(1, rewrite_batch_size)
+
+    def _build_prompt(self, sq: dict[str, Any], vaccines: str) -> str:
+        """Render the rewrite conversation for one source query."""
+        user = _REWRITE_USER_TMPL.format(
+            vaccines=vaccines,
+            qtypes=", ".join(QUERY_TYPE_VALUES),
+            qid=sq.get("id"),
+        )
+        user += f"{sq.get('query', '').strip()}\n\n"
+        user += (
+            "Return JSON: {\"id\": <int>, \"vaccine\": \"<name from the "
+            "available list>\", \"rewritten_query\": \"<Vietnamese "
+            "vaccine question>\", \"query_type\": \"<allowed value>\", "
+            "\"answerability\": \"<allowed value>\", \"rationale\": "
+            "\"<short reason>\"}"
+        )
+        return self.client.render(
+            [
+                {"role": "system", "content": _REWRITE_SYSTEM},
+                {"role": "user", "content": user},
+            ]
+        )
 
     def rewrite(self, source_queries: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if not source_queries:
@@ -339,43 +363,23 @@ class QwenRewriter:
                     continue
             pending.append((sq, i))
 
-        if pending:
-            prompts: list[str] = []
-            for sq, _ in pending:
-                user = _REWRITE_USER_TMPL.format(
-                    vaccines=vaccines,
-                    qtypes=", ".join(QUERY_TYPE_VALUES),
-                    qid=sq.get("id"),
-                )
-                user += f"{sq.get('query', '').strip()}\n\n"
-                user += (
-                    "Return JSON: {\"id\": <int>, \"vaccine\": \"<name from the "
-                    "available list>\", \"rewritten_query\": \"<Vietnamese "
-                    "vaccine question>\", \"query_type\": \"<allowed value>\", "
-                    "\"answerability\": \"<allowed value>\", \"rationale\": "
-                    "\"<short reason>\"}"
-                )
-                prompts.append(
-                    self.client.render(
-                        [
-                            {"role": "system", "content": _REWRITE_SYSTEM},
-                            {"role": "user", "content": user},
-                        ]
-                    )
-                )
-
+        # Chunk the pending prompts so each chunk is both one LLM call and a
+        # checkpoint save point: a crash mid-rewrite loses at most one
+        # chunk instead of the whole stage.
+        for start in range(0, len(pending), self.rewrite_batch_size):
+            chunk = pending[start : start + self.rewrite_batch_size]
+            prompts = [self._build_prompt(sq, vaccines) for sq, _ in chunk]
             sampling = self.client.sample()
             outputs = self.client.llm.generate(prompts, sampling)
-            for (sq, idx), out in zip(pending, outputs):
+            for (sq, idx), out in zip(chunk, outputs):
                 raw_text = out.outputs[0].text if out and out.outputs else ""
                 parsed = _extract_json(raw_text)
                 res = _normalize_result(parsed or {}, sq.get("id"))
                 results[idx] = res
                 if self.checkpoint is not None:
                     self.checkpoint.put_rewrite(sq.get("id"), res)
-
-        if self.checkpoint is not None:
-            self.checkpoint.save()
+            if self.checkpoint is not None:
+                self.checkpoint.save()
 
         return [r if r is not None else {} for r in results]
 
