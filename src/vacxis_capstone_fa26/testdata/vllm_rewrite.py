@@ -156,18 +156,38 @@ class VLLMClient:
         return SamplingParams(**kwargs)
 
     def render(self, messages: list[dict[str, str]]) -> str:
-        """Render a conversation to the model's chat-template string.
+        """Render a conversation to a chat-template string for ``generate``.
 
-        Newer vLLM versions only accept plain-string prompts for
-        ``LLM.generate`` in the offline batch API, so we pre-render the
-        conversation with ``apply_chat_template`` (available across
-        versions) instead of passing a dict prompt.
+        ``LLM.generate`` in recent vLLM versions only accepts plain strings
+        (or dicts whose ``"prompt"`` is a string), and the convenience
+        ``LLM.apply_chat_template`` method has since been removed. The
+        tokenizer-level ``apply_chat_template`` is stable across versions,
+        so we render through the engine's tokenizer instead.
         """
         self.ensure_loaded()
-        return self.llm.apply_chat_template(
+        rendered = self._tokenizer().apply_chat_template(
             messages,
             add_generation_prompt=True,
             tokenize=False,
+        )
+        # TokenizerPool-style tokenizers return a list for multiple
+        # conversations; we always pass one, so a bare string is expected.
+        return rendered[0] if isinstance(rendered, list) else rendered
+
+    def _tokenizer(self) -> Any:
+        """Resolve the engine's tokenizer across vLLM versions."""
+        llm = self.llm
+        get_tokenizer = getattr(llm, "get_tokenizer", None)
+        if callable(get_tokenizer):
+            return get_tokenizer()
+        if hasattr(llm, "tokenizer"):
+            return llm.tokenizer
+        engine = getattr(llm, "llm_engine", None)
+        if engine is not None and hasattr(engine, "tokenizer"):
+            return engine.tokenizer
+        raise VLLMError(
+            "Could not locate a tokenizer on the loaded vLLM engine; "
+            "update vLLM or pass a chat-template string manually."
         )
 
 
