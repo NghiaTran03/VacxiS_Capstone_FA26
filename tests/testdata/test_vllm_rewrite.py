@@ -12,7 +12,15 @@ from vacxis_capstone_fa26.testdata.generator import (
     RuleBasedRewriter,
     generate_and_validate_from_source,
 )
-from vacxis_capstone_fa26.testdata.vllm_rewrite import _extract_json, _normalize_result
+from vacxis_capstone_fa26.testdata.vllm_rewrite import (
+    QwenAnswerGenerator,
+    QwenRewriter,
+    VLLMCheckpoint,
+    VLLMClient,
+    VLLMError,
+    _extract_json,
+    _normalize_result,
+)
 
 from .conftest import make_chunk
 
@@ -95,6 +103,94 @@ def test_normalize_result_defaults_on_garbage():
     assert good["query_type"] == "DOSAGE"  # upper-cased
     assert good["answerability"] == "UNANSWERABLE"
     assert good["vaccine"] == "X"
+
+
+class _FakeCompletion:
+    """Mimics vLLM's RequestOutput: .outputs is a list, [0] has .text."""
+
+    def __init__(self, text: str) -> None:
+        self._completion = _Completion(text)
+        self.outputs = [self._completion]
+
+
+class _Completion:
+    def __init__(self, text: str) -> None:
+        self.text = text
+
+
+class _FakeLLM:
+    """Minimal stand-in for vllm.LLM so the vLLM path runs without a GPU."""
+
+    def __init__(self) -> None:
+        self.calls: list[list[str]] = []
+        self._tokenizer = _FakeTokenizer()
+
+    def generate(self, prompts, sampling):
+        self.calls.append(prompts)
+        return [_FakeCompletion('{"a": 1}') for _ in prompts]
+
+    def get_tokenizer(self):
+        return self._tokenizer
+
+
+class _FakeTokenizer:
+    def apply_chat_template(self, messages, add_generation_prompt=True, tokenize=False):
+        return "<rendered>"
+
+
+def test_checkpoint_round_trip(tmp_path):
+    path = tmp_path / "ckpt.json"
+    cp = VLLMCheckpoint(path, model="m", seed=1)
+    cp.put_rewrite(1, {"vaccine": "V", "rewritten_query": "q"})
+    cp.put_answer(1, "ans", [])
+    cp.save()
+
+    cp2 = VLLMCheckpoint(path, model="m", seed=1)
+    cp2.load()
+    assert cp2.get_rewrite("1")["vaccine"] == "V"
+    assert cp2.get_answer("1")["reference_answer"] == "ans"
+
+
+def test_checkpoint_meta_mismatch_raises(tmp_path):
+    path = tmp_path / "ckpt.json"
+    VLLMCheckpoint(path, model="m", seed=1).save()
+    with pytest.raises(VLLMError):
+        VLLMCheckpoint(path, model="other", seed=1).load()
+
+
+def test_rewriter_uses_checkpoint_cache(tmp_path, monkeypatch):
+    import vacxis_capstone_fa26.testdata.vllm_rewrite as vr
+
+    monkeypatch.setattr(vr, "SamplingParams", lambda **kw: kw)
+    cp = VLLMCheckpoint(tmp_path / "ckpt.json", model="m", seed=1)
+    cp.put_rewrite(2, {"id": 2, "vaccine": "Vax A", "rewritten_query": "c",
+                       "query_type": "PRECAUTION", "answerability": "ANSWERABLE"})
+    llm = _FakeLLM()
+    client = VLLMClient(llm=llm, model="m")
+    out = QwenRewriter(client, vaccine_names=["Vax A"], checkpoint=cp).rewrite(
+        [{"id": 2, "query": "q"}, {"id": 3, "query": "r"}]
+    )
+    assert out[0]["vaccine"] == "Vax A"  # from cache, no LLM call
+    assert len(llm.calls[0]) == 1  # only the uncached id=3 hit the model
+
+
+def test_answer_generator_batches_and_checkpoints(tmp_path, monkeypatch):
+    import vacxis_capstone_fa26.testdata.vllm_rewrite as vr
+
+    monkeypatch.setattr(vr, "SamplingParams", lambda **kw: kw)
+    cp = VLLMCheckpoint(tmp_path / "ckpt.json", model="m", seed=1)
+    llm = _FakeLLM()
+    client = VLLMClient(llm=llm, model="m")
+    gen = QwenAnswerGenerator(client, checkpoint=cp, batch_size=2)
+    queries = [
+        {"SOURCE_QUERY_ID": i, "ANSWERABILITY": "ANSWERABLE",
+         "RELEVANT_CHUNKS": [{"RELEVANCE_SCORE": 3, "CHUNK_ID": "c", "TEXT": "t"}]}
+        for i in range(3)
+    ]
+    gen.generate_answers(queries)
+    assert len(llm.calls) == 2  # batches of 2 + 1
+    assert llm.calls[0][0] == "<rendered>"  # rendered strings, not dicts
+    assert all(q["REFERENCE_ANSWER"] for q in queries)
 
 
 @pytest.mark.integration

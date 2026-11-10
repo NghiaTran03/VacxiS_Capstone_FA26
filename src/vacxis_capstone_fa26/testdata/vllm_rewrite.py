@@ -21,7 +21,8 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Protocol
 
 from .answer_generator import REFERENCE_ANSWER_FORMAT, SYSTEM_PROMPT, UNANSWERABLE_FALLBACK_ANSWER
@@ -44,6 +45,10 @@ DEFAULT_VLLM_MODEL = "Qwen/Qwen2.5-7B-Instruct"
 # from exactly the values the rest of the pipeline understands.
 QUERY_TYPE_VALUES: tuple[str, ...] = tuple(t["type"] for t in QUERY_TYPE_DEFS)
 
+# Bump when the rewrite/answer prompts change so a stale checkpoint is
+# rejected rather than silently mixing incompatible outputs.
+PROMPT_VERSION = 2
+
 ANSWERABILITY_VALUES: tuple[str, ...] = (
     "ANSWERABLE",
     "PARTIALLY_ANSWERABLE",
@@ -53,6 +58,95 @@ ANSWERABILITY_VALUES: tuple[str, ...] = (
 
 class VLLMError(RuntimeError):
     """Raised when vLLM is requested but unavailable or misconfigured."""
+
+
+class VLLMCheckpoint:
+    """Durable store for the two expensive vLLM stages (rewrites, answers).
+
+    A single JSON file lets a crashed or killed run (Colab session timeout,
+    GPU OOM) resume instead of regenerating everything. Both stages are
+    keyed by the stable source-query ``id`` (never by ``QUERY_ID``, which
+    depends on the shuffle seed), so a ``--limit 50`` smoke run warms the
+    same checkpoint for the full 1200-query run.
+
+    A ``meta`` header (model, seed, prompt version) is checked on load: a
+    checkpoint from a different model/seed/prompt is rejected loudly rather
+    than mixed into a new run.
+    """
+
+    def __init__(
+        self,
+        path: Path,
+        *,
+        model: str,
+        seed: int | None,
+    ) -> None:
+        self.path = Path(path)
+        self.meta = {
+            "model": model,
+            "seed": seed,
+            "prompt_version": PROMPT_VERSION,
+        }
+        self.rewrites: dict[str, dict[str, Any]] = {}
+        self.answers: dict[str, dict[str, Any]] = {}
+
+    @staticmethod
+    def _key(source_id: Any) -> str:
+        return str(source_id)
+
+    def load(self) -> None:
+        """Load an existing checkpoint; raise on incompatible meta."""
+        if not self.path.exists():
+            return
+        data = json.loads(self.path.read_text(encoding="utf-8"))
+        meta = data.get("meta") or {}
+        for key, want in self.meta.items():
+            if key in meta and meta[key] != want:
+                raise VLLMError(
+                    f"Checkpoint {self.path} was written with {key}={meta[key]!r}, "
+                    f"but this run uses {key}={want!r}. Use a fresh --checkpoint "
+                    "path or re-run without it."
+                )
+        self.rewrites = {
+            self._key(k): v for k, v in (data.get("rewrites") or {}).items()
+        }
+        self.answers = {
+            self._key(k): v for k, v in (data.get("answers") or {}).items()
+        }
+        print(
+            f"  -> checkpoint resumed: {len(self.rewrites)} rewrites, "
+            f"{len(self.answers)} answers cached"
+        )
+
+    def save(self) -> None:
+        """Atomically persist the current cache (tmp file + rename)."""
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "meta": self.meta,
+            "rewrites": self.rewrites,
+            "answers": self.answers,
+        }
+        tmp = self.path.with_name(self.path.name + ".tmp")
+        tmp.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(self.path)
+
+    # Convenience accessors used by the rewriter / answer generator.
+    def get_rewrite(self, source_id: Any) -> dict[str, Any] | None:
+        return self.rewrites.get(self._key(source_id))
+
+    def put_rewrite(self, source_id: Any, result: dict[str, Any]) -> None:
+        self.rewrites[self._key(source_id)] = result
+
+    def get_answer(self, source_id: Any) -> dict[str, Any] | None:
+        return self.answers.get(self._key(source_id))
+
+    def put_answer(
+        self, source_id: Any, reference_answer: str, claim_map: list
+    ) -> None:
+        self.answers[self._key(source_id)] = {
+            "reference_answer": reference_answer,
+            "claim_evidence_map": claim_map,
+        }
 
 
 class Rewriter(Protocol):
@@ -222,9 +316,11 @@ class QwenRewriter:
         client: VLLMClient,
         *,
         vaccine_names: list[str],
+        checkpoint: VLLMCheckpoint | None = None,
     ) -> None:
         self.client = client
         self.vaccine_names = list(vaccine_names)
+        self.checkpoint = checkpoint
 
     def rewrite(self, source_queries: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if not source_queries:
@@ -232,39 +328,56 @@ class QwenRewriter:
         self.client.ensure_loaded()
 
         vaccines = ", ".join(self.vaccine_names) if self.vaccine_names else "(none)"
-        prompts: list[str] = []
-        for sq in source_queries:
-            user = _REWRITE_USER_TMPL.format(
-                vaccines=vaccines,
-                qtypes=", ".join(QUERY_TYPE_VALUES),
-                qid=sq.get("id"),
-            )
-            user += f"{sq.get('query', '').strip()}\n\n"
-            user += (
-                "Return JSON: {\"id\": <int>, \"vaccine\": \"<name from the "
-                "available list>\", \"rewritten_query\": \"<Vietnamese "
-                "vaccine question>\", \"query_type\": \"<allowed value>\", "
-                "\"answerability\": \"<allowed value>\", \"rationale\": "
-                "\"<short reason>\"}"
-            )
-            prompts.append(
-                self.client.render(
-                    [
-                        {"role": "system", "content": _REWRITE_SYSTEM},
-                        {"role": "user", "content": user},
-                    ]
+        pending: list[tuple[dict[str, Any], int]] = []
+        results: list[dict[str, Any] | None] = [None] * len(source_queries)
+
+        for i, sq in enumerate(source_queries):
+            if self.checkpoint is not None:
+                cached = self.checkpoint.get_rewrite(sq.get("id"))
+                if cached is not None:
+                    results[i] = cached
+                    continue
+            pending.append((sq, i))
+
+        if pending:
+            prompts: list[str] = []
+            for sq, _ in pending:
+                user = _REWRITE_USER_TMPL.format(
+                    vaccines=vaccines,
+                    qtypes=", ".join(QUERY_TYPE_VALUES),
+                    qid=sq.get("id"),
                 )
-            )
+                user += f"{sq.get('query', '').strip()}\n\n"
+                user += (
+                    "Return JSON: {\"id\": <int>, \"vaccine\": \"<name from the "
+                    "available list>\", \"rewritten_query\": \"<Vietnamese "
+                    "vaccine question>\", \"query_type\": \"<allowed value>\", "
+                    "\"answerability\": \"<allowed value>\", \"rationale\": "
+                    "\"<short reason>\"}"
+                )
+                prompts.append(
+                    self.client.render(
+                        [
+                            {"role": "system", "content": _REWRITE_SYSTEM},
+                            {"role": "user", "content": user},
+                        ]
+                    )
+                )
 
-        sampling = self.client.sample()
-        outputs = self.client.llm.generate(prompts, sampling)
+            sampling = self.client.sample()
+            outputs = self.client.llm.generate(prompts, sampling)
+            for (sq, idx), out in zip(pending, outputs):
+                raw_text = out.outputs[0].text if out and out.outputs else ""
+                parsed = _extract_json(raw_text)
+                res = _normalize_result(parsed or {}, sq.get("id"))
+                results[idx] = res
+                if self.checkpoint is not None:
+                    self.checkpoint.put_rewrite(sq.get("id"), res)
 
-        results: list[dict[str, Any]] = []
-        for sq, out in zip(source_queries, outputs):
-            raw_text = out.outputs[0].text if out and out.outputs else ""
-            parsed = _extract_json(raw_text)
-            results.append(_normalize_result(parsed or {}, sq.get("id")))
-        return results
+        if self.checkpoint is not None:
+            self.checkpoint.save()
+
+        return [r if r is not None else {} for r in results]
 
 
 # Answers reuse the exact JSON schema and system prompt of the OpenRouter
@@ -279,25 +392,77 @@ class QwenAnswerGenerator:
     (``generate_answers(queries) -> queries``). For UNANSWERABLE queries or
     queries without a score>=3 chunk it mirrors
     :class:`ExtractiveAnswerGenerator` (fallback answer, empty claim map).
+
+    LLM-backed answers are computed in batches (``batch_size``) so 1200
+    queries do not issue 1200 single-prompt calls. Each query must carry a
+    ``SOURCE_QUERY_ID`` (the stable parquet ``id``) for checkpointing to
+    apply; without it, checkpointing is simply bypassed.
     """
 
-    def __init__(self, client: VLLMClient) -> None:
+    def __init__(
+        self,
+        client: VLLMClient,
+        *,
+        checkpoint: VLLMCheckpoint | None = None,
+        batch_size: int = 64,
+    ) -> None:
         self.client = client
+        self.checkpoint = checkpoint
+        self.batch_size = max(1, batch_size)
+
+    def _answerable_with_evidence(self, q: dict[str, Any]) -> bool:
+        return q.get("ANSWERABILITY") != "UNANSWERABLE" and any(
+            c.get("RELEVANCE_SCORE", 0) >= 3 for c in q.get("RELEVANT_CHUNKS", [])
+        )
 
     def generate_answers(self, queries: list[dict[str, Any]]) -> list[dict[str, Any]]:
         for q in queries:
-            has_evidence = any(
-                c.get("RELEVANCE_SCORE", 0) >= 3 for c in q.get("RELEVANT_CHUNKS", [])
-            )
-            if q.get("ANSWERABILITY") == "UNANSWERABLE" or not has_evidence:
+            if not self._answerable_with_evidence(q):
                 q["REFERENCE_ANSWER"] = UNANSWERABLE_FALLBACK_ANSWER
                 q["CLAIM_EVIDENCE_MAP"] = []
-            else:
-                self._generate_single(q)
+
+        to_call: list[dict[str, Any]] = [
+            q
+            for q in queries
+            if self._answerable_with_evidence(q)
+            and (
+                self.checkpoint is None
+                or self.checkpoint.get_answer(q.get("SOURCE_QUERY_ID")) is None
+            )
+        ]
+
+        for i in range(0, len(to_call), self.batch_size):
+            batch = to_call[i : i + self.batch_size]
+            self._generate_batch(batch)
+            if self.checkpoint is not None:
+                self.checkpoint.save()
+
         return queries
 
-    def _generate_single(self, q: dict[str, Any]) -> None:
+    def _generate_batch(self, batch: list[dict[str, Any]]) -> None:
         self.client.ensure_loaded()
+        prompts: list[str] = []
+        for q in batch:
+            prompts.append(self._build_answer_prompt(q))
+
+        sampling = self.client.sample(max_tokens=1024)
+        outputs = self.client.llm.generate(prompts, sampling)
+
+        for q, out in zip(batch, outputs):
+            text = out.outputs[0].text if out and out.outputs else ""
+            data = _extract_json(text)
+            if data and "reference_answer" in data:
+                answer = str(data.get("reference_answer", "")).strip()
+                claims = data.get("claim_evidence_map", []) or []
+            else:
+                answer = UNANSWERABLE_FALLBACK_ANSWER
+                claims = []
+            q["REFERENCE_ANSWER"] = answer
+            q["CLAIM_EVIDENCE_MAP"] = claims
+            if self.checkpoint is not None:
+                self.checkpoint.put_answer(q.get("SOURCE_QUERY_ID"), answer, claims)
+
+    def _build_answer_prompt(self, q: dict[str, Any]) -> str:
         relevant = [
             c
             for c in q.get("RELEVANT_CHUNKS", [])
@@ -313,19 +478,9 @@ class QwenAnswerGenerator:
             "Trả JSON theo schema:\n"
             f"{_JSON_SCHEMA_HINT}"
         )
-        prompt = self.client.render(
+        return self.client.render(
             [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user},
             ]
         )
-        sampling = self.client.sample(max_tokens=1024)
-        outputs = self.client.llm.generate([prompt], sampling)
-        text = outputs[0].outputs[0].text if outputs and outputs[0].outputs else ""
-        data = _extract_json(text)
-        if not data or "reference_answer" not in data:
-            q["REFERENCE_ANSWER"] = UNANSWERABLE_FALLBACK_ANSWER
-            q["CLAIM_EVIDENCE_MAP"] = []
-            return
-        q["REFERENCE_ANSWER"] = str(data.get("reference_answer", "")).strip()
-        q["CLAIM_EVIDENCE_MAP"] = data.get("claim_evidence_map", []) or []

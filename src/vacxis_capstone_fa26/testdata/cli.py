@@ -35,6 +35,7 @@ from .vllm_rewrite import (
     DEFAULT_VLLM_MODEL,
     QwenAnswerGenerator,
     QwenRewriter,
+    VLLMCheckpoint,
     VLLMClient,
     VLLMError,
 )
@@ -151,6 +152,31 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Force offline extractive answers regardless of --vllm.",
     )
     p.add_argument(
+        "--limit",
+        type=int,
+        default=0,
+        help=(
+            "queries source only: process at most the first N source queries "
+            "(0 = all). Useful for quick smoke runs before a full pass."
+        ),
+    )
+    p.add_argument(
+        "--checkpoint",
+        type=Path,
+        default=None,
+        help=(
+            "vLLM source only: JSON file to cache rewrites + answers so a "
+            "crashed/killed run can resume. Re-run with the same path to "
+            "continue; the meta header rejects a model/seed/prompt mismatch."
+        ),
+    )
+    p.add_argument(
+        "--answers-batch-size",
+        type=int,
+        default=64,
+        help="vLLM source only: answer-generation batch size (default: %(default)s).",
+    )
+    p.add_argument(
         "--no-validate",
         action="store_true",
         help="Skip the post-write validation pass.",
@@ -201,9 +227,19 @@ def _run_queries_source(
 ) -> tuple[list[dict], object]:
     source_queries = _load_source_queries(args.source_queries)
     print(f"Loaded {len(source_queries)} source queries from {args.source_queries}")
+    if args.limit and args.limit < len(source_queries):
+        source_queries = source_queries[: args.limit]
+        print(f"  -> --limit applied: processing first {len(source_queries)}")
 
     use_vllm = _resolve_use_vllm(args)
     vaccine_names = list(index_by_vaccine(chunks).keys())
+
+    checkpoint: VLLMCheckpoint | None = None
+    if use_vllm and args.checkpoint is not None:
+        checkpoint = VLLMCheckpoint(
+            args.checkpoint, model=args.vllm_model, seed=seed
+        )
+        checkpoint.load()
 
     if use_vllm:
         client = VLLMClient(
@@ -211,11 +247,17 @@ def _run_queries_source(
             gpu_memory_utilization=args.vllm_gpu_memory,
             seed=seed,
         )
-        rewriter = QwenRewriter(client, vaccine_names=vaccine_names)
+        rewriter = QwenRewriter(
+            client, vaccine_names=vaccine_names, checkpoint=checkpoint
+        )
         if args.dry_run_answers:
             ans_gen = ExtractiveAnswerGenerator()
         else:
-            ans_gen = QwenAnswerGenerator(client)
+            ans_gen = QwenAnswerGenerator(
+                client,
+                checkpoint=checkpoint,
+                batch_size=args.answers_batch_size,
+            )
         print(f"Using Qwen via vLLM: {args.vllm_model}")
     else:
         rewriter = RuleBasedRewriter(chunks, rng)

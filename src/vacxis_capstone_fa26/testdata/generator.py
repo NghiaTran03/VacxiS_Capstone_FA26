@@ -400,6 +400,7 @@ def build_queries_from_source(
         queries.append(
             {
                 "QUERY_ID": "",  # stamped below
+                "SOURCE_QUERY_ID": sq.get("id"),  # stable parquet id, used by checkpoints
                 "QUERY": res.get("rewritten_query") or str(sq.get("query", "")).strip(),
                 "QUERY_DIFFICULTY": "MEDIUM",
                 "QUERY_TYPE": qtype,
