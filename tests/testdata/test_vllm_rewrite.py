@@ -174,6 +174,38 @@ def test_rewriter_uses_checkpoint_cache(tmp_path, monkeypatch):
     assert len(llm.calls[0]) == 1  # only the uncached id=3 hit the model
 
 
+def test_resume_restores_cached_answers(tmp_path, monkeypatch):
+    """A resumed run must emit the cached answer text, not None (gate B1)."""
+    import vacxis_capstone_fa26.testdata.vllm_rewrite as vr
+
+    monkeypatch.setattr(vr, "SamplingParams", lambda **kw: kw)
+    cp = VLLMCheckpoint(tmp_path / "ckpt.json", model="m", seed=1)
+    cp.put_answer(7, "cached answer text", [{"claim": "c"}])
+    cp.save()
+
+    cp2 = VLLMCheckpoint(tmp_path / "ckpt.json", model="m", seed=1)
+    cp2.load()
+    llm = _FakeLLM()
+    client = VLLMClient(llm=llm, model="m")
+    gen = QwenAnswerGenerator(client, checkpoint=cp2, batch_size=2)
+    queries = [
+        {"SOURCE_QUERY_ID": 7, "ANSWERABILITY": "ANSWERABLE",
+         "RELEVANT_CHUNKS": [{"RELEVANCE_SCORE": 3, "CHUNK_ID": "c", "TEXT": "t"}]},
+        {"SOURCE_QUERY_ID": 8, "ANSWERABILITY": "ANSWERABLE",
+         "RELEVANT_CHUNKS": [{"RELEVANCE_SCORE": 3, "CHUNK_ID": "c", "TEXT": "t"}]},
+    ]
+    gen.generate_answers(queries)
+
+    # The cached id keeps its text and is not re-requested from the model.
+    assert queries[0]["REFERENCE_ANSWER"] == "cached answer text"
+    assert queries[0]["CLAIM_EVIDENCE_MAP"] == [{"claim": "c"}]
+    # Only the uncached id went to the model.
+    assert len(llm.calls) == 1
+    assert len(llm.calls[0]) == 1
+    # No record may end up with a missing answer.
+    assert all(q["REFERENCE_ANSWER"] for q in queries)
+
+
 def test_answer_generator_batches_and_checkpoints(tmp_path, monkeypatch):
     import vacxis_capstone_fa26.testdata.vllm_rewrite as vr
 

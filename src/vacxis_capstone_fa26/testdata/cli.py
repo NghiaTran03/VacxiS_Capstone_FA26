@@ -288,6 +288,10 @@ def _run_queries_source(
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
 
+    if args.limit < 0:
+        print("[ERROR] --limit must be 0 (all) or a positive integer.", file=sys.stderr)
+        return 1
+
     if not args.chunks.exists():
         print(f"[ERROR] chunks parquet not found at {args.chunks}", file=sys.stderr)
         return 1

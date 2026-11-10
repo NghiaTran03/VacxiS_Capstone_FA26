@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -420,6 +420,16 @@ class QwenAnswerGenerator:
             if not self._answerable_with_evidence(q):
                 q["REFERENCE_ANSWER"] = UNANSWERABLE_FALLBACK_ANSWER
                 q["CLAIM_EVIDENCE_MAP"] = []
+
+        # Restore answers already computed by an earlier (crashed) run so a
+        # resumed run emits the cached text instead of leaving None.
+        if self.checkpoint is not None:
+            for q in queries:
+                if self._answerable_with_evidence(q):
+                    cached = self.checkpoint.get_answer(q.get("SOURCE_QUERY_ID"))
+                    if cached is not None:
+                        q["REFERENCE_ANSWER"] = cached["reference_answer"]
+                        q["CLAIM_EVIDENCE_MAP"] = cached["claim_evidence_map"]
 
         to_call: list[dict[str, Any]] = [
             q
