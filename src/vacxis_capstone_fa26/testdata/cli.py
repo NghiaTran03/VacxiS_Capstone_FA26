@@ -31,6 +31,7 @@ from .generator import (
     generate_and_validate_from_source,
 )
 from .validator import validate
+from .postprocess import filter_no_han, split_and_mask
 from .vllm_rewrite import (
     DEFAULT_VLLM_MODEL,
     QwenAnswerGenerator,
@@ -194,6 +195,38 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--strict-validation",
         action="store_true",
         help="Treat validation warnings as failures (exit non-zero).",
+    )
+    p.add_argument(
+        "--filter-no-han",
+        action="store_true",
+        help="Drop records containing any Han (CJK) character before writing.",
+    )
+    p.add_argument(
+        "--mask-symptoms",
+        action="store_true",
+        help=(
+            "For records after the first --split-at, replace query symptoms "
+            "with symptoms found in the record's most relevant chunk."
+        ),
+    )
+    p.add_argument(
+        "--split-at",
+        type=int,
+        default=300,
+        help=(
+            "Boundary between the normal export (first N records) and the "
+            "symptom-masked remainder (default: %(default)s). Only used with "
+            "--mask-symptoms."
+        ),
+    )
+    p.add_argument(
+        "--out-masked",
+        type=Path,
+        default=None,
+        help=(
+            "Where to write the symptom-masked remainder (default: <out> "
+            "with a _masked suffix)."
+        ),
     )
     return p.parse_args(argv)
 
@@ -373,7 +406,35 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 2
 
+    # Optional post-processing, applied after validation so the written
+    # records remain schema-valid.
+    if args.filter_no_han:
+        before = len(queries)
+        queries = filter_no_han(queries)
+        print(f"  -> --filter-no-han: dropped {before - len(queries)} records")
+
     args.out.parent.mkdir(parents=True, exist_ok=True)
+
+    if args.mask_symptoms:
+        head, tail, stats = split_and_mask(
+            queries, split_at=args.split_at, rng=rng
+        )
+        with open(args.out, "w", encoding="utf-8") as f:
+            json.dump(head, f, ensure_ascii=False, indent=2)
+        print(f"Wrote {len(head)} unmasked records to {args.out}")
+
+        out_masked = args.out_masked
+        if out_masked is None:
+            out_masked = args.out.with_name(args.out.stem + "_masked.json")
+        out_masked.parent.mkdir(parents=True, exist_ok=True)
+        with open(out_masked, "w", encoding="utf-8") as f:
+            json.dump(tail, f, ensure_ascii=False, indent=2)
+        print(
+            f"Wrote {len(tail)} symptom-masked records to {out_masked} "
+            f"({stats['symptoms_replaced']} symptoms replaced)"
+        )
+        return 0
+
     with open(args.out, "w", encoding="utf-8") as f:
         json.dump(queries, f, ensure_ascii=False, indent=2)
     print(f"Wrote dataset to {args.out}")
