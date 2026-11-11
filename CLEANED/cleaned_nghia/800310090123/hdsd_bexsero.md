@@ -38,15 +38,15 @@ Liều dùng
 | Độ tuổi nhận liều đầu tiên | Tiêm chủng cơ bản | Khoảng thời gian giữa các liều cơ bản | Tiêm nhắc |
 |---|---|---|---|
 | Nhũ nhi, 2 đến 5 tháng tuổi | Ba liều, mỗi liều 0,5 ml | Không dưới 1 tháng | Có, một liều trong năm thứ hai cuộc đời với thời gian giãn cách ít nhất 6 tháng giữa các liều cơ bản và liều nhắc lại |
-| | Hai liều, mỗi liều 0,5 ml | Không dưới 2 tháng | Có, một liều trong năm thứ hai cuộc đời với thời gian giãn cách ít nhất 2 tháng giữa các liều cơ bản và liều nhắc lại b |
+| | Hai liều, mỗi liều 0,5 ml | Không dưới 2 tháng | Có, một liều trong năm thứ hai cuộc đời với thời gian giãn cách ít nhất 6 tháng giữa các liều cơ bản và liều nhắc lại |
 | Nhũ nhi, 6 đến 11 tháng tuổi | Hai liều, mỗi liều 0,5 ml | Không dưới 2 tháng | Có, một liều trong năm thứ hai cuộc đời với thời gian giãn cách ít nhất 2 tháng giữa các liều cơ bản và liều nhắc lại b |
 | Trẻ nhỏ, từ 12 đến 23 tháng tuổi | Hai liều, mỗi liều 0,5 ml | Không dưới 2 tháng | Có, một liều với thời gian giãn cách từ 12 đến 23 tháng giữa các liều cơ bản và liều nhắc lại b |
 | Trẻ nhỏ, từ 2 đến 10 tuổi | Hai liều, mỗi liều 0,5 ml | Không dưới 1 tháng | Khuyến cáo liều nhắc lại cho những đối tượng vẫn có nguy cơ mắc bệnh não mô cầu, dựa trên các khuyến nghị chính thức b |
 | Thanh thiếu niên (từ 11 tuổi) và người trưởng thành* | Hai liều, mỗi liều 0,5 ml | Không dưới 1 tháng | Khuyến cáo liều nhắc lại cho những đối tượng vẫn có nguy cơ mắc bệnh não mô cầu, dựa trên các khuyến nghị chính thức b |
 
 a Vẫn chưa xác định được tính an toàn và hiệu lực của Bexsero ở nhũ nhi dưới 8 tuần tuổi.
-b Không có sẵn dữ liệu.
-Xem “Tác dụng dược lực”.
+  Không có sẵn dữ liệu.
+b Xem “Tác dụng dược lực”.
 * Chưa xác định được tính an toàn và hiệu lực của Bexsero ở những người trên 50 tuổi.
 
 Không có đủ dữ liệu về tính an toàn và hiệu quả của việc chuyển đổi qua lại giữa Bexsero và các vắc xin não mô cầu nhóm B khác để hoàn thành các liệu trình chủng ngừa. Do đó, khuyến cáo những đối tượng đã tiêm Bexsero liều đầu tiên nên đảm bảo hoàn thành đầy đủ các liều chủng ngừa Bexsero tiếp theo.
