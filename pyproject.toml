@@ -9,6 +9,8 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "flagembedding>=1.4.2",
+    "gradio>=6.31.0",
+    "huggingface-hub>=1.33.0",
     "openai>=2.54.0",
     "pyarrow>=26.0.0",
     "qdrant-client>=1.19.1",
@@ -16,6 +18,7 @@ dependencies = [
 
 [project.scripts]
 vacxis-pipeline = "vacxis_capstone_fa26.cli:main"
+vacxis-web = "vacxis_capstone_fa26.web:main"
 vacxis-capstone-fa26 = "vacxis_capstone_fa26:main"
 generate-test-dataset = "vacxis_capstone_fa26.testdata.cli:main"
 vacxis-retrieval = "vacxis_capstone_fa26.retrieval.cli:main"
