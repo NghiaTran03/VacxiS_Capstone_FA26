@@ -1,14 +1,16 @@
-"""Tests for the dataset post-processing (Han filter + symptom masking)."""
+"""Tests for the dataset post-processing (Han filter + symptom masking).
+
+The symptom *selection* is LLM-driven (QwenSymptomMasker); these tests cover
+the deterministic validation/apply layer and the Han filter.
+"""
 from __future__ import annotations
 
-import random
-
 from vacxis_capstone_fa26.testdata.postprocess import (
+    apply_replacements,
     contains_han,
     filter_no_han,
-    find_symptoms,
-    mask_symptoms,
-    split_and_mask,
+    relevant_chunk_texts,
+    split_records,
 )
 
 
@@ -18,7 +20,7 @@ def _record(query: str, chunk_text: str, chunk_id: str = "c1") -> dict:
         "QUERY": query,
         "RELEVANT_CHUNKS": [
             {"CHUNK_ID": chunk_id, "TEXT": chunk_text, "RELEVANCE_SCORE": 3},
-            {"CHUNK_ID": "c2", "TEXT": "irrelevant", "RELEVANCE_SCORE": 0},
+            {"CHUNK_ID": "c2", "TEXT": "irrelevant chunk text", "RELEVANCE_SCORE": 0},
         ],
     }
 
@@ -43,75 +45,72 @@ def test_filter_no_han_drops_cjk_records():
     assert [r["QUERY"] for r in kept] == ["sốt sau tiêm"]
 
 
-def test_find_symptoms_prefers_longest_term():
-    text = "chỗ tiêm nổi mề đay và sốt"
-    found = find_symptoms(text)
-    assert "nổi mề đay" in found
-    assert "mề đay" not in found
-    assert "sốt" in found
+def test_relevant_chunk_texts_uses_score_3_only():
+    rec = _record("q", "relevant text")
+    texts = relevant_chunk_texts(rec)
+    assert texts == ["relevant text"]
 
 
-def test_find_symptoms_ignores_substring_matches():
-    # "cho" and "khoảng" must not match the generic term "đỏ"/"ho".
-    found = find_symptoms("dài khoảng thời gian cho phép")
-    assert "ho" not in found
-    assert "đỏ" not in found
-
-
-def test_mask_symptoms_replaces_with_chunk_symptom():
-    q = _record(
+def test_apply_replacements_swaps_symptom():
+    rec = _record(
         "Sau khi tiêm vaccine A, bị đau đầu dữ dội thì phải làm sao?",
-        "Các triệu chứng: sốt, đau đầu, mệt mỏi, tiêu chảy nhẹ.",
+        "Các triệu chứng: sốt, mệt mỏi, tiêu chảy nhẹ.",
     )
-    updated, report = mask_symptoms(q, random.Random(0))
-    # "đau đầu" is the query symptom; it is replaced by a chunk symptom.
-    assert report["replaced"] == ["đau đầu"]
-    assert report["with"]
+    updated, report = apply_replacements(
+        rec, [{"original": "đau đầu", "replacement": "tiêu chảy"}]
+    )
+    assert report["applied"] == ["đau đầu"]
     assert "đau đầu" not in updated["QUERY"].lower()
-    # The replacement really occurs in the top chunk.
-    chunk_text = updated["RELEVANT_CHUNKS"][0]["TEXT"].lower()
-    assert report["with"][0].lower() in chunk_text
+    assert "tiêu chảy" in updated["QUERY"].lower()
     # Original record is not mutated.
-    assert q["QUERY"] != updated["QUERY"]
+    assert "đau đầu" in rec["QUERY"].lower()
 
 
-def test_mask_symptoms_no_chunk_symptom_leaves_query_unchanged():
-    q = _record(
-        "Tôi bị đau đầu sau khi tiêm vaccine A?",
-        "Bảo quản ở nơi khô ráo, tránh ánh sáng trực tiếp.",
+def test_apply_replacements_drops_original_not_in_query():
+    rec = _record("Tôi bị sốt sau khi tiêm?", "Triệu chứng: đau đầu, tiêu chảy.")
+    updated, report = apply_replacements(
+        rec, [{"original": "đau đầu", "replacement": "tiêu chảy"}]
     )
-    updated, report = mask_symptoms(q, random.Random(0))
-    assert report["replaced"] == []
-    assert updated["QUERY"] == q["QUERY"]
+    assert report["applied"] == []
+    assert report["skipped"] == ["đau đầu"]
+    assert updated["QUERY"] == rec["QUERY"]
 
 
-def test_mask_symptoms_no_query_symptom_is_noop():
-    q = _record(
-        "Vaccine A được chỉ định cho ai?",
-        "Các triệu chứng: sốt, đau đầu, tiêu chảy.",
+def test_apply_replacements_drops_replacement_not_in_chunk():
+    rec = _record("Tôi bị đau đầu sau khi tiêm?", "Triệu chứng: sốt.")
+    updated, report = apply_replacements(
+        rec, [{"original": "đau đầu", "replacement": "hắt hơi"}]
     )
-    updated, report = mask_symptoms(q, random.Random(0))
-    assert report == {"replaced": [], "with": []}
+    assert report["applied"] == []
+    assert report["skipped"] == ["đau đầu"]
+    assert updated["QUERY"] == rec["QUERY"]
 
 
-def test_split_and_mask_masks_only_tail():
-    records = [
-        _record("bị sốt sau tiêm", "Triệu chứng: đau đầu, tiêu chảy."),
-        _record("bị đau đầu sau tiêm", "Triệu chứng: sốt, mệt mỏi."),
-        _record("không bị gì", "Bảo quản lạnh."),
-    ]
-    head, tail, stats = split_and_mask(
-        records, split_at=1, rng=random.Random(0)
+def test_apply_replacements_prefers_longer_original_first():
+    rec = _record(
+        "Sau tiêm tôi bị nổi mề đay nhẹ.",
+        "Triệu chứng: nổi mề đay, sốt.",
     )
-    assert len(head) == 1 and len(tail) == 2
-    assert head[0]["QUERY"] == "bị sốt sau tiêm"
-    assert stats["split_at"] == 1
-    # Tail record 0 has its symptom replaced; record 2 is unchanged.
-    assert tail[0]["QUERY"] != "bị đau đầu sau tiêm"
-    assert tail[1]["QUERY"] == "không bị gì"
+    updated, report = apply_replacements(
+        rec,
+        [
+            {"original": "mề đay", "replacement": "sốt"},
+            {"original": "nổi mề đay", "replacement": "sốt"},
+        ],
+    )
+    # The longer term wins, so the query keeps the "nổi" prefix intact.
+    assert updated["QUERY"] == "Sau tiêm tôi bị sốt nhẹ."
 
 
-def test_split_at_beyond_length_masks_nothing():
-    records = [_record("sốt", "đau đầu")]
-    head, tail, stats = split_and_mask(records, split_at=300, rng=random.Random(0))
-    assert len(head) == 1 and tail == []
+def test_apply_replacements_no_pairs_is_noop():
+    rec = _record("q", "chunk")
+    updated, report = apply_replacements(rec, [])
+    assert report == {"applied": [], "skipped": []}
+    assert updated["QUERY"] == rec["QUERY"]
+
+
+def test_split_records():
+    head, tail = split_records([{"i": i} for i in range(5)], 3)
+    assert len(head) == 3 and len(tail) == 2
+    head2, tail2 = split_records([{"i": 0}], 300)
+    assert len(head2) == 1 and tail2 == []

@@ -9,16 +9,18 @@ Two transformations, applied in order by the CLI:
 
 2. **Symptom masking** -- for the records past the split point, replace the
    symptoms mentioned in the query with symptoms that actually occur in the
-   record's most relevant chunk. This makes the query answerable from the
-   evidence it is grounded on, instead of asking about a symptom the chunk
-   never mentions.
+   record's most relevant chunk (the chunks with ``RELEVANCE_SCORE == 3``).
 
-The symptom lexicon is Vietnamese and was curated against the chunk corpus,
-so every term is one that genuinely occurs in the source documents.
+   The *choice* of replacements is made by the LLM, which receives the query
+   and the relevant chunks and answers with a JSON list of
+   ``{"original": ..., "replacement": ...}`` pairs. This module only applies
+   the edits: every pair is validated against the record (the original term
+   must occur in the query, the replacement must occur in the chunk text) and
+   applied deterministically, so a hallucinated replacement can never enter
+   the dataset.
 """
 from __future__ import annotations
 
-import random
 import re
 from typing import Any, Iterable
 
@@ -26,61 +28,6 @@ from typing import Any, Iterable
 HAN_PATTERN = re.compile(
     r"[㐀-䶿一-鿿豈-﫿"
     r"\U00020000-\U0002FA1F\U00030000-\U000323AF]"
-)
-
-# Vietnamese symptom / adverse-event vocabulary found in the chunk corpus.
-# Ordered longest-first at match time so multi-word terms win over their
-# substrings ("nổi mề đay" before "mề đay").
-SYMPTOM_LEXICON: tuple[str, ...] = (
-    "rối loạn tiêu hóa",
-    "đau tại chỗ tiêm",
-    "viêm mạch máu",
-    "đau nửa đầu",
-    "nổi mề đay",
-    "đau đầu",
-    "đau cơ",
-    "đau khớp",
-    "đau bụng",
-    "đau lưng",
-    "mệt mỏi",
-    "buồn nôn",
-    "chóng mặt",
-    "phát ban",
-    "ban đỏ",
-    "phản vệ",
-    "dị ứng",
-    "mề đay",
-    "tiêu chảy",
-    "khó thở",
-    "sưng hạch",
-    "nổi hạch",
-    "chán ăn",
-    "mất ngủ",
-    "sốt cao",
-    "sốt",
-    "nôn",
-    "ngứa",
-    "sưng",
-    "đỏ",
-    "co giật",
-    "run rẩy",
-    "phù mạch",
-    "hắt hơi",
-    "sổ mũi",
-    "lạnh run",
-    "choáng",
-    "hét",
-)
-
-# Longest-first so "rối loạn tiêu hóa" is preferred over "rối loạn".
-_SYMPTOMS_BY_LENGTH: tuple[str, ...] = tuple(
-    sorted(SYMPTOM_LEXICON, key=len, reverse=True)
-)
-
-# Symptom terms that are too generic to be meaningful evidence on their own.
-# They are never chosen as a replacement target.
-GENERIC_SYMPTOMS: frozenset[str] = frozenset(
-    {"đỏ", "ngứa", "sưng", "nôn", "sốt", "hét"}
 )
 
 
@@ -106,125 +53,76 @@ def filter_no_han(records: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
     return kept
 
 
-def _term_pattern(term: str) -> re.Pattern[str]:
-    """Word-boundary matcher for a Vietnamese term."""
-    return re.compile(
-        r"(?<![a-zà-ỹ])" + re.escape(term) + r"(?![a-zà-ỹ])", re.IGNORECASE
-    )
+def split_records(
+    records: list[dict[str, Any]], split_at: int
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Split records into the normal export (head) and the tail to mask."""
+    return list(records[:split_at]), list(records[split_at:])
 
 
-def find_symptoms(text: str) -> list[str]:
-    """Return the distinct symptom terms occurring in ``text``.
-
-    Terms are matched longest-first and non-overlapping, so "nổi mề đay" is
-    reported instead of the substring "mề đay".
-    """
-    if not text:
-        return []
-    lowered = text.lower()
-    claimed: list[tuple[int, int]] = []
-    found: list[str] = []
-    for term in _SYMPTOMS_BY_LENGTH:
-        for match in _term_pattern(term).finditer(lowered):
-            span = match.span()
-            if any(span[0] < end and start < span[1] for start, end in claimed):
-                continue
-            claimed.append(span)
-            found.append(match.group(0))
-    return found
-
-
-def _primary_chunk_text(record: dict[str, Any]) -> str:
-    """Text of the record's most relevant chunk (highest relevance score)."""
+def relevant_chunk_texts(record: dict[str, Any]) -> list[str]:
+    """Texts of the record's relevant chunks (RELEVANCE_SCORE == 3)."""
     chunks = record.get("RELEVANT_CHUNKS") or []
-    if not chunks:
-        return ""
-    best = max(chunks, key=lambda c: c.get("RELEVANCE_SCORE", 0))
-    return best.get("TEXT", "") or ""
+    return [
+        c.get("TEXT", "") or ""
+        for c in chunks
+        if c.get("RELEVANCE_SCORE", 0) >= 3
+    ]
 
 
-def mask_symptoms(
+def _normalize(term: str) -> str:
+    """Case/whitespace-normalized form used for comparisons."""
+    return re.sub(r"\s+", " ", (term or "").strip().lower())
+
+
+def apply_replacements(
     record: dict[str, Any],
-    rng: random.Random,
+    replacements: list[dict[str, str]],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    """Replace the query's symptoms with symptoms present in its top chunk.
+    """Apply validated symptom replacements to a record's query.
 
-    Returns ``(updated_record, report)`` where ``report`` holds the terms
-    that were replaced and the terms they were replaced with. The record is
-    copied, never mutated in place.
+    A pair is applied only when the ``original`` term really occurs in the
+    query and the ``replacement`` really occurs in one of the record's
+    relevant chunks. Longer originals are applied first so that a multi-word
+    symptom is not partially rewritten by a shorter one.
     """
     query = record.get("QUERY", "") or ""
-    chunk_text = _primary_chunk_text(record)
-    if not query or not chunk_text:
-        return record, {"replaced": [], "with": []}
+    chunk_texts = relevant_chunk_texts(record)
+    if not query or not chunk_texts or not replacements:
+        return record, {"applied": [], "skipped": []}
 
-    query_symptoms = find_symptoms(query)
-    if not query_symptoms:
-        return record, {"replaced": [], "with": []}
+    chunk_blob = " ".join(chunk_texts).lower()
 
-    chunk_symptoms = {s.lower() for s in find_symptoms(chunk_text)}
-    if not chunk_symptoms:
-        return record, {"replaced": [], "with": []}
+    pairs: list[tuple[str, str]] = []
+    skipped: list[str] = []
+    for pair in replacements:
+        original = (pair.get("original") or "").strip()
+        replacement = (pair.get("replacement") or "").strip()
+        if not original or not replacement:
+            continue
+        if _normalize(original) not in _normalize(query):
+            skipped.append(original)
+            continue
+        if _normalize(replacement) not in _normalize(chunk_blob):
+            skipped.append(original)
+            continue
+        pairs.append((original, replacement))
 
-    # Candidates: symptoms evidenced by the chunk and not already in the
-    # query, preferring specific terms over generic ones.
-    query_lower = query.lower()
-    candidates = [
-        s
-        for s in chunk_symptoms
-        if s not in query_lower and s not in GENERIC_SYMPTOMS
-    ]
-    if not candidates:
-        candidates = [s for s in chunk_symptoms if s not in query_lower]
-    if not candidates:
-        return record, {"replaced": [], "with": []}
+    if not pairs:
+        return record, {"applied": [], "skipped": skipped}
 
-    rng.shuffle(candidates)
+    pairs.sort(key=lambda p: len(p[0]), reverse=True)
+    new_query = query
+    applied: list[str] = []
+    for original, replacement in pairs:
+        pattern = re.compile(
+            r"(?<![a-zà-ỹ])" + re.escape(original) + r"(?![a-zà-ỹ])",
+            re.IGNORECASE,
+        )
+        new_query, count = pattern.subn(replacement, new_query, count=1)
+        if count:
+            applied.append(original)
 
     updated = dict(record)
-    new_query = query
-    replaced: list[str] = []
-    used: list[str] = []
-    for term in query_symptoms:
-        if not candidates:
-            break
-        target = candidates.pop()
-        pattern = _term_pattern(term)
-        if not pattern.search(new_query):
-            continue
-        new_query = pattern.sub(target, new_query, count=1)
-        replaced.append(term)
-        used.append(target)
-
     updated["QUERY"] = new_query
-    return updated, {"replaced": replaced, "with": used}
-
-
-def split_and_mask(
-    records: list[dict[str, Any]],
-    *,
-    split_at: int,
-    rng: random.Random,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
-    """Split records and mask symptoms in the tail.
-
-    The first ``split_at`` records are returned untouched; the remainder get
-    their symptoms replaced with chunk-grounded ones. Returns
-    ``(head, tail, stats)``.
-    """
-    head = list(records[:split_at])
-    tail_records = list(records[split_at:])
-    tail: list[dict[str, Any]] = []
-    replaced_total = 0
-    for record in tail_records:
-        updated, report = mask_symptoms(record, rng)
-        if report["replaced"]:
-            replaced_total += len(report["replaced"])
-        tail.append(updated)
-    stats = {
-        "split_at": split_at,
-        "head": len(head),
-        "tail": len(tail),
-        "symptoms_replaced": replaced_total,
-    }
-    return head, tail, stats
+    return updated, {"applied": applied, "skipped": skipped}

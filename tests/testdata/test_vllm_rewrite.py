@@ -6,6 +6,8 @@ the marked integration test, which is skipped by default.
 """
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from vacxis_capstone_fa26.testdata.generator import (
@@ -256,3 +258,93 @@ def test_vllm_path_smoke(monkeypatch):
     rw = QwenRewriter(client, vaccine_names=["Vax A"])
     out = rw.rewrite([{"id": 1, "query": "phụ nữ mang thai có tiêm được không"}])
     assert out[0]["vaccine"]
+
+
+class _MaskFakeLLM:
+    """Fake LLM returning a fixed symptom-replacement payload."""
+
+    def __init__(self, payload: str) -> None:
+        self.payload = payload
+        self.calls: list[list[str]] = []
+        self._tokenizer = _FakeTokenizer()
+
+    def generate(self, prompts, sampling):
+        self.calls.append(prompts)
+        return [_FakeCompletion(self.payload) for _ in prompts]
+
+    def get_tokenizer(self):
+        return self._tokenizer
+
+
+def _mask_record(query: str, chunk_text: str, source_id: int = 1) -> dict:
+    return {
+        "QUERY_ID": "VAX_Q_0001",
+        "SOURCE_QUERY_ID": source_id,
+        "QUERY": query,
+        "RELEVANT_CHUNKS": [
+            {"CHUNK_ID": "c1", "TEXT": chunk_text, "RELEVANCE_SCORE": 3}
+        ],
+    }
+
+
+def test_symptom_masker_uses_llm_and_validates(tmp_path, monkeypatch):
+    """The model proposes pairs; only pairs grounded in the chunk are applied."""
+    import vacxis_capstone_fa26.testdata.vllm_rewrite as vr
+    from vacxis_capstone_fa26.testdata.postprocess import apply_replacements
+
+    monkeypatch.setattr(vr, "SamplingParams", lambda **kw: kw)
+    payload = json.dumps(
+        {
+            "replacements": [
+                {"original": "đau đầu", "replacement": "tiêu chảy"},
+                {"original": "hắt hơi", "replacement": "sốt"},
+            ]
+        }
+    )
+    llm = _MaskFakeLLM(payload)
+    client = VLLMClient(llm=llm, model="m")
+    cp = VLLMCheckpoint(tmp_path / "ckpt.json", model="m", seed=1)
+    masker = vr.QwenSymptomMasker(client, checkpoint=cp, batch_size=8)
+
+    rec = _mask_record(
+        "Sau khi tiêm tôi bị đau đầu dữ dội?", "Triệu chứng: sốt, tiêu chảy."
+    )
+    pairs = masker.mask([rec])
+    assert len(llm.calls) == 1
+    assert pairs[0][0]["original"] == "đau đầu"
+
+    updated, report = apply_replacements(rec, pairs[0])
+    assert report["applied"] == ["đau đầu"]
+    assert "tiêu chảy" in updated["QUERY"]
+    assert "hắt hơi" not in updated["QUERY"]
+
+    assert cp.get_mask(1) == pairs[0]
+
+
+def test_symptom_masker_resumes_from_checkpoint(tmp_path, monkeypatch):
+    import vacxis_capstone_fa26.testdata.vllm_rewrite as vr
+
+    monkeypatch.setattr(vr, "SamplingParams", lambda **kw: kw)
+    cp = VLLMCheckpoint(tmp_path / "ckpt.json", model="m", seed=1)
+    cp.put_mask(1, [{"original": "a", "replacement": "b"}])
+    cp.save()
+
+    cp2 = VLLMCheckpoint(tmp_path / "ckpt.json", model="m", seed=1)
+    cp2.load()
+    llm = _MaskFakeLLM("{}")
+    client = VLLMClient(llm=llm, model="m")
+    masker = vr.QwenSymptomMasker(client, checkpoint=cp2, batch_size=8)
+    pairs = masker.mask([_mask_record("q", "chunk", source_id=1)])
+    assert pairs[0] == [{"original": "a", "replacement": "b"}]
+    assert llm.calls == []
+
+
+def test_symptom_masker_tolerates_bad_payload(tmp_path, monkeypatch):
+    import vacxis_capstone_fa26.testdata.vllm_rewrite as vr
+
+    monkeypatch.setattr(vr, "SamplingParams", lambda **kw: kw)
+    llm = _MaskFakeLLM("not json at all")
+    client = VLLMClient(llm=llm, model="m")
+    masker = vr.QwenSymptomMasker(client, batch_size=8)
+    pairs = masker.mask([_mask_record("q", "chunk")])
+    assert pairs == [[]]

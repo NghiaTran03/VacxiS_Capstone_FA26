@@ -31,11 +31,12 @@ from .generator import (
     generate_and_validate_from_source,
 )
 from .validator import validate
-from .postprocess import filter_no_han, split_and_mask
+from .postprocess import apply_replacements, filter_no_han, split_records
 from .vllm_rewrite import (
     DEFAULT_VLLM_MODEL,
     QwenAnswerGenerator,
     QwenRewriter,
+    QwenSymptomMasker,
     VLLMCheckpoint,
     VLLMClient,
     VLLMError,
@@ -266,6 +267,7 @@ def _run_queries_source(
     rng: random.Random,
     vaccine_mapping: dict[str, str],
     seed: int,
+    checkpoint: VLLMCheckpoint | None,
 ) -> tuple[list[dict], object]:
     source_queries = _load_source_queries(args.source_queries)
     print(f"Loaded {len(source_queries)} source queries from {args.source_queries}")
@@ -275,13 +277,6 @@ def _run_queries_source(
 
     use_vllm = _resolve_use_vllm(args)
     vaccine_names = list(index_by_vaccine(chunks).keys())
-
-    checkpoint: VLLMCheckpoint | None = None
-    if use_vllm and args.checkpoint is not None:
-        checkpoint = VLLMCheckpoint(
-            args.checkpoint, model=args.vllm_model, seed=seed
-        )
-        checkpoint.load()
 
     if use_vllm:
         client = VLLMClient(
@@ -330,6 +325,44 @@ def _run_queries_source(
     return queries, rpt
 
 
+def _build_masker(
+    args: argparse.Namespace,
+    chunks,
+    rng: random.Random,
+    checkpoint: VLLMCheckpoint | None,
+    seed: int,
+):
+    """Build the symptom masker for the masked-tail export.
+
+    Uses the vLLM model when available so the model picks the symptoms to
+    replace (it sees the query and the score-3 chunks). Falls back to the
+    offline rule-based path, which cannot replace symptoms -- there the
+    records are exported unchanged.
+    """
+    if _resolve_use_vllm(args):
+        client = VLLMClient(
+            model=args.vllm_model,
+            gpu_memory_utilization=args.vllm_gpu_memory,
+            seed=seed,
+        )
+        print(f"Masking symptoms with Qwen via vLLM: {args.vllm_model}")
+        return QwenSymptomMasker(
+            client,
+            checkpoint=checkpoint,
+            batch_size=args.answers_batch_size,
+        )
+
+    print("vLLM unavailable: the masked export will keep its queries unchanged.")
+    return _NoopMasker()
+
+
+class _NoopMasker:
+    """Offline masker that proposes no replacements."""
+
+    def mask(self, records: list[dict]) -> list[list[dict[str, str]]]:
+        return [[] for _ in records]
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
 
@@ -362,10 +395,23 @@ def main(argv: list[str] | None = None) -> int:
     rng = random.Random(seed)
     print(f"Using seed: {seed}")
 
+    # One checkpoint store shared by all three LLM stages (rewrites,
+    # answers, symptom masks) so a single file resumes the whole run.
+    checkpoint: VLLMCheckpoint | None = None
+    if args.checkpoint is not None and _resolve_use_vllm(args):
+        checkpoint = VLLMCheckpoint(
+            args.checkpoint, model=args.vllm_model, seed=seed
+        )
+        try:
+            checkpoint.load()
+        except VLLMError as exc:
+            print(f"[ERROR] {exc}", file=sys.stderr)
+            return 1
+
     if args.source == "queries":
         try:
             queries, rpt = _run_queries_source(
-                args, chunks, rng, vaccine_mapping, seed
+                args, chunks, rng, vaccine_mapping, seed, checkpoint
             )
         except VLLMError as exc:
             print(f"[ERROR] {exc}", file=sys.stderr)
@@ -416,9 +462,17 @@ def main(argv: list[str] | None = None) -> int:
     args.out.parent.mkdir(parents=True, exist_ok=True)
 
     if args.mask_symptoms:
-        head, tail, stats = split_and_mask(
-            queries, split_at=args.split_at, rng=rng
-        )
+        head, tail = split_records(queries, args.split_at)
+        masker = _build_masker(args, chunks, rng, checkpoint, seed)
+        pairs = masker.mask(tail)
+
+        masked_tail: list[dict] = []
+        applied_total = 0
+        for record, record_pairs in zip(tail, pairs):
+            updated, report = apply_replacements(record, record_pairs)
+            applied_total += len(report["applied"])
+            masked_tail.append(updated)
+
         with open(args.out, "w", encoding="utf-8") as f:
             json.dump(head, f, ensure_ascii=False, indent=2)
         print(f"Wrote {len(head)} unmasked records to {args.out}")
@@ -428,10 +482,10 @@ def main(argv: list[str] | None = None) -> int:
             out_masked = args.out.with_name(args.out.stem + "_masked.json")
         out_masked.parent.mkdir(parents=True, exist_ok=True)
         with open(out_masked, "w", encoding="utf-8") as f:
-            json.dump(tail, f, ensure_ascii=False, indent=2)
+            json.dump(masked_tail, f, ensure_ascii=False, indent=2)
         print(
-            f"Wrote {len(tail)} symptom-masked records to {out_masked} "
-            f"({stats['symptoms_replaced']} symptoms replaced)"
+            f"Wrote {len(masked_tail)} symptom-masked records to {out_masked} "
+            f"({applied_total} symptoms replaced)"
         )
         return 0
 

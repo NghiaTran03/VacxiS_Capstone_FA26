@@ -89,6 +89,7 @@ class VLLMCheckpoint:
         }
         self.rewrites: dict[str, dict[str, Any]] = {}
         self.answers: dict[str, dict[str, Any]] = {}
+        self.masks: dict[str, list[dict[str, str]]] = {}
 
     @staticmethod
     def _key(source_id: Any) -> str:
@@ -113,9 +114,12 @@ class VLLMCheckpoint:
         self.answers = {
             self._key(k): v for k, v in (data.get("answers") or {}).items()
         }
+        self.masks = {
+            self._key(k): v for k, v in (data.get("masks") or {}).items()
+        }
         print(
             f"  -> checkpoint resumed: {len(self.rewrites)} rewrites, "
-            f"{len(self.answers)} answers cached"
+            f"{len(self.answers)} answers, {len(self.masks)} masks cached"
         )
 
     def save(self) -> None:
@@ -125,6 +129,7 @@ class VLLMCheckpoint:
             "meta": self.meta,
             "rewrites": self.rewrites,
             "answers": self.answers,
+            "masks": self.masks,
         }
         tmp = self.path.with_name(self.path.name + ".tmp")
         tmp.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
@@ -147,6 +152,12 @@ class VLLMCheckpoint:
             "reference_answer": reference_answer,
             "claim_evidence_map": claim_map,
         }
+
+    def get_mask(self, source_id: Any) -> list[dict[str, str]] | None:
+        return self.masks.get(self._key(source_id))
+
+    def put_mask(self, source_id: Any, pairs: list[dict[str, str]]) -> None:
+        self.masks[self._key(source_id)] = pairs
 
 
 class Rewriter(Protocol):
@@ -498,3 +509,114 @@ class QwenAnswerGenerator:
                 {"role": "user", "content": user},
             ]
         )
+
+
+_MASK_SYSTEM = """Bạn là người hiệu chỉnh câu hỏi y tế bằng tiếng Việt. Với một
+câu hỏi và các đoạn CHỨNG CỨ đi kèm, tìm các triệu chứng được nêu trong
+câu hỏi mà KHÔNG xuất hiện trong chứng cứ. Thay mỗi triệu chứng đó bằng một
+triệu chứng có mặt trong chứng cứ sao cho câu hỏi vẫn tự nhiên. Chỉ trả JSON,
+không dùng Markdown."""
+
+_MASK_USER_TMPL = """CÂU HỎI: {query}
+
+CÁC ĐOẠN CHỨNG CỨ (chỉ các chunk có điểm liên quan cao):
+{chunks}
+
+Trả JSON: {{"replacements": [{{"original": "triệu chứng trong câu hỏi",
+"replacement": "triệu chứng trong chứng cứ"}}, ...]}}. Nếu không có gì
+cần thay, trả {{"replacements": []}}."""
+
+
+class QwenSymptomMasker:
+    """LLM-backed symptom replacement for masked dataset records.
+
+    The model chooses which symptoms to replace (it sees the query and the
+    relevant chunks); the caller validates each pair against the record via
+    :func:`postprocess.apply_replacements`, so an invented replacement is
+    dropped rather than shipped. Output is cached in the checkpoint like
+    the other two LLM stages.
+    """
+
+    def __init__(
+        self,
+        client: VLLMClient,
+        *,
+        checkpoint: VLLMCheckpoint | None = None,
+        batch_size: int = 64,
+    ) -> None:
+        self.client = client
+        self.checkpoint = checkpoint
+        self.batch_size = max(1, batch_size)
+
+    def mask(self, records: list[dict[str, Any]]) -> list[list[dict[str, str]]]:
+        """Return one list of ``{original, replacement}`` pairs per record."""
+        results: list[list[dict[str, str]] | None] = [None] * len(records)
+        pending: list[tuple[int, dict[str, Any]]] = []
+        for i, record in enumerate(records):
+            if self.checkpoint is not None:
+                cached = self.checkpoint.get_mask(record.get("SOURCE_QUERY_ID"))
+                if cached is not None:
+                    results[i] = cached
+                    continue
+            pending.append((i, record))
+
+        for start in range(0, len(pending), self.batch_size):
+            batch = pending[start : start + self.batch_size]
+            pairs = self._generate_batch(batch)
+            for (idx, record), result in zip(batch, pairs):
+                results[idx] = result
+                if self.checkpoint is not None:
+                    self.checkpoint.put_mask(
+                        record.get("SOURCE_QUERY_ID"), result
+                    )
+            if self.checkpoint is not None:
+                self.checkpoint.save()
+
+        return [p if p is not None else [] for p in results]
+
+    def _generate_batch(
+        self, batch: list[tuple[int, dict[str, Any]]]
+    ) -> list[list[dict[str, str]]]:
+        from .postprocess import relevant_chunk_texts
+
+        self.client.ensure_loaded()
+        prompts: list[str] = []
+        for _, record in batch:
+            chunks_context = "\n\n---\n\n".join(
+                t for t in relevant_chunk_texts(record) if t
+            )
+            user = _MASK_USER_TMPL.format(
+                query=record.get("QUERY", ""),
+                chunks=chunks_context or "(không có chứng cứ)",
+            )
+            prompts.append(
+                self.client.render(
+                    [
+                        {"role": "system", "content": _MASK_SYSTEM},
+                        {"role": "user", "content": user},
+                    ]
+                )
+            )
+
+        sampling = self.client.sample(max_tokens=512)
+        outputs = self.client.llm.generate(prompts, sampling)
+
+        pairs: list[list[dict[str, str]]] = []
+        for out in outputs:
+            text = out.outputs[0].text if out and out.outputs else ""
+            data = _extract_json(text) or {}
+            raw_pairs = data.get("replacements")
+            cleaned: list[dict[str, str]] = []
+            if isinstance(raw_pairs, list):
+                for item in raw_pairs:
+                    if isinstance(item, dict):
+                        cleaned.append(
+                            {
+                                "original": str(item.get("original", "")).strip(),
+                                "replacement": str(
+                                    item.get("replacement", "")
+                                ).strip(),
+                            }
+                        )
+            pairs.append(cleaned)
+        return pairs
