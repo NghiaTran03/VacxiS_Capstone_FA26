@@ -22,7 +22,8 @@ tasks_ocr/
 #local
 pr-review/
 table.md
-scripts/
+scripts/*
+!scripts/lightrag_ingestion.py
 .bin/
 bugs-review/
 

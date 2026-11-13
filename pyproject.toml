@@ -9,9 +9,18 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "flagembedding>=1.4.2",
+    "json-repair>=0.64.9",
+    "nano-vectordb>=0.0.4.3",
+    "neo4j>=6.4.1",
+    "networkx>=3.7",
     "openai>=2.54.0",
+    "pipmaster>=1.2.2",
     "pyarrow>=26.0.0",
+    "pypinyin>=0.55.0",
+    "python-dotenv>=1.2.4",
     "qdrant-client>=1.19.1",
+    "tenacity>=9.2.1",
+    "tiktoken>=0.14.0",
 ]
 
 [project.scripts]
