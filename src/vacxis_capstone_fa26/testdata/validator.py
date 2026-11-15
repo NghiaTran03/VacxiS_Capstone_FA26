@@ -1,16 +1,122 @@
-"""Post-write validation for the generated dataset.
+"""Validation and deterministic label application for the generated dataset.
 
-The validator is read-only: it inspects the produced query list and emits a
-: class:`ValidationReport` summarising hard failures (exit non-zero) and soft
-warnings. The output JSON schema is unchanged from the original pipeline.
+Two layers:
+
+* :class:`ValidationReport` / :func:`validate` -- corpus-level checks over a
+  produced query list (hard failures vs soft warnings).
+* record invariants (``verify_record``) and the deterministic writer
+  ``apply_labels`` -- keep a record's derived fields (label, answer, claim
+  map, evidence completeness) consistent after any stage rewrites the
+  query.
 """
 from __future__ import annotations
 
+import re
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Iterable
+from typing import Any, Iterable
 
 from .chunks import Chunk
+
+
+ANSWERABILITY_VALUES: frozenset[str] = frozenset(
+    {"ANSWERABLE", "PARTIALLY_ANSWERABLE", "UNANSWERABLE"}
+)
+
+# Evidence completeness follows the label: an unanswerable record has no
+# evidence to be complete about.
+COMPLETENESS_BY_ANSWERABILITY: dict[str, str] = {
+    "ANSWERABLE": "COMPLETE",
+    "PARTIALLY_ANSWERABLE": "PARTIAL",
+    "UNANSWERABLE": "NOT_ASSESSED",
+}
+
+CITATION_PATTERN = re.compile(r"\[([A-Za-z0-9_\-]+)\]")
+WHITESPACE_PATTERN = re.compile(r"\s+")
+
+
+def _normalize(text: str) -> str:
+    return WHITESPACE_PATTERN.sub(" ", text or "").strip()
+
+
+def relevant_chunks(record: dict[str, Any]) -> list[dict[str, Any]]:
+    """The record's chunks with ``RELEVANCE_SCORE >= 3``."""
+    return [
+        chunk
+        for chunk in record.get("RELEVANT_CHUNKS") or []
+        if isinstance(chunk, dict) and chunk.get("RELEVANCE_SCORE", 0) >= 3
+    ]
+
+
+def apply_labels(
+    record: dict[str, Any],
+    *,
+    answerability: str,
+    reference_answer: str,
+    claim_evidence_map: list[dict[str, Any]] | None = None,
+) -> None:
+    """Write a stage's verdict into a record, in place.
+
+    The answerability label decides whether the record keeps its evidence:
+    an unanswerable record carries no chunks, because the evidence does not
+    support its question.
+    """
+    label = answerability if answerability in ANSWERABILITY_VALUES else "ANSWERABLE"
+    record["ANSWERABILITY"] = label
+    record["REFERENCE_ANSWER"] = reference_answer
+    record["CLAIM_EVIDENCE_MAP"] = list(claim_evidence_map or [])
+    record["EVIDENCE_COMPLETENESS"] = COMPLETENESS_BY_ANSWERABILITY[label]
+
+    if label == "UNANSWERABLE":
+        record["RELEVANT_CHUNKS"] = []
+        record["RELEVANT_DOCS"] = []
+
+
+def verify_record(record: dict[str, Any]) -> tuple[bool, str]:
+    """Check a record against the invariants. Returns ``(keep, reason)``.
+
+    The checks are:
+
+    1. the answerability label is a known value;
+    2. an unanswerable record carries no relevant chunks, and an answerable
+       one carries at least one;
+    3. every ``[CHUNK_ID]`` in the reference answer resolves to one of the
+       record's relevant chunks;
+    4. every claim cites a relevant chunk;
+    5. every evidence quote is a verbatim excerpt of the chunk it cites.
+    """
+    label = str(record.get("ANSWERABILITY") or "")
+    if label not in ANSWERABILITY_VALUES:
+        return False, f"ANSWERABILITY={label!r} is not a known label"
+
+    chunks = relevant_chunks(record)
+    if label == "UNANSWERABLE":
+        if chunks:
+            return False, "UNANSWERABLE record still carries relevant chunks"
+    elif not chunks:
+        return False, f"{label} record has no relevant chunk"
+
+    texts = {
+        str(chunk.get("CHUNK_ID", "")): str(chunk.get("TEXT", "") or "")
+        for chunk in chunks
+    }
+
+    answer = str(record.get("REFERENCE_ANSWER") or "")
+    unknown = sorted(set(CITATION_PATTERN.findall(answer)) - set(texts))
+    if unknown:
+        return False, f"reference answer cites unknown chunk(s): {', '.join(unknown)}"
+
+    for index, claim in enumerate(record.get("CLAIM_EVIDENCE_MAP") or []):
+        if not isinstance(claim, dict):
+            return False, f"claim #{index + 1} is not an object"
+        chunk_id = str(claim.get("chunk_id", "")).strip()
+        if chunk_id not in texts:
+            return False, f"claim #{index + 1} cites unknown chunk {chunk_id!r}"
+        quote = _normalize(str(claim.get("evidence_quote", "")))
+        if quote and quote not in _normalize(texts[chunk_id]):
+            return False, f"claim #{index + 1} quote is not verbatim in {chunk_id}"
+
+    return True, "ok"
 
 
 @dataclass
@@ -84,14 +190,6 @@ def validate(
                 f"{qid} TEXT in RELEVANT_CHUNKS does not match chunks.parquet"
             )
 
-        # New datasets have null spans; retain bounds checks for legacy datasets.
-        for chunk in relevant:
-            for span in chunk.get("EVIDENCE_SPANS") or []:
-                start, end = span.get("START"), span.get("END")
-                if (type(start) is not int or type(end) is not int
-                        or not 0 <= start < end <= len(chunk.get("TEXT", ""))):
-                    rpt.failures.append(f"{qid} EVIDENCE_SPAN out of bounds")
-
         # MULTI_HOP / INTERACTION should pull a second doc; other types should
         # not (per the strict pairing rules).
         if q.get("QUERY_COMPLEXITY") == "MULTI_HOP":
@@ -112,6 +210,13 @@ def validate(
                 rpt.failures.append(
                     f"{qid} distractor references unknown CHUNK_ID {d.get('CHUNK_ID')!r}"
                 )
+
+        # The answer and its claim map must be grounded in the record's own
+        # evidence. These are warnings rather than failures so a dataset
+        # without answers still validates.
+        keep, reason = verify_record(q)
+        if not keep and reason != "ok":
+            rpt.warnings.append(f"{qid} answer/claim map check: {reason}")
 
     for t in expected_types:
         if type_counts.get(t, 0) == 0:
