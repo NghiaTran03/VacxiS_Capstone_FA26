@@ -21,7 +21,23 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 from typing import Any, Callable, Literal
+
+try:
+    from tqdm import tqdm
+except ImportError:  # pragma: no cover - optional CLI nicety
+    class _NoProgress:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            pass
+
+        def update(self, _count: int) -> None:
+            pass
+
+        def close(self) -> None:
+            pass
+
+    tqdm = _NoProgress
 
 from .answer_generator import REFERENCE_ANSWER_FORMAT, UNANSWERABLE_FALLBACK_ANSWER
 from .checkpoint import VLLMCheckpoint
@@ -83,6 +99,7 @@ def run_batched_stage(
     default: Callable[[Any], Any],
     batch_size: int,
     max_tokens: int,
+    progress: bool = False,
 ) -> list[Any]:
     """Run one LLM stage over ``items``, returning one value per input item.
 
@@ -101,41 +118,58 @@ def run_batched_stage(
     """
     if not items:
         return []
-    client.ensure_loaded()
 
     results: list[Any] = [None] * len(items)
     pending: list[tuple[Any, int]] = []
+    cached_count = 0
     for i, item in enumerate(items):
         key = key_of(item)
         if checkpoint is not None and key is not None:
             cached = checkpoint.get(store, key)
             if cached is not None:
                 results[i] = cached
+                cached_count += 1
                 continue
         pending.append((item, i))
 
-    for start in range(0, len(pending), max(1, batch_size)):
-        batch = pending[start : start + max(1, batch_size)]
-        prompts = [build_prompt(item) for item, _ in batch]
-        sampling = client.sample(max_tokens=max_tokens)
-        outputs = client.llm.generate(prompts, sampling)
-        if len(outputs) != len(batch):
-            raise VLLMError(
-                f"LLM returned {len(outputs)} outputs for {len(batch)} prompts; "
-                "refusing to ship short records."
-            )
-        for (item, idx), out in zip(batch, outputs):
-            raw_text = out.outputs[0].text if out and out.outputs else ""
-            value = parse(raw_text, item)
-            if value is None:
-                value = default(item)
-            else:
-                key = key_of(item)
-                if checkpoint is not None and key is not None:
-                    checkpoint.put(store, key, value)
-            results[idx] = value
-        if checkpoint is not None:
-            checkpoint.save()
+    if not pending:
+        return results
+    client.ensure_loaded()
+
+    progress_bar = tqdm(
+        total=len(items),
+        initial=cached_count,
+        desc=store,
+        unit="record",
+        file=sys.stderr,
+        disable=not progress,
+    )
+    try:
+        for start in range(0, len(pending), max(1, batch_size)):
+            batch = pending[start : start + max(1, batch_size)]
+            prompts = [build_prompt(item) for item, _ in batch]
+            sampling = client.sample(max_tokens=max_tokens)
+            outputs = client.llm.generate(prompts, sampling)
+            if len(outputs) != len(batch):
+                raise VLLMError(
+                    f"LLM returned {len(outputs)} outputs for {len(batch)} prompts; "
+                    "refusing to ship short records."
+                )
+            for (item, idx), out in zip(batch, outputs):
+                raw_text = out.outputs[0].text if out and out.outputs else ""
+                value = parse(raw_text, item)
+                if value is None:
+                    value = default(item)
+                else:
+                    key = key_of(item)
+                    if checkpoint is not None and key is not None:
+                        checkpoint.put(store, key, value)
+                results[idx] = value
+            if checkpoint is not None:
+                checkpoint.save()
+            progress_bar.update(len(batch))
+    finally:
+        progress_bar.close()
 
     return results
 
@@ -244,6 +278,7 @@ class QwenRewriter:
             default=default,
             batch_size=self.rewrite_batch_size,
             max_tokens=512,
+            progress=True,
         )
 
 
@@ -348,6 +383,7 @@ class QwenSymptomMasker:
             default=default,
             batch_size=self.batch_size,
             max_tokens=512,
+            progress=True,
         )
 
         # No-chunk records are skipped; the LLM was never called, so there is
@@ -464,6 +500,7 @@ class QwenAnswerStage:
             default=self._fallback,
             batch_size=self.batch_size,
             max_tokens=1024,
+            progress=True,
         )
         for r, v in zip(needs_llm, values):
             apply_labels(

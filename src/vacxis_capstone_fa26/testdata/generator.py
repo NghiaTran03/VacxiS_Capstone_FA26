@@ -95,32 +95,30 @@ def build_queries(
         cat_chunks = [c for c in vaccine_chunks if c.category == cat]
         primary = rng.choice(cat_chunks) if cat_chunks else rng.choice(vaccine_chunks)
 
-        answerability = res.get("answerability", "ANSWERABLE")
+        # The rewriter's label is only a proposal. It must not decide whether
+        # evidence is attached: the unified answer stage is the authority and
+        # needs the candidate chunks in order to decide UNANSWERABLE itself.
         evidence_chunk = {
             "CHUNK_ID": primary.chunk_id,
             "TEXT": primary.text,
             "RELEVANCE_SCORE": 3,
         }
-
         distractors = sample_distractors(
             primary, chunks, by_category, rng, distractors_per_query,
         )
-
-        if answerability == "UNANSWERABLE":
-            relevant_payload: list[dict] = []
-            relevant_docs: list[str] = []
-            evidence_completeness = "NOT_ASSESSED"
-        else:
-            relevant_payload = [evidence_chunk] + [
-                {
-                    "CHUNK_ID": d.chunk.chunk_id,
-                    "TEXT": d.chunk.text,
-                    "RELEVANCE_SCORE": score_for(d.kind),
-                }
-                for d in distractors
-            ]
-            relevant_docs = [primary.doc_id]
-            evidence_completeness = "COMPLETE"
+        relevant_payload = [evidence_chunk] + [
+            {
+                "CHUNK_ID": d.chunk.chunk_id,
+                "TEXT": d.chunk.text,
+                "RELEVANCE_SCORE": score_for(d.kind),
+            }
+            for d in distractors
+        ]
+        relevant_docs = [primary.doc_id]
+        # This is provisional metadata; the answer stage derives the final
+        # label and refreshes EVIDENCE_COMPLETENESS after masking.
+        answerability = "ANSWERABLE"
+        evidence_completeness = "COMPLETE"
 
         queries.append(
             {

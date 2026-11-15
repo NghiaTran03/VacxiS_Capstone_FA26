@@ -152,7 +152,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument(
         "--filter-no-han",
         action="store_true",
-        help="Drop records containing any Han (CJK) character before writing.",
+        help=(
+            "Also filter Han-containing records before masking; a final Han "
+            "filter is always applied before writing."
+        ),
     )
     p.add_argument(
         "--split-at",
@@ -341,7 +344,9 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 return 2
 
-        # 5. han filter.
+        # 5. Optional early Han filter keeps bad rewrites out of the masking
+        # stage. A final filter below is unconditional because masking and
+        # answer generation can introduce Han after this point.
         if args.filter_no_han:
             before = len(queries)
             queries = filter_no_han(queries)
@@ -371,6 +376,20 @@ def main(argv: list[str] | None = None) -> int:
         masked_tail, tail_dropped = _drop_failed(masked_tail)
         _report_dropped("head", head_dropped)
         _report_dropped("masked", tail_dropped)
+
+        # Enforce the language invariant on the final serialized records.
+        # The filter is intentionally unconditional: generated answers or
+        # masked queries can contain Han even when the early opt-in filter was
+        # not requested, and those records are not valid for this dataset.
+        before_head = len(head)
+        before_masked = len(masked_tail)
+        head = filter_no_han(head)
+        masked_tail = filter_no_han(masked_tail)
+        print(
+            "  -> final Han filter: dropped "
+            f"{before_head - len(head)} head and "
+            f"{before_masked - len(masked_tail)} masked record(s)"
+        )
     except VLLMError as exc:
         print(f"[ERROR] {exc}", file=sys.stderr)
         return 1
