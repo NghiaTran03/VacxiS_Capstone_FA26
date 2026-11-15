@@ -6,7 +6,7 @@ from typing import Any
 
 from openai import OpenAI
 
-BASE_URL = "https://openrouter.ai/api/v1"
+BASE_URL = os.getenv("VACXIS_LLM_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
 
 
 class LLMError(RuntimeError):
