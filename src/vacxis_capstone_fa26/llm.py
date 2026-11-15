@@ -35,11 +35,23 @@ def validate_response(response: Any) -> Any:
     try:
         choice = response.choices[0]
         content = choice.message.content
+
+        print("=== LLM RESPONSE DEBUG ===")
+        print("Model:", response.model)
+        print("Finish reason:", choice.finish_reason)
+        print("Content type:", type(content).__name__)
+        print("Content length:", len(content) if isinstance(content, str) else None)
+        print("Usage:", response.usage)
+        print("Refusal:", getattr(choice.message, "refusal", None))
+        print("==========================")
+
         valid = (
             choice.finish_reason in (None, "stop")
-            and isinstance(content, str) and bool(content.strip())
+            and isinstance(content, str)
+            and bool(content.strip())
         )
-    except (AttributeError, IndexError, KeyError, TypeError):
+    except (AttributeError, IndexError, KeyError, TypeError) as exc:
+        print("Response validation exception:", repr(exc))
         valid = False
     if not valid:
         raise LLMError("OpenRouter returned an invalid or incomplete response.")
