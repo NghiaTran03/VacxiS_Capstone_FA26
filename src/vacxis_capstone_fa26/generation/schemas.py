@@ -24,7 +24,7 @@ class GenerationConfig:
         default_factory=lambda: os.getenv("VACXIS_GENERATION_MODEL", "").strip()
     )
     temperature: float = 0.0
-    max_tokens: int = 1024
+    max_tokens: int | None = None
     enforce_citations: bool = True
     include_metadata: bool = True
     timeout: float = 30.0

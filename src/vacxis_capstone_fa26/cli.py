@@ -58,8 +58,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             sub.add_argument("--report-json", type=Path, default=Path("evaluation_report.json"))
             sub.add_argument("--report-md", type=Path, default=Path("evaluation_report.md"))
         if name == "benchmark":
-            sub.add_argument("--max-tokens", type=int, default=GenerationConfig.max_tokens,
-                             help="Override the LLM output token limit (GenerationConfig.max_tokens)")
+            sub.add_argument("--max-tokens", type=int, default=None,
+                             help="Cap LLM output tokens; default: no cap")
     return parser.parse_args(argv)
 
 
