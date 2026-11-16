@@ -60,6 +60,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         if name == "benchmark":
             sub.add_argument("--max-tokens", type=int, default=None,
                              help="Cap LLM output tokens; default: no cap")
+            sub.add_argument("--timeout", type=float, default=GenerationConfig.timeout,
+                             help="Per-request LLM timeout in seconds (default: "
+                                  f"{GenerationConfig.timeout})")
     return parser.parse_args(argv)
 
 
@@ -70,6 +73,8 @@ def main(argv: list[str] | None = None) -> int:
         generation.model = args.model
     if getattr(args, "max_tokens", None) is not None:
         generation.max_tokens = args.max_tokens
+    if getattr(args, "timeout", None) is not None:
+        generation.timeout = args.timeout
     options = {"project_root": args.project_root, "retrieval": retrieval_config(args),
                "generation": generation}
     for flag, field in (("chunks", "chunks_path"), ("mapping", "mapping_path"),
