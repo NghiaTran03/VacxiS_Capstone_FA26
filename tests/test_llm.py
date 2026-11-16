@@ -57,8 +57,17 @@ def test_transport_and_generator_wire_contract(router):
     body = json.loads(request.content)
     assert body["model"] == "fixture/generation"
     assert body["messages"][1]["role"] == "user"
-    assert body["max_tokens"] == 1024
+    assert "max_tokens" not in body
     assert clients[0].is_closed
+
+
+def test_generator_max_tokens_override(router):
+    _, requests, _ = router
+    MedicalGenerator(GenerationConfig(max_tokens=2048)).generate(
+        "Question", [{"chunk_id": "c1", "text": "Evidence"}]
+    )
+    body = json.loads(requests[0].content)
+    assert body["max_tokens"] == 2048
 
 
 @pytest.mark.parametrize("field", ["OPENROUTER_API_KEY", "VACXIS_GENERATION_MODEL"])

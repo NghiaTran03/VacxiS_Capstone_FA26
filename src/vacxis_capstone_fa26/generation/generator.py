@@ -76,10 +76,13 @@ class MedicalGenerator:
         )
 
         model_used = self.config.model
+        kwargs: dict[str, Any] = {}
+        if self.config.max_tokens is not None:
+            kwargs["max_tokens"] = self.config.max_tokens
         response = completion(
             model=self.config.model, messages=messages,
-            temperature=self.config.temperature, max_tokens=self.config.max_tokens,
-            timeout=self.config.timeout,
+            temperature=self.config.temperature, timeout=self.config.timeout,
+            **kwargs,
         )
         answer_text = response.choices[0].message.content.strip()
         usage = {

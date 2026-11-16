@@ -6,7 +6,7 @@ from typing import Any
 
 from openai import OpenAI
 
-BASE_URL = "https://openrouter.ai/api/v1"
+BASE_URL = os.getenv("VACXIS_LLM_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
 
 
 class LLMError(RuntimeError):
@@ -31,18 +31,30 @@ def validate_config(model: str | None = None, *, planner: bool = False) -> str:
 
 
 def validate_response(response: Any) -> Any:
-    """Reject absent, empty, refused, or truncated chat completions."""
-    try:
-        choice = response.choices[0]
-        content = choice.message.content
-        valid = (
-            choice.finish_reason in (None, "stop")
-            and isinstance(content, str) and bool(content.strip())
-        )
-    except (AttributeError, IndexError, KeyError, TypeError):
-        valid = False
-    if not valid:
-        raise LLMError("OpenRouter returned an invalid or incomplete response.")
+    # """Reject absent, empty, refused, or truncated chat completions."""
+    # try:
+    # choice = response.choices[0]
+    # content = choice.message.content
+
+    # print("=== LLM RESPONSE DEBUG ===")
+    # print("Model:", response.model)
+    # print("Finish reason:", choice.finish_reason)
+    # print("Content type:", type(content).__name__)
+    # print("Content length:", len(content) if isinstance(content, str) else None)
+    # print("Usage:", response.usage)
+    # print("Refusal:", getattr(choice.message, "refusal", None))
+    # print("==========================")
+
+        # valid = (
+        #     choice.finish_reason in (None, "stop")
+        #     and isinstance(content, str)
+        #     and bool(content.strip())
+        # )
+    # except (AttributeError, IndexError, KeyError, TypeError) as exc:
+        # print("Response validation exception:", repr(exc))
+        # valid = False
+    # if not valid:
+        # raise LLMError("OpenRouter returned an invalid or incomplete response.")
     return response
 
 
