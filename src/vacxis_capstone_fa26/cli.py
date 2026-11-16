@@ -57,6 +57,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             sub.add_argument("--results", type=Path, default=Path("generation_results.json"))
             sub.add_argument("--report-json", type=Path, default=Path("evaluation_report.json"))
             sub.add_argument("--report-md", type=Path, default=Path("evaluation_report.md"))
+        if name == "benchmark":
+            sub.add_argument("--max-tokens", type=int, default=GenerationConfig.max_tokens,
+                             help="Override the LLM output token limit (GenerationConfig.max_tokens)")
     return parser.parse_args(argv)
 
 
@@ -65,6 +68,8 @@ def main(argv: list[str] | None = None) -> int:
     generation = GenerationConfig(dry_run=getattr(args, "dry_run", False))
     if getattr(args, "model", None) is not None:
         generation.model = args.model
+    if getattr(args, "max_tokens", None) is not None:
+        generation.max_tokens = args.max_tokens
     options = {"project_root": args.project_root, "retrieval": retrieval_config(args),
                "generation": generation}
     for flag, field in (("chunks", "chunks_path"), ("mapping", "mapping_path"),
