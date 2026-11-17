@@ -303,13 +303,13 @@ class VacxisRAGEvaluator:
             metrics=self.build_metrics(),
             _skip_reset=True,
             display_config=DisplayConfig(
-                show_indicator=False,
-                print_results=False,
-                inspect_after_run=False,
+                show_indicator=True,
+                print_results=True,
+                inspect_after_run=True,
             ),
             cache_config=CacheConfig(write_cache=write_cache, use_cache=use_cache),
             async_config=AsyncConfig(run_async=True, max_concurrent=max_concurrent),
-            error_config=ErrorConfig(ignore_errors=True, skip_on_missing_params=True),
+            error_config=ErrorConfig(ignore_errors=False, skip_on_missing_params=False),
         )
 
     # ------------------------------------------------------------------
