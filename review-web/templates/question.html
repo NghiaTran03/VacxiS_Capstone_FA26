@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% from "_profile.html" import permission, fields %}
 {% block title %}Duyệt {{ item.question_id }}{% endblock %}
 {% block content %}
 <div class="reading-width stack">
@@ -48,21 +47,7 @@
         </div>
       </section>
     </fieldset>
-    {% if ask_profile %}
-      <input type="hidden" name="permission_intent" value="{{ intent }}">
-      <section class="panel consent stack" id="permission" data-focus tabindex="-1" aria-labelledby="permission-title">
-        <h2 id="permission-title">Xin phép chia sẻ thông tin</h2>
-        {{ permission() }}
-        <div><button class="primary" type="submit" name="action" value="confirm_skip">Bỏ qua và xác nhận</button></div>
-        <details class="disclosure"{% if error %} open{% endif %}>
-          <summary>Đồng ý chia sẻ thông tin</summary>
-          <div class="stack section-body">
-            {{ fields(profile_values, professions) }}
-            <div><button type="submit" class="primary" name="action" value="confirm_share">Lưu thông tin và xác nhận</button></div>
-          </div>
-        </details>
-      </section>
-    {% elif item.status != 'verified' %}
+    {% if item.status != 'verified' %}
       <div class="actions">
         <button class="primary" type="submit" name="action" value="confirm">Xác nhận và sang câu tiếp</button>
         <button type="submit" name="action" value="draft">Lưu nháp</button>

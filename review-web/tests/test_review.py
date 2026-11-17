@@ -67,9 +67,20 @@ class ReviewWorkflow(unittest.TestCase):
 
     def join(self, token, expected=303):
         client = TestClient(self.app, follow_redirects=False)
-        response = client.post("/join", data={"token": token, "csrf": csrf(client.get("/join"))})
+        response = self.open_invite(client, token, action="enter")
+        if response.status_code == 200 and expected == 303:
+            response = self.complete_invite(client, response, "skip")
         self.assertEqual(response.status_code, expected)
         return client
+
+    def open_invite(self, client, token, action="open"):
+        return client.post("/join", data={"token": token, "action": action, "csrf": csrf(client.get("/join"))})
+
+    def complete_invite(self, client, page, action, **extra):
+        data = {"csrf": csrf(page), "token": field(page, "token"), "action": action, **extra}
+        if action in {"skip", "share"}:
+            data["permission_intent"] = field(page, "permission_intent")
+        return client.post("/join", data=data)
 
     def review(self, client, path, action, revision=0, **extra):
         data = {"answer": "Câu trả lời mẫu", "answerability": "UNANSWERABLE", "notes": "",
@@ -113,18 +124,23 @@ class ReviewWorkflow(unittest.TestCase):
         self.assertIn("Thử nghiệm nội bộ", self.join(legacy_token).get(FIRST).text)
 
     def test_live_permission_profile_and_withdrawal(self):
-        client = self.join(self.make_invite())
-        self.assertNotIn('name="full_name"', client.get(FIRST).text)
-        notice = self.review(client, FIRST, "confirm")
+        token = self.make_invite()
+        client = TestClient(self.app, follow_redirects=False)
+        notice = self.open_invite(client, token)
         self.assertEqual(notice.status_code, 200)
         self.assertIn("Nhóm đồ án xin phép", notice.text)
-        self.assertIn("Bỏ qua và xác nhận", notice.text)
-        self.assertIn("Câu trả lời mẫu", notice.text)
+        self.assertIn("Bỏ qua và bắt đầu duyệt", notice.text)
+        self.assertIn('name="full_name"', notice.text)
+        self.assertNotIn('/admin/login', notice.text)
+        self.assertEqual(client.get(FIRST).status_code, 401)
         self.assertEqual(self.admin.get("/admin/export/live").json(), [])
 
-        result = self.review(client, FIRST, "confirm_share", full_name="Nguyễn Văn A", profession="doctor",
-                             workplace="Đơn vị kiểm thử", permission_intent=field(notice, "permission_intent"))
+        result = self.complete_invite(client, notice, "share", full_name="Nguyễn Văn A", profession="doctor",
+                                      workplace="Đơn vị kiểm thử")
         self.assertEqual(result.status_code, 303)
+        self.assertEqual(result.headers["location"], FIRST)
+        self.assertNotIn('name="full_name"', client.get(FIRST).text)
+        self.assertEqual(self.review(client, FIRST, "confirm").status_code, 303)
         self.assertIn("Bác sĩ Nguyễn Văn A", client.get(FIRST).text)
         response = self.admin.get("/admin/export/live")
         self.assertNotIn("Nguyễn Văn A", response.text)
@@ -134,7 +150,6 @@ class ReviewWorkflow(unittest.TestCase):
         self.assertTrue(record["VERIFIED"])
         self.assertTrue(record["ANNOTATOR_IDS"][-1].startswith("R-"))
         self.assertEqual(record["RELEVANT_CHUNKS"], [])
-        self.assertNotIn("Xin phép chia sẻ thông tin", self.review(client, result.headers["location"], "confirm").text)
 
         privacy = client.get("/quyen-rieng-tu")
         self.assertIn("Đơn vị kiểm thử", privacy.text)
@@ -147,7 +162,12 @@ class ReviewWorkflow(unittest.TestCase):
         self.assertIn("Người duyệt R-", client.get(FIRST).text)
 
     def test_test_scope_verifies_without_profile_and_never_exports_live(self):
-        client = self.join(self.make_invite("test"))
+        token = self.make_invite("test")
+        client = TestClient(self.app, follow_redirects=False)
+        opened = self.open_invite(client, token)
+        self.assertNotIn('name="full_name"', opened.text)
+        self.assertNotIn('/admin/login', opened.text)
+        self.assertEqual(self.complete_invite(client, opened, "begin").status_code, 303)
         self.assertIn("Thử nghiệm nội bộ", client.get(FIRST).text)
         result = self.review(client, FIRST, "confirm", full_name="Dữ liệu giả", profession="doctor")
         self.assertEqual(result.status_code, 303)
@@ -166,9 +186,7 @@ class ReviewWorkflow(unittest.TestCase):
         self.assertEqual(client.post(FIRST, data={"action": "confirm"}).status_code, 403)
         self.assertEqual(self.review(client, FIRST, "draft").status_code, 303)
         self.assertEqual(self.review(client, FIRST, "draft").status_code, 409)
-        notice = self.review(client, FIRST, "confirm", revision=1)
-        self.assertEqual(self.review(client, FIRST, "confirm_skip", revision=1,
-                                     permission_intent=field(notice, "permission_intent")).status_code, 303)
+        self.assertEqual(self.review(client, FIRST, "confirm", revision=1).status_code, 303)
         history = self.admin.get("/admin/history/live/VAX_Q_0001")
         self.assertIn("Lịch sử duyệt", history.text)
         response = self.admin_post("/admin/reopen", {"scope": "live", "identifier": "VAX_Q_0001", "revision": 2})
@@ -185,9 +203,7 @@ class ReviewWorkflow(unittest.TestCase):
         chunk_id = "gardasil_9_001310178700_c_0009"
         review = {"answerability": "PARTIALLY_ANSWERABLE", "evidence_id": chunk_id}
         self.assertEqual(self.review(client, WITH_TABLE, "confirm", answerability="PARTIALLY_ANSWERABLE").status_code, 422)
-        notice = self.review(client, WITH_TABLE, "confirm", **review)
-        result = self.review(client, WITH_TABLE, "confirm_skip", **review,
-                             permission_intent=field(notice, "permission_intent"))
+        result = self.review(client, WITH_TABLE, "confirm", **review)
         self.assertEqual(result.status_code, 303)
         [record] = self.admin.get("/admin/export/live").json()
         self.assertEqual(record["REFERENCE_ANSWER"], f"Câu trả lời mẫu [{chunk_id}]")
@@ -206,15 +222,47 @@ class ReviewWorkflow(unittest.TestCase):
         self.assertEqual(colleague.get("/gioi-thieu").status_code, 403)
 
     def test_retaking_permission_in_another_tab_preserves_opt_out(self):
-        client = self.join(self.make_invite())
-        early = self.review(client, FIRST, "confirm")
-        other = self.review(client, "/review/VAX_Q_0002", "confirm")
-        result = self.review(client, FIRST, "confirm_skip", permission_intent=field(early, "permission_intent"))
+        token = self.make_invite()
+        client = TestClient(self.app, follow_redirects=False)
+        other = TestClient(self.app, follow_redirects=False)
+        early = self.open_invite(client, token)
+        late = self.open_invite(other, token)
+        result = self.complete_invite(client, early, "skip")
         self.assertEqual(result.status_code, 303)
-        stale = self.review(client, "/review/VAX_Q_0002", "confirm_share", full_name="Bản cũ",
-                            permission_intent=field(other, "permission_intent"))
-        self.assertEqual(stale.status_code, 409)
-        self.assertEqual(len(self.admin.get("/admin/export/live").json()), 1)
+        self.assertEqual(result.headers["location"], FIRST)
+        stale = self.complete_invite(other, late, "share", full_name="Bản cũ")
+        self.assertEqual(stale.status_code, 400)
+        self.assertEqual(self.admin.get("/admin/export/live").json(), [])
+        with connect(self.location) as db:
+            self.assertEqual(db.one("SELECT consent, full_name FROM reviewers"), {"consent": "declined", "full_name": None})
+
+    def test_opening_live_invitation_keeps_admin_session_until_continue(self):
+        token = self.make_invite()
+        welcome = self.admin.get("/join")
+        self.assertNotIn('/admin/login', welcome.text)
+        notice = self.open_invite(self.admin, token)
+        self.assertIn("chuyển phiên đăng nhập", notice.text)
+        self.assertNotIn('/admin/login', notice.text)
+        self.assertEqual(self.admin.get("/admin").status_code, 200)
+        self.assertEqual(self.complete_invite(self.admin, notice, "skip").status_code, 303)
+        self.assertEqual(self.admin.get("/admin").status_code, 403)
+
+    def test_legacy_live_session_gets_permission_before_its_next_review(self):
+        client = self.join(self.make_invite())
+        with connect(self.location, write=True) as db:
+            db.execute("UPDATE reviewers SET consent = NULL")
+        path = "/review/onboarding/start"
+        self.assertEqual(client.get(FIRST).headers["location"], path)
+        start = client.get(path)
+        self.assertIn('name="full_name"', start.text)
+        old_form = client.post(FIRST, data={"csrf": csrf(start), "action": "confirm", "revision": 0,
+                                            "answer": "Câu trả lời mẫu", "answerability": "UNANSWERABLE"})
+        self.assertEqual(old_form.headers["location"], path)
+        self.assertEqual(self.admin.get("/admin/export/live").json(), [])
+        submitted = client.post(path, data={"csrf": csrf(start), "action": "skip",
+                                           "permission_intent": field(start, "permission_intent")})
+        self.assertEqual(submitted.headers["location"], FIRST)
+        self.assertEqual(client.get(FIRST).status_code, 200)
 
     def test_invite_retry_does_not_reserve_again_and_release_revokes_link(self):
         operation = field(self.admin.get("/admin"), "operation")

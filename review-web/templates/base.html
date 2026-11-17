@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Duyệt câu trả lời{% endblock %} · VacxiS</title>
-  <script src="/assets/app.js"></script>
+  <script src="/assets/app.js?v=2"></script>
   <link rel="stylesheet" href="/assets/app.css">
 </head>
 <body>
@@ -24,7 +24,7 @@
   <footer class="site-footer">
     <div class="shell footer-row">
       <a href="/quyen-rieng-tu">Bảo vệ thông tin cá nhân</a>
-      {% if signed_in %}
+      {% if signed_in and not joining %}
         <div class="actions">
           {% if not joining %}<a href="/join">Dùng lời mời khác</a>{% endif %}
           <form action="/logout" method="post">

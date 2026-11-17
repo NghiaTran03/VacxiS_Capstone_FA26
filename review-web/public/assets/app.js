@@ -18,13 +18,13 @@
       label();
     });
 
-    const invitation = document.querySelector("[data-invite-entry]");
+    const invitation = document.querySelector("[data-invite-form]");
     const token = location.hash.slice(1);
     if (invitation && /^[A-Za-z0-9_-]{43}$/.test(token)) {
-      invitation.querySelector("input").value = token;
-      invitation.hidden = true;
-      document.querySelector("[data-invite-ready]").hidden = false;
+      invitation.elements.token.value = token;
+      invitation.elements.action.value = "open";
       history.replaceState(null, "", location.pathname + location.search);
+      invitation.requestSubmit();
     }
 
     const passwordToggle = document.querySelector("[data-password-toggle]");

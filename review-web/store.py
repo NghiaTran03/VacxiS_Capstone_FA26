@@ -200,6 +200,14 @@ def invite(db, scope, count, can_refer, referral_id, *, token=None):
     return issue_link(db, reviewer_id, referral_id, token=token)
 
 
+def invited_reviewer(db, token):
+    return db.one(
+        "SELECT r.* FROM invitations i JOIN reviewers r ON r.id = i.reviewer_id "
+        "WHERE i.token_hash = ? AND i.consumed_at IS NULL AND i.expires_at > ?",
+        (digest(token), timestamp()),
+    )
+
+
 def accept_invite(db, token):
     token_hash = digest(token)
     invitation = db.one("SELECT reviewer_id FROM invitations WHERE token_hash = ?", (token_hash,))
@@ -216,7 +224,7 @@ def accept_invite(db, token):
     if changed != 1:
         return None
     db.execute("UPDATE reviewers SET access_version = access_version + 1 WHERE id = ?", (reviewer_id,))
-    return db.one("SELECT id, access_version FROM reviewers WHERE id = ?", (reviewer_id,))
+    return db.one("SELECT * FROM reviewers WHERE id = ?", (reviewer_id,))
 
 
 def update_profile(db, person, decision, profile):

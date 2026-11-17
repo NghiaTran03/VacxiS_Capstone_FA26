@@ -20,7 +20,8 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from content import ANSWERABILITY, PROFESSIONS, STATUS, export_record, remove_citations, render_chunk, reviewer_label, score_three
 from store import (
-    BASE_DIR, SCOPES, ReviewConflict, ReviewError, accept_invite, connect, database_location, invite, issue_link,
+    BASE_DIR, SCOPES, ReviewConflict, ReviewError, accept_invite, connect, database_location, digest, invite,
+    invited_reviewer, issue_link,
     release_unstarted, reopen, reserve_operation, save_review, timestamp, update_profile,
 )
 
@@ -29,6 +30,7 @@ INVITE_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 INVITE_TOKEN = re.compile(r"[A-Za-z0-9_-]{43}")
 INVITE_CODE = re.compile(rf"[{INVITE_ALPHABET}]{{12}}")
 INVITE_ALIASES = str.maketrans({"O": "0", "I": "1", "L": "1"})
+REVIEW_START = "/review/onboarding/start"
 
 
 def token_for_code(code, key):
@@ -86,6 +88,10 @@ def profile_from(form):
     if len(profile["full_name"] or "") > 120 or len(profile["workplace"] or "") > 200:
         raise ReviewError("Họ tên hoặc nơi công tác dài hơn giới hạn của biểu mẫu.")
     return profile
+
+
+def needs_profile(person):
+    return person["scope"] == "live" and person["consent"] is None
 
 
 def reviewer(db, request, *, lock=False):
@@ -208,19 +214,62 @@ def create_app(location=None):
     def join_page(request: Request):
         return page(request, "welcome", joining=True)
 
+    def permission_intent(person, token):
+        context = digest(token) if token else person["access_version"]
+        return consent_signer.dumps([person["id"], person["profile_revision"], context])
+
+    def invitation_page(request, person, *, token=None, form=None, error=None, code=200):
+        ask_profile = needs_profile(person)
+        values = {field: form.get(field, "") for field in ("full_name", "profession", "workplace")} if form else {}
+        return page(request, "invitation", joining=True, person=person, token=token,
+                    ask_profile=ask_profile, profile_values=values,
+                    intent=permission_intent(person, token) if ask_profile else None, error=error, code=code)
+
+    def finish_profile(db, person, form, token=None):
+        action = form.get("action")
+        if (action not in {"share", "skip"}
+                or not equal(form.get("permission_intent"), permission_intent(person, token))):
+            raise ReviewConflict("Lựa chọn chia sẻ thông tin đã thay đổi. Hãy kiểm tra và thử lại.")
+        sharing = action == "share"
+        update_profile(db, person, "accepted" if sharing else "declined", profile_from(form) if sharing else {})
+
+    def failed_invitation(request):
+        return page(request, "welcome", joining=True, code=400,
+                    error="Hãy kiểm tra mã hoặc liên kết. Nếu lời mời đã dùng hoặc hết hạn, hãy xin nhóm đồ án cấp lại.")
+
     @app.post("/join")
     def join(request: Request, form: PostForm):
         token = invitation_token(form.get("token"), invitation_key)
-        person = None
-        if token:
+        action = form.get("action", "enter")
+        if not token or action not in {"open", "enter", "begin", "share", "skip"}:
+            return failed_invitation(request)
+        with connect(location) as db:
+            invited = invited_reviewer(db, token)
+        if not invited:
+            return failed_invitation(request)
+        if action == "open" or (action == "enter" and needs_profile(invited)):
+            return invitation_page(request, invited, token=token)
+        following = None
+        try:
             with connect(location, write=True) as db:
                 person = accept_invite(db, token)
-        if not person:
-            return page(request, "welcome", joining=True, code=400,
-                        error="Hãy kiểm tra mã hoặc liên kết. Nếu lời mời đã dùng hoặc hết hạn, hãy xin nhóm đồ án cấp lại.")
+                if not person:
+                    return failed_invitation(request)
+                if needs_profile(person):
+                    finish_profile(db, person, form, token)
+                    following = next_item(db, person)
+                elif action in {"share", "skip"}:
+                    raise ReviewConflict("Lựa chọn chia sẻ thông tin đã thay đổi. Hãy kiểm tra và thử lại.")
+        except ReviewError as error:
+            with connect(location) as db:
+                invited = invited_reviewer(db, token)
+            if not invited:
+                return failed_invitation(request)
+            return invitation_page(request, invited, token=token, form=form, error=str(error),
+                                   code=409 if isinstance(error, ReviewConflict) else 422)
         request.session.clear()
         request.session.update(reviewer_id=person["id"], access_version=person["access_version"])
-        return redirect("/review")
+        return redirect(f"/review/{following['question_id']}" if following else "/review")
 
     @app.get("/admin/login")
     def admin_login_page(request: Request):
@@ -249,6 +298,8 @@ def create_app(location=None):
     def review_list(request: Request, status: str = "", q: str = ""):
         with connect(location) as db:
             person = require_reviewer(db, request)
+            if needs_profile(person):
+                return redirect(REVIEW_START)
             rows = db.all(
                 "SELECT r.question_id, r.status, q.query FROM review_items r JOIN questions q ON q.id = r.question_id "
                 "WHERE r.scope = ? AND r.reviewer_id = ? ORDER BY q.position",
@@ -262,11 +313,27 @@ def create_app(location=None):
                     done=sum(row["status"] == "verified" for row in rows), next_row=next_row,
                     status=status, search=q[:120], message=request.session.pop("message", ""))
 
-    def permission_intent(person, item):
-        return consent_signer.dumps([person["id"], person["access_version"], person["profile_revision"],
-                                     item["question_id"], item["revision"]])
+    @app.get(REVIEW_START)
+    def start_review(request: Request):
+        with connect(location) as db:
+            person = require_reviewer(db, request)
+        return invitation_page(request, person) if needs_profile(person) else redirect("/review")
 
-    def question_page(request, person, item, *, form=None, ask_profile=False, error=None, code=200):
+    @app.post(REVIEW_START)
+    def start_review_submit(request: Request, form: PostForm):
+        try:
+            with connect(location, write=True) as db:
+                person = require_reviewer(db, request, lock=True)
+                if not needs_profile(person):
+                    return redirect("/review")
+                finish_profile(db, person, form)
+                following = next_item(db, person)
+        except ReviewError as error:
+            return invitation_page(request, person, form=form, error=str(error),
+                                   code=409 if isinstance(error, ReviewConflict) else 422)
+        return redirect(f"/review/{following['question_id']}" if following else "/review")
+
+    def question_page(request, person, item, *, form=None, error=None, code=200):
         original = json.loads(item["original"])
         sources = score_three(original)
         answer = item["answer"] if item["answer"] is not None else remove_citations(original["REFERENCE_ANSWER"])
@@ -276,12 +343,9 @@ def create_app(location=None):
         if form is not None:
             values = {field: str(form.get(field, "")) for field in ("answer", "answerability", "notes")}
             values["evidence_ids"] = form.getlist("evidence_id")
-        profile_values = {field: form.get(field, "") for field in ("full_name", "profession", "workplace")} if form else {}
         return page(request, "question", person=person, item=item, values=values,
                     original_answer=remove_citations(original["REFERENCE_ANSWER"]),
-                    sources=[render_chunk(chunk) for chunk in sources], ask_profile=ask_profile,
-                    intent=permission_intent(person, item) if ask_profile else None,
-                    profile_values=profile_values, error=error, code=code,
+                    sources=[render_chunk(chunk) for chunk in sources], error=error, code=code,
                     message=request.session.pop("message", ""))
 
     @app.get("/review/{identifier}")
@@ -289,21 +353,23 @@ def create_app(location=None):
         with connect(location) as db:
             person = require_reviewer(db, request)
             item = get_item(db, person, identifier)
+            if needs_profile(person):
+                return redirect(REVIEW_START)
         return question_page(request, person, item)
 
     @app.post("/review/{identifier}")
     def review_save(request: Request, identifier: str, form: PostForm):
         action = form.get("action")
-        ask_profile = False
         try:
             with connect(location, write=True) as db:
                 person = require_reviewer(db, request, lock=True)
                 item = get_item(db, person, identifier)
+                if needs_profile(person):
+                    return redirect(REVIEW_START)
                 revision = integer(form.get("revision"), "Tải lại trang trước khi lưu.")
                 if item["revision"] != revision or item["status"] == "verified":
                     raise ReviewConflict("Câu này vừa được cập nhật. Hãy mở lại để xem bản mới.")
-                actions = {"draft": "draft", "flag": "flagged", "confirm": "verified",
-                           "confirm_skip": "verified", "confirm_share": "verified"}
+                actions = {"draft": "draft", "flag": "flagged", "confirm": "verified"}
                 if action not in actions:
                     raise ReviewError("Hãy chọn một thao tác duyệt.")
                 status = actions[action]
@@ -321,23 +387,12 @@ def create_app(location=None):
                     raise ReviewError("Hãy ghi lý do cần xem lại.")
                 if status == "verified" and (not answer or (label != "UNANSWERABLE" and not selected)):
                     raise ReviewError("Hãy điền câu trả lời và chọn đoạn làm căn cứ nếu tài liệu trả lời được.")
-                ask_profile = status == "verified" and person["scope"] == "live" and person["consent"] is None
-                if ask_profile and action == "confirm":
-                    return question_page(request, person, item, form=form, ask_profile=True)
-                if action in {"confirm_skip", "confirm_share"} and (
-                    not ask_profile or not equal(form.get("permission_intent"), permission_intent(person, item))
-                ):
-                    return question_page(request, person, item, form=form, ask_profile=ask_profile, code=409,
-                                         error="Lựa chọn chia sẻ thông tin đã thay đổi. Hãy kiểm tra và xác nhận lại.")
-                if ask_profile:
-                    decision = "accepted" if action == "confirm_share" else "declined"
-                    update_profile(db, person, decision, profile_from(form) if decision == "accepted" else {})
                 save_review(db, item, person["id"], revision, status, answer, label, selected, notes)
                 following = next_item(db, person, identifier) if status == "verified" else None
         except ReviewConflict as error:
             return question_page(request, person, item, error=str(error), code=409)
         except ReviewError as error:
-            return question_page(request, person, item, form=form, ask_profile=ask_profile, error=str(error), code=422)
+            return question_page(request, person, item, form=form, error=str(error), code=422)
         request.session["message"] = f"{STATUS[status]} · {identifier}"
         if following:
             return redirect(f"/review/{following['question_id']}")
