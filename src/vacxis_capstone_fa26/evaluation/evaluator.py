@@ -252,7 +252,7 @@ class VacxisRAGEvaluator:
         answer_fn: Callable[[str, dict[str, Any]], dict[str, Any]],
         chunk_texts: dict[str, str] | None = None,
         *,
-        max_concurrent: int = 20,
+        max_concurrent: int = 1,
         write_cache: bool = True,
         use_cache: bool = True,
     ) -> EvaluationSummary:

@@ -115,6 +115,15 @@ def parse_args() -> argparse.Namespace:
     add_retrieval_arguments(parser)
     return parser.parse_args()
 
+def save_results(results: list[dict], out_path: Path) -> None:
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    temp_path = out_path.with_suffix(out_path.suffix + ".tmp")
+
+    with temp_path.open("w", encoding="utf-8") as f:
+        json.dump(results, f, ensure_ascii=False, indent=2)
+
+    temp_path.replace(out_path)
 
 def main() -> None:
     """Run generation CLI entrypoint."""
@@ -169,6 +178,7 @@ def main() -> None:
                 result = item.original.copy()
                 result["GENERATED_ANSWER"] = ans.to_dict()
                 results.append(result)
+                save_results(results, out_path)
 
         else:
             try:
@@ -200,6 +210,7 @@ def main() -> None:
                     result = item.original.copy()
                     result["GENERATED_ANSWER"] = ans.to_dict()
                     results.append(result)
+                    save_results(results, out_path)
 
         out_path = args.out_file or Path("generation_results.json")
         out_path.parent.mkdir(parents=True, exist_ok=True)

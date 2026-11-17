@@ -79,6 +79,8 @@ class OpenRouterJudgeLLM(DeepEvalBaseLLM):
             self._sync_client = OpenAI(
                 api_key=self.api_key or "OPENROUTER_API_KEY_MISSING",
                 base_url=self.base_url,
+                max_retries=5,
+                timeout=360,
             )
         return self._sync_client
 
@@ -87,6 +89,8 @@ class OpenRouterJudgeLLM(DeepEvalBaseLLM):
             self._async_client = AsyncOpenAI(
                 api_key=self.api_key or "OPENROUTER_API_KEY_MISSING",
                 base_url=self.base_url,
+                max_retries=5,
+                timeout=360,
             )
         return self._async_client
 
