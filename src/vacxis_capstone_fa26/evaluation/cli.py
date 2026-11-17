@@ -23,10 +23,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger("vacxis.evaluation.cli")
 
-_DEFAULT_JUDGE_MODEL = "gpt-oss-120b"
-_MAIN_DATASET = Path("evaluation/eval_dataset_300_final.json")
 _DEFAULT_UNANSWERABLE = Path("test_dataset.json")
 _DEFAULT_CHUNKS = Path("chunks_storage/chunks.parquet")
+_MAIN_DATASET = Path("evaluation/eval_dataset_300_final.json")
 
 
 def parse_args() -> argparse.Namespace:
@@ -58,8 +57,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--judge-model",
         type=str,
-        default=_DEFAULT_JUDGE_MODEL,
-        help="DeepEval judge model (OpenRouter model name)",
+        default=None,
+        help="DeepEval judge model. Defaults to VACXIS_EVALUATION_MODEL, then "
+        "VACXIS_GENERATION_MODEL, then gpt-oss-120b",
     )
     parser.add_argument(
         "--threshold",
@@ -71,6 +71,11 @@ def parse_args() -> argparse.Namespace:
         "--skip-geval",
         action="store_true",
         help="Skip the GEval correctness metric",
+    )
+    parser.add_argument(
+        "--skip-unanswerable",
+        action="store_true",
+        help="Skip the separate unanswerable-set evaluation pass",
     )
     parser.add_argument(
         "--chunks",
@@ -294,7 +299,7 @@ def _run_live(
     _maybe_export(summary, args)
 
     unanswerable = _load_flat_dataset(args.unanswerable)
-    if unanswerable:
+    if unanswerable and not args.skip_unanswerable:
         logger.info("Running live RAG pipeline over %d unanswerable goldens", len(unanswerable))
         unsummary = _evaluate_live(evaluator, unanswerable, args, chunk_texts)
         print("\n--- Unanswerable evaluation ---")
@@ -324,7 +329,7 @@ def _run_precomputed(
     _maybe_export(summary, args)
 
     unanswerable = _load_flat_dataset(args.unanswerable)
-    if unanswerable and args.unanswerable != args.results:
+    if unanswerable and args.unanswerable != args.results and not args.skip_unanswerable:
         stubs = _unanswerable_stubs(unanswerable)
         unsummary = evaluator.evaluate_results(unanswerable, stubs, chunk_texts=chunk_texts)
         print("\n--- Unanswerable evaluation ---")
