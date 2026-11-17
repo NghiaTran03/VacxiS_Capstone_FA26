@@ -1,276 +1,258 @@
-"""Tests for VacxiS evaluation metrics and evaluators."""
+"""Tests for the DeepEval-based VacxiS evaluation module."""
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-import pyarrow.compute as pc
 import pyarrow.parquet as pq
 import pytest
+from openai import OpenAI
 
-from vacxis_capstone_fa26.evaluation.evaluator import (
-    GenerationEvaluator,
-    RetrievalEvaluator,
+from deepeval.evaluate.types import EvaluationResult, TestResult
+from deepeval.models import DeepEvalBaseLLM
+from deepeval.tracing.api import MetricData
+
+from vacxis_capstone_fa26.evaluation import (
     VacxisRAGEvaluator,
-    compute_metric_aggregates,
+    align_results,
+    answer_fields,
+    load_chunk_texts,
+    load_goldens,
+    retrieval_context_from_answer,
+    validate_query_ids,
 )
-from vacxis_capstone_fa26.evaluation.generation import (
-    bleu_score,
-    citation_f1,
-    citation_precision,
-    citation_recall,
-    citation_validity,
-    compute_rouge,
-    exact_match,
-    normalize_text,
-    refusal_correctness,
-    rouge_l,
-    rouge_n,
-    token_precision_recall_f1,
-)
-from vacxis_capstone_fa26.evaluation.retrieval import (
-    average_precision,
-    dcg_at_k,
-    evaluate_retrieval_query,
-    f1_at_k,
-    hit_rate_at_k,
-    idcg_at_k,
-    ndcg_at_k,
-    precision_at_k,
-    recall_at_k,
-    reciprocal_rank,
-)
-from vacxis_capstone_fa26.evaluation.schemas import EvaluationSummary, MetricAggregate
+from vacxis_capstone_fa26.evaluation.cli import _save_parquet
+from vacxis_capstone_fa26.evaluation.schemas import EvaluationSummary
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+MAIN_DATASET = PROJECT_ROOT / "evaluation" / "eval_dataset_300_final.json"
+FLAT_DATASET = PROJECT_ROOT / "test_dataset.json"
+CHUNKS_PATH = PROJECT_ROOT / "chunks_storage" / "chunks.parquet"
 
 
-# ---------------------------------------------------------------------------
-# Retrieval Metrics Tests
-# ---------------------------------------------------------------------------
+class _StubJudge(DeepEvalBaseLLM):
+    """Offline judge that satisfies the abstract methods without a live client."""
+
+    def __init__(self) -> None:
+        super().__init__(model="stub-judge")
+
+    def load_model(self) -> OpenAI:
+        return OpenAI(api_key="x", base_url="http://localhost")
+
+    def get_model_name(self) -> str:
+        return "stub-judge"
+
+    def generate(self, prompt: str, schema=None):
+        return "ok"
+
+    async def a_generate(self, prompt: str, schema=None):
+        return "ok"
 
 
-def test_hit_rate_at_k():
-    retrieved = ["c1", "c2", "c3", "c4", "c5"]
-    assert hit_rate_at_k(retrieved, ["c1"], k=1) == 1.0
-    assert hit_rate_at_k(retrieved, ["c3"], k=2) == 0.0
-    assert hit_rate_at_k(retrieved, ["c3"], k=3) == 1.0
-    assert hit_rate_at_k(retrieved, ["c99"], k=5) == 0.0
-    assert hit_rate_at_k(retrieved, ["c1"], k=0) == 0.0
-    assert hit_rate_at_k([], [], k=5) == 1.0
-
-
-def test_precision_at_k():
-    retrieved = ["c1", "c2", "c3", "c4"]
-    relevant = {"c1", "c3"}
-    assert precision_at_k(retrieved, relevant, k=1) == 1.0  # 1/1
-    assert precision_at_k(retrieved, relevant, k=2) == 0.5  # 1/2
-    assert precision_at_k(retrieved, relevant, k=4) == 0.5  # 2/4
-    assert precision_at_k(retrieved, set(), k=2) == 0.0
-    assert precision_at_k(retrieved, relevant, k=0) == 0.0
-
-
-def test_recall_at_k():
-    retrieved = ["c1", "c2", "c3", "c4"]
-    relevant = {"c1", "c3", "c5", "c6"}
-    assert recall_at_k(retrieved, relevant, k=1) == 0.25  # 1/4
-    assert recall_at_k(retrieved, relevant, k=3) == 0.5   # 2/4
-    assert recall_at_k(retrieved, relevant, k=4) == 0.5   # 2/4
-    assert recall_at_k(retrieved, set(), k=2) == 0.0
-
-
-def test_f1_at_k():
-    retrieved = ["c1", "c2", "c3", "c4"]
-    relevant = {"c1", "c2"}
-    # at k=2: prec = 2/2 = 1.0, rec = 2/2 = 1.0 => f1 = 1.0
-    assert pytest.approx(f1_at_k(retrieved, relevant, k=2), 0.001) == 1.0
-    # at k=4: prec = 2/4 = 0.5, rec = 2/2 = 1.0 => f1 = 2*(0.5*1)/(1.5) = 0.6667
-    assert pytest.approx(f1_at_k(retrieved, relevant, k=4), 0.001) == 0.6667
-    assert f1_at_k(retrieved, set(), k=2) == 0.0
-
-
-def test_reciprocal_rank():
-    retrieved = ["c1", "c2", "c3", "c4"]
-    assert reciprocal_rank(retrieved, ["c1"]) == 1.0
-    assert reciprocal_rank(retrieved, ["c2"]) == 0.5
-    assert reciprocal_rank(retrieved, ["c4"]) == 0.25
-    assert reciprocal_rank(retrieved, ["c99"]) == 0.0
-    assert reciprocal_rank(retrieved, ["c4"], k=2) == 0.0
-
-
-def test_average_precision():
-    retrieved = ["c1", "c2", "c3", "c4"]
-    relevant = ["c1", "c3"]
-    # rank 1: hit (P=1/1)
-    # rank 2: miss
-    # rank 3: hit (P=2/3)
-    # AP = (1.0 + 2/3) / 2 = 1.6667 / 2 = 0.8333
-    ap = average_precision(retrieved, relevant, k=4)
-    assert pytest.approx(ap, 0.001) == 0.8333
-    assert average_precision(retrieved, [], k=4) == 0.0
-
-
-def test_ndcg_at_k():
-    retrieved = ["c1", "c2", "c3"]
-    scores = {"c1": 3.0, "c2": 2.0, "c3": 1.0}
-    # Ideal order is c1, c2, c3
-    assert pytest.approx(ndcg_at_k(retrieved, scores, k=3), 0.001) == 1.0
-
-    # Reversed order
-    rev_retrieved = ["c3", "c2", "c1"]
-    ndcg_rev = ndcg_at_k(rev_retrieved, scores, k=3)
-    assert ndcg_rev < 1.0
-    assert ndcg_rev > 0.0
-
-    # Zero scores
-    assert ndcg_at_k(retrieved, {}, k=3) == 1.0
-
-
-def test_evaluate_retrieval_query_chunk_and_doc():
-    retrieved = [
-        {"chunk_id": "vax1_c_0001", "score": 0.9},
-        {"chunk_id": "vax2_c_0002", "score": 0.8},
-        {"chunk_id": "vax1_c_0003", "score": 0.7},
-    ]
-    relevant_chunks = [
-        {"CHUNK_ID": "vax1_c_0001", "RELEVANCE_SCORE": 3},
-        {"CHUNK_ID": "vax1_c_0003", "RELEVANCE_SCORE": 1},
-    ]
-    relevant_docs = ["vax1"]
-
-    res = evaluate_retrieval_query(
-        retrieved=retrieved,
-        relevant_chunks=relevant_chunks,
-        relevant_docs=relevant_docs,
-        k_values=[1, 3],
-        query_id="Q01",
-        query_text="Liều dùng vắc xin?",
+def _make_evaluator(enable_geval: bool = True) -> VacxisRAGEvaluator:
+    """An evaluator with a stub judge so no network or key is needed."""
+    return VacxisRAGEvaluator(
+        judge_model=_StubJudge(), threshold=0.5, enable_geval=enable_geval
     )
 
-    assert res.query_id == "Q01"
-    assert res.metrics["hit_rate@1"] == 1.0
-    assert res.metrics["recall@1"] == 0.5
-    assert res.metrics["recall@3"] == 1.0
-    assert res.metrics["mrr"] == 1.0
-    assert res.metrics["doc_hit_rate@1"] == 1.0
-    assert res.metrics["doc_recall@1"] == 1.0
+
+def _fake_metric(name: str, score: float, success: bool = True) -> MetricData:
+    """Build a MetricData row the way DeepEval's evaluate() does."""
+    return MetricData(
+        name=name,
+        threshold=0.5,
+        success=success,
+        score=score,
+        reason="stub reason",
+        strict_mode=False,
+        flaky=False,
+        evaluation_model="stub-judge",
+        error=None,
+        evaluation_cost=0.0,
+        input_tokens=0,
+        output_tokens=0,
+        verbose_logs=None,
+        expectations_data=None,
+    )
+
+
+def _fake_result(num_cases: int, metric_names: list[str]) -> EvaluationResult:
+    """Fabricate a DeepEval EvaluationResult with one TestResult per case."""
+    test_results = []
+    for i in range(num_cases):
+        metrics_data = [_fake_metric(name, 0.5 + 0.01 * i) for name in metric_names]
+        test_results.append(
+            TestResult(
+                name=f"case{i}",
+                success=True,
+                conversational=False,
+                index=i,
+                input=f"q{i}",
+                actual_output=f"a{i}",
+                expected_output=f"e{i}",
+                retrieval_context=["ctx"],
+                metadata={"query_id": f"qid{i}"},
+                metrics_data=metrics_data,
+            )
+        )
+    return EvaluationResult(
+        test_results=test_results, confident_link=None, test_run_id="stub-run"
+    )
 
 
 # ---------------------------------------------------------------------------
-# Generation & Grounding Metrics Tests
+# Datasets
 # ---------------------------------------------------------------------------
 
 
-def test_normalize_text():
-    raw = "Theo hướng dẫn [chunk_001], liều dùng là 0.5ml!"
-    norm = normalize_text(raw)
-    assert "[chunk_001]" not in norm
-    assert norm == "theo hướng dẫn liều dùng là 05ml"
+def test_load_goldens_main_dataset():
+    records = load_goldens(MAIN_DATASET)
+    assert len(records) == 300
+    first = records[0]
+    assert first.query_id == "eval_0001"
+    assert first.answerability == "ANSWERABLE"
+    assert first.complexity == "SINGLE_HOP"
+    assert first.query_style == "PATIENT_STYLE"
+    assert first.query.strip()
+    assert first.expected_output.strip()
+    assert first.context and first.context[0].strip()
 
 
-def test_exact_match():
-    pred = "Vaccine Gardasil 9 tiêm 0.5 ml [c1]."
-    ref = "vaccine gardasil 9 tiêm 0.5 ml"
-    assert exact_match(pred, ref) == 1.0
-    assert exact_match(pred, "Vaccine Verorab") == 0.0
+def test_load_goldens_flat_dataset():
+    records = load_goldens(FLAT_DATASET)
+    assert len(records) == 460
+    first = records[0]
+    assert first.query_id == "VAX_Q_0001"
+    assert first.answerability == "UNANSWERABLE"
+    assert first.difficulty == "MEDIUM"
+    assert first.query_type == "ADVERSE_EFFECT"
+    # The flat RELEVANT_CHUNKS carry a TEXT field, normalized to context strings.
+    has_context = any(r.context for r in records)
+    assert has_context
 
 
-def test_token_precision_recall_f1():
-    pred = "tiêm bắp 0.5 ml vào cơ delta"
-    ref = "tiêm bắp liều 0.5 ml"
-    prec, rec, f1 = token_precision_recall_f1(pred, ref)
-    assert prec > 0.0
-    assert rec > 0.0
-    assert f1 > 0.0
-    assert pytest.approx(f1, 0.01) == (2 * prec * rec) / (prec + rec)
-
-    # Empty inputs
-    assert token_precision_recall_f1("", "") == (1.0, 1.0, 1.0)
-    assert token_precision_recall_f1("abc", "") == (0.0, 0.0, 0.0)
+def test_load_chunk_texts():
+    texts = load_chunk_texts(CHUNKS_PATH)
+    assert texts, "chunk text store should not be empty"
+    assert all(isinstance(v, str) and v.strip() for v in texts.values())
 
 
-def test_rouge_n_and_rouge_l():
-    pred = "vắc xin phòng bệnh dại cho người"
-    ref = "vắc xin phòng bệnh dại ở người lớn"
-
-    p1, r1, f1_1 = rouge_n(pred, ref, n=1)
-    assert f1_1 > 0.6
-
-    p2, r2, f1_2 = rouge_n(pred, ref, n=2)
-    assert f1_2 > 0.4
-
-    pl, rl, f1_l = rouge_l(pred, ref)
-    assert f1_l > 0.5
-
-    all_rouge = compute_rouge(pred, ref)
-    assert "rouge_1_f1" in all_rouge
-    assert "rouge_2_f1" in all_rouge
-    assert "rouge_l_f1" in all_rouge
+def test_load_chunk_texts_missing_returns_empty(tmp_path: Path):
+    assert load_chunk_texts(tmp_path / "nope.parquet") == {}
 
 
-def test_bleu_score():
-    pred = "Gardasil 9 được chỉ định cho người từ 9 đến 45 tuổi"
-    ref = "Gardasil 9 được chỉ định cho người từ 9 đến 45 tuổi"
-    scores = bleu_score(pred, ref)
-    assert pytest.approx(scores["bleu"], 0.01) == 1.0
-    assert pytest.approx(scores["bleu_1"], 0.01) == 1.0
-
-    # Completely disjoint
-    disjoint_scores = bleu_score("khác hoàn toàn", "nội dung mẫu", smooth=False)
-    assert disjoint_scores["bleu"] == 0.0
-
-
-def test_citation_metrics():
-    citations = ["chunk_1", "chunk_2"]
-    relevant = ["chunk_1", "chunk_3"]
-    retrieved = ["chunk_1", "chunk_2", "chunk_4"]
-
-    prec = citation_precision(citations, relevant)
-    assert prec == 0.5  # 1/2
-    rec = citation_recall(citations, relevant)
-    assert rec == 0.5   # 1/2
-    f1 = citation_f1(citations, relevant)
-    assert f1 == 0.5
-
-    val = citation_validity(citations, retrieved, invalid_citations=["invalid_bracket"])
-    assert pytest.approx(val, 0.01) == 2.0 / 3.0  # 2 valid / 3 total
+def test_retrieval_context_from_answer(tmp_path: Path):
+    chunk_texts = {"abc_c_001": "text A", "abc_c_002": "text B"}
+    hydrated = retrieval_context_from_answer(
+        {"retrieved_chunk_ids": ["abc_c_001", "abc_c_002", "missing"]},
+        chunk_texts,
+    )
+    assert hydrated == ["text A", "text B"]
+    # Unknown ids are dropped.
+    assert retrieval_context_from_answer({"retrieved_chunk_ids": ["nope"]}, chunk_texts) == []
 
 
-def test_refusal_correctness():
-    assert refusal_correctness(is_refusal=True, expected_answerability="UNANSWERABLE") == 1.0
-    assert refusal_correctness(is_refusal=False, expected_answerability="ANSWERABLE") == 1.0
-    assert refusal_correctness(is_refusal=False, expected_answerability="PARTIALLY_ANSWERABLE") == 1.0
-    assert refusal_correctness(is_refusal=True, expected_answerability="ANSWERABLE") == 0.0
-    assert refusal_correctness(is_refusal=False, expected_answerability="UNANSWERABLE") == 0.0
+def test_answer_fields_unwrapped():
+    fields = answer_fields(
+        {
+            "answer": "a",
+            "is_refusal": True,
+            "retrieved_chunk_ids": ["c1", "c2"],
+        }
+    )
+    assert fields == {
+        "actual_output": "a",
+        "is_refusal": True,
+        "retrieved_chunk_ids": ["c1", "c2"],
+    }
+
+
+def test_answer_fields_wrapped_in_generated_answer():
+    fields = answer_fields(
+        {"GENERATED_ANSWER": {"answer": "a", "is_refusal": False, "retrieved_chunk_ids": ["c"]}}
+    )
+    assert fields["actual_output"] == "a"
+    assert fields["is_refusal"] is False
+    assert fields["retrieved_chunk_ids"] == ["c"]
 
 
 # ---------------------------------------------------------------------------
-# Evaluator & Summary Tests
+# Alignment & IDs
 # ---------------------------------------------------------------------------
 
 
-def test_compute_metric_aggregates():
-    records = [
-        {"f1": 0.8, "recall": 0.9},
-        {"f1": 0.6, "recall": 0.7},
+def test_validate_query_ids_rejects_duplicates():
+    with pytest.raises(ValueError, match="Duplicate"):
+        validate_query_ids([{"QUERY_ID": "a"}, {"QUERY_ID": "a"}])
+
+
+def test_validate_query_ids_rejects_missing():
+    with pytest.raises(ValueError):
+        validate_query_ids([{"QUERY": "q"}])
+
+
+def test_validate_query_ids_reads_deep_metadata():
+    by_id = validate_query_ids([{"additional_metadata": {"query_id": "eval_1"}}])
+    assert "eval_1" in by_id
+
+
+def test_align_results_preserves_result_order():
+    dataset = [
+        {"QUERY_ID": "B", "QUERY": "qb"},
+        {"QUERY_ID": "A", "QUERY": "qa"},
     ]
-    overall, agg = compute_metric_aggregates(records)
-    assert pytest.approx(overall["f1"], 0.001) == 0.7
-    assert pytest.approx(overall["recall"], 0.001) == 0.8
-    assert agg["f1"].count == 2
-    assert agg["f1"].min == 0.6
-    assert agg["f1"].max == 0.8
+    results = [
+        {"QUERY_ID": "B", "GENERATED_ANSWER": {"answer": "xb"}},
+        {"QUERY_ID": "A", "GENERATED_ANSWER": {"answer": "xa"}},
+    ]
+    aligned = align_results(dataset, results)
+    assert [item["QUERY_ID"] for item in aligned] == ["B", "A"]
 
 
-def test_evaluator_and_export(tmp_path: Path):
-    queries = [
+def test_align_results_mismatched_ids_raises():
+    dataset = [{"QUERY_ID": "A"}]
+    results = [{"QUERY_ID": "B"}]
+    with pytest.raises(ValueError, match="disagree"):
+        align_results(dataset, results)
+
+
+# ---------------------------------------------------------------------------
+# Metrics & test-case construction
+# ---------------------------------------------------------------------------
+
+
+def test_build_metrics_default_includes_geval():
+    evaluator = _make_evaluator(enable_geval=True)
+    names = [m.__name__ for m in evaluator.build_metrics()]
+    assert len(names) == 6
+    assert "Answer Relevancy" in names
+    assert "Faithfulness" in names
+    assert any("Contextual" in n for n in names)
+
+
+def test_build_metrics_without_geval():
+    evaluator = _make_evaluator(enable_geval=False)
+    assert len(evaluator.build_metrics()) == 5
+
+
+# ---------------------------------------------------------------------------
+# Summary construction, refusal correctness, and exports
+# ---------------------------------------------------------------------------
+
+
+def _small_dataset_and_results(chunk_texts: dict[str, str]):
+    """Two flat goldens plus matching precomputed results."""
+    dataset = [
         {
             "QUERY_ID": "Q1",
             "QUERY": "Liều dùng Verorab?",
             "QUERY_TYPE": "DOSAGE",
             "QUERY_DIFFICULTY": "EASY",
             "QUERY_COMPLEXITY": "SINGLE_HOP",
+            "QUERY_STYLE": "PATIENT_STYLE",
             "ANSWERABILITY": "ANSWERABLE",
-            "RELEVANT_CHUNKS": [{"CHUNK_ID": "verorab_c_001", "RELEVANCE_SCORE": 3}],
             "REFERENCE_ANSWER": "Tiêm 0.5ml.",
+            "RELEVANT_CHUNKS": [],
         },
         {
             "QUERY_ID": "Q2",
@@ -278,69 +260,122 @@ def test_evaluator_and_export(tmp_path: Path):
             "QUERY_TYPE": "INDICATION",
             "QUERY_DIFFICULTY": "HARD",
             "QUERY_COMPLEXITY": "SINGLE_HOP",
+            "QUERY_STYLE": "CLINICAL_STYLE",
             "ANSWERABILITY": "UNANSWERABLE",
-            "RELEVANT_CHUNKS": [],
             "REFERENCE_ANSWER": "Không có thông tin.",
+            "RELEVANT_CHUNKS": [],
         },
     ]
-
-    answers = [
+    results = [
         {
             "QUERY_ID": "Q1",
             "GENERATED_ANSWER": {
                 "answer": "Tiêm 0.5ml [verorab_c_001].",
                 "citations": ["verorab_c_001"],
                 "invalid_citations": [],
-                "retrieved_chunk_ids": ["verorab_c_001"],
+                "retrieved_chunk_ids": list(chunk_texts.keys())[:1],
                 "is_refusal": False,
-                "latency_seconds": 0.12,
-                "usage": {"total_tokens": 150},
             },
         },
         {
             "QUERY_ID": "Q2",
             "GENERATED_ANSWER": {
-                "answer": "Tài liệu không đề cập đến việc điều trị sốt rét.",
+                "answer": "Tài liệu không đề cập đến sốt rét.",
                 "citations": [],
                 "invalid_citations": [],
                 "retrieved_chunk_ids": [],
                 "is_refusal": True,
-                "latency_seconds": 0.08,
-                "usage": {"total_tokens": 80},
             },
         },
     ]
+    return dataset, results
 
-    rag_evaluator = VacxisRAGEvaluator(k_values=[1, 3])
-    summary = rag_evaluator.evaluate_results(dataset_items=queries, generation_results=answers)
+
+def test_evaluate_results_builds_full_summary(tmp_path: Path, monkeypatch):
+    evaluator = _make_evaluator(enable_geval=True)
+    chunk_texts = {"verorab_c_001": "text about Verorab dosing"}
+    dataset, results = _small_dataset_and_results(chunk_texts)
+
+    metric_names = [m.__name__ for m in evaluator.build_metrics()]
+    monkeypatch.setattr(
+        evaluator,
+        "_run_deepeval",
+        lambda cases, **kw: _fake_result(len(cases), metric_names),
+    )
+
+    summary = evaluator.evaluate_results(dataset, results, chunk_texts=chunk_texts)
 
     assert summary.num_queries == 2
+    # 5 RAG + GEval + refusal indicator.
+    assert len(summary.metric_names) == 7
+    assert "refusal_correctness" in summary.metric_names
+    # Both answers align with their ANSWERABILITY ground truth.
     assert summary.overall_metrics["refusal_correctness"] == 1.0
-    assert summary.overall_metrics["hit_rate@1"] == 1.0
-    assert "DOSAGE" in summary.by_query_type
-    assert "INDICATION" in summary.by_query_type
+    assert "ANSWERABLE" in summary.by_answerability
+    assert "UNANSWERABLE" in summary.by_answerability
     assert "EASY" in summary.by_difficulty
+    # Per-query records carry the judge reasons and hydrated context.
+    assert summary.per_query_results[0]["query_id"] == "Q1"
+    assert "Answer Relevancy" in summary.per_query_results[0]["metric_results"]
 
-    # Test Markdown rendering
-    md = summary.render_markdown()
-    assert "# VacxiS Evaluation Report" in md
-    assert "DOSAGE" in md
-
-    # Test JSON export
+    # Exports.
     json_path = tmp_path / "summary.json"
     VacxisRAGEvaluator.save_json(summary, json_path)
-    assert json_path.exists()
-    loaded_json = json.loads(json_path.read_text(encoding="utf-8"))
-    assert loaded_json["num_queries"] == 2
+    loaded = json.loads(json_path.read_text(encoding="utf-8"))
+    assert loaded["num_queries"] == 2
+    assert loaded["overall_metrics"]["refusal_correctness"] == 1.0
 
-    # Test Parquet export using PyArrow
+    md_path = tmp_path / "report.md"
+    VacxisRAGEvaluator.save_markdown(summary, md_path)
+    markdown = md_path.read_text(encoding="utf-8")
+    assert "# VacxiS DeepEval Report" in markdown
+    assert "Answer Relevancy" in markdown
+
+
+def test_refusal_mismatch_scores_zero():
+    evaluator = _make_evaluator(enable_geval=False)
+    # An ANSWERABLE question answered with a refusal should score 0.
+    dataset = [
+        {
+            "QUERY_ID": "Q1",
+            "QUERY": "q",
+            "ANSWERABILITY": "ANSWERABLE",
+            "REFERENCE_ANSWER": "a",
+        }
+    ]
+    results = [
+        {"QUERY_ID": "Q1", "GENERATED_ANSWER": {"answer": "x", "is_refusal": True}}
+    ]
+    metric_names = [m.__name__ for m in evaluator.build_metrics()]
+    evaluator._run_deepeval = lambda cases, **kw: _fake_result(1, metric_names)
+    summary = evaluator.evaluate_results(dataset, results, chunk_texts={})
+    assert summary.overall_metrics["refusal_correctness"] == 0.0
+
+
+def test_save_parquet_round_trip(tmp_path: Path):
+    evaluator = _make_evaluator(enable_geval=True)
+    dataset, results = _small_dataset_and_results({"verorab_c_001": "t"})
+    metric_names = [m.__name__ for m in evaluator.build_metrics()]
+    evaluator._run_deepeval = lambda cases, **kw: _fake_result(2, metric_names)
+    summary = evaluator.evaluate_results(dataset, results, chunk_texts={})
+
     parquet_path = tmp_path / "per_query.parquet"
-    VacxisRAGEvaluator.save_parquet(summary, parquet_path)
+    _save_parquet(summary, parquet_path)
     assert parquet_path.exists()
 
-    # Read back and verify with pyarrow.parquet
     table = pq.read_table(parquet_path)
     assert len(table) == 2
-    assert "metric_exact_match" in table.column_names
-    assert "metric_token_f1" in table.column_names
-    assert "retrieval_hit_rate@1" in table.column_names
+    assert "query_id" in table.column_names
+    assert "metric_refusal_correctness" in table.column_names
+    assert "meta_answerability" in table.column_names
+
+
+def test_summary_to_dict_is_json_safe(tmp_path: Path):
+    evaluator = _make_evaluator(enable_geval=True)
+    dataset, results = _small_dataset_and_results({})
+    metric_names = [m.__name__ for m in evaluator.build_metrics()]
+    evaluator._run_deepeval = lambda cases, **kw: _fake_result(2, metric_names)
+    summary = evaluator.evaluate_results(dataset, results, chunk_texts={})
+    # A JSON round-trip must not raise (no sets, no non-serializable objects).
+    serialized = json.dumps(summary.to_dict(), ensure_ascii=False)
+    assert "refusal_correctness" in serialized

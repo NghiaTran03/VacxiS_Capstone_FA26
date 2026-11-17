@@ -30,3 +30,4 @@ bugs-review/
 #models
 models/
 .pytest_cache
+.deepeval/
