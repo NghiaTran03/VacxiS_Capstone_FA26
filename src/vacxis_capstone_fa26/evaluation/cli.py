@@ -15,6 +15,7 @@ from vacxis_capstone_fa26.evaluation import (
     resolve_judge_model,
 )
 from vacxis_capstone_fa26.evaluation.schemas import EvaluationSummary
+from vacxis_capstone_fa26.generation.schemas import GenerationConfig
 
 logging.basicConfig(
     level=logging.INFO,
@@ -114,6 +115,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reranker-path", type=str, default="models/bge-reranker")
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--skip-rerank", action="store_true")
+    parser.add_argument(
+        "--timeout",
+        type=float,
+        default=480,
+        help="Per-request LLM timeout in seconds for the live pipeline "
+        "(default: 480)",
+    )
     return parser.parse_args()
 
 
@@ -222,7 +230,7 @@ def _build_answer_fn(args: argparse.Namespace):
         skip_rerank=args.skip_rerank,
     )
     ret_config = retrieval_config(ns)
-    gen_config = GenerationConfig()
+    gen_config = GenerationConfig(timeout=args.timeout)
     generator = MedicalGenerator(config=gen_config)
     pipeline = VacxisRAGPipeline(retrieval_config=ret_config, generator=generator)
 
