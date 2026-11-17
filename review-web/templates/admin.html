@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Quản lý lượt duyệt{% endblock %}
+{% block content %}
+<div class="heading-row">
+  <div class="stack compact">
+    <h1>Quản lý lượt duyệt</h1>
+    <p class="muted">{{ scopes[scope] }} · Đã xác nhận {{ done }} / {{ total }} câu</p>
+  </div>
+  <a class="button" href="/admin/export/{{ scope }}">Tải JSON {{ 'đã xác nhận' if scope == 'live' else 'thử nghiệm' }}</a>
+</div>
+<nav class="actions" aria-label="Chọn lượt duyệt">
+  {% for key, label in scopes.items() %}<a class="button{% if key == scope %} primary{% endif %}" href="/admin?scope={{ key }}"{% if key == scope %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+</nav>
+{% if invite_url %}
+  <div class="panel stack consent" data-focus tabindex="-1">
+    <h2>Lời mời đã sẵn sàng</h2>
+    <p>Gửi riêng cho người nhận. Lời mời có hạn 7 ngày và dùng một lần qua mã hoặc liên kết.</p>
+    <div class="field"><label for="invite-code">Mã mời</label><input id="invite-code" class="invite-code" readonly value="{{ invite_code }}"></div>
+    <div class="field"><label for="invite-url">Liên kết mời</label><input id="invite-url" readonly value="{{ invite_url }}"></div>
+    <div class="actions">
+      <button class="primary" type="button" data-copy="invite-message" hidden>Sao chép lời mời</button>
+      <button type="button" data-copy="invite-code" hidden>Sao chép mã</button>
+      <button type="button" data-copy="invite-url" hidden>Sao chép liên kết</button>
+      <span class="muted" data-copy-feedback role="status"></span>
+    </div>
+    <details class="disclosure">
+      <summary>Xem tin nhắn mẫu</summary>
+      <div class="section-body"><textarea id="invite-message" aria-label="Tin nhắn mời người duyệt" rows="6" readonly>Nhóm đồ án VacxiS mời anh/chị tham gia duyệt câu trả lời. Mở liên kết sau và bấm Vào trang duyệt:
+{{ invite_url }}
+
+Anh/chị cũng có thể mở {{ public_url }} và nhập mã {{ invite_code }}.
+Lời mời dùng một lần, có hạn 7 ngày.</textarea></div>
+    </details>
+  </div>
+{% endif %}
+<div class="admin-grid">
+  <section class="panel stack">
+    <h2>Tạo lời mời</h2>
+    <p class="muted">{{ available }} câu chưa phân công trong lượt này.</p>
+    {% if available %}
+      <form action="/admin/invite" method="post" class="stack">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="hidden" name="operation" value="{{ invite_operation }}">
+        <input type="hidden" name="scope" value="{{ scope }}">
+        <div class="field"><label for="count">Số câu giao cho người này</label><input id="count" name="count" type="number" min="1" max="{{ [available, 460]|min }}" value="{{ [5, available]|min }}" required></div>
+        {% if referrals %}
+          <div class="field"><label for="referral">Đề xuất giới thiệu</label><select id="referral" name="referral_id">
+            <option value="">Lời mời trực tiếp</option>
+            {% for row in referrals %}<option value="{{ row.id }}">{{ row.label }} · từ {{ row.referred_by }}</option>{% endfor %}
+          </select></div>
+        {% endif %}
+        {% if scope == 'live' %}<label class="check"><input type="checkbox" name="can_refer" value="yes"> Cho phép giới thiệu đồng nghiệp</label>{% endif %}
+        <div><button class="primary" type="submit">Tạo lời mời và phân câu</button></div>
+      </form>
+    {% endif %}
+  </section>
+  <section class="panel stack">
+    <h2>Liên kết và phân công</h2>
+    {% if people %}
+      <form action="/admin/reissue" method="post" class="stack">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="hidden" name="operation" value="{{ reviewer_operation }}">
+        <div class="field"><label for="reviewer-id">Người duyệt</label><select id="reviewer-id" name="reviewer_id" required>
+          <option value="">Chọn người duyệt</option>
+          {% for person in people %}<option value="{{ person.id }}">{{ reviewer_label(person) }}{% if person.full_name %} · {{ person.id }}{% endif %}</option>{% endfor %}
+        </select></div>
+        <div class="actions">
+          <button type="submit">Cấp lời mời mới</button>
+          <button type="submit" formaction="/admin/release">Thu hồi câu chưa bắt đầu</button>
+        </div>
+      </form>
+    {% else %}<p class="muted">Chưa có người được mời.</p>{% endif %}
+  </section>
+</div>
+{% if scope == 'live' and people %}
+  <details class="disclosure panel">
+    <summary>Hồ sơ người duyệt</summary>
+    <ul class="stack">
+      {% for person in people %}
+        <li>{{ reviewer_label(person) }}{% if person.full_name %} · {{ person.id }}{% endif %}{% if person.workplace %} · {{ person.workplace }}{% endif %}</li>
+      {% endfor %}
+    </ul>
+  </details>
+{% endif %}
+<section class="stack" aria-label="Tiến độ từng câu">
+  <form action="/admin" method="get" class="filter-row panel">
+    <input type="hidden" name="scope" value="{{ scope }}">
+    <div class="field"><label for="admin-status">Lọc theo trạng thái</label><select id="admin-status" name="status">
+      <option value="">Tất cả</option>
+      {% for key, label in statuses.items() %}<option value="{{ key }}"{% if key == status %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select></div>
+    <button type="submit">Áp dụng</button>
+  </form>
+  <ul class="question-list panel">
+    {% for row in rows %}
+      <li><a href="/admin/history/{{ scope }}/{{ row.question_id }}">
+        <span><span class="code">{{ row.question_id }}</span><span class="question-name">{{ row.query }}</span><span class="muted">{{ reviewer_label(row) if row.reviewer_id else 'Chưa phân công' }}</span></span>
+        <span class="state state-{{ row.status }}">{{ statuses[row.status] }}</span>
+      </a></li>
+    {% else %}<li class="empty">Không có câu phù hợp.</li>{% endfor %}
+  </ul>
+</section>
+{% endblock %}

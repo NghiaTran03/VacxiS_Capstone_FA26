@@ -1,0 +1,6 @@
+/.env
+/.env.*
+!/.env.example
+/.uv-cache/
+/.vercel/
+/*.sqlite3*

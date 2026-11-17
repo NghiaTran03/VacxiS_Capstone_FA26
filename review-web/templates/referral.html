@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Giới thiệu đồng nghiệp{% endblock %}
+{% block content %}
+<article class="reading-width stack">
+  <p><a href="/review">‹ Danh sách câu hỏi</a></p>
+  <section class="panel stack">
+    <h1>Giới thiệu đồng nghiệp</h1>
+    <p>Đặt một mã để nhóm đồ án trao đổi với bạn về lời mời. Đồng nghiệp sẽ nhận một liên kết riêng sau khi nhóm xử lý đề xuất.</p>
+    <form method="post" action="/gioi-thieu" class="stack">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <div class="field"><label for="referral-code">Mã giới thiệu</label><input id="referral-code" name="label" required maxlength="40" autocomplete="off" aria-describedby="referral-help"><p class="muted" id="referral-help">Dùng chữ không dấu, số hoặc dấu gạch.</p></div>
+      <div><button class="primary" type="submit">Gửi đề xuất</button></div>
+    </form>
+  </section>
+</article>
+{% endblock %}

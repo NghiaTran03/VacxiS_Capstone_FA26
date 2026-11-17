@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Câu hỏi được giao{% endblock %}
+{% block content %}
+<div class="heading-row">
+  <div class="stack compact">
+    <h1>Câu hỏi được giao</h1>
+    <p class="muted">Đã xác nhận <strong>{{ done }} / {{ total }}</strong> câu</p>
+  </div>
+  {% if next_row %}<a class="button primary" href="/review/{{ next_row.question_id }}">Duyệt tiếp</a>{% endif %}
+</div>
+<form method="get" action="/review" class="filter-row panel">
+  <div class="field"><label for="search">Tìm câu hỏi</label><input id="search" name="q" type="search" value="{{ search }}" maxlength="120"></div>
+  <div class="field">
+    <label for="filter-status">Trạng thái</label>
+    <select id="filter-status" name="status">
+      <option value="">Tất cả</option>
+      {% for value, label in statuses.items() %}<option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <button type="submit">Áp dụng</button>
+</form>
+<ul class="question-list panel" aria-label="Danh sách câu hỏi">
+  {% for row in rows %}
+    <li><a href="/review/{{ row.question_id }}">
+      <span><span class="code">{{ row.question_id }}</span><span class="question-name">{{ row.query }}</span></span>
+      <span class="state state-{{ row.status }}">{{ statuses[row.status] }}</span>
+    </a></li>
+  {% else %}<li class="empty">Không có câu phù hợp.</li>{% endfor %}
+</ul>
+{% if person.can_refer %}<p><a href="/gioi-thieu">Giới thiệu đồng nghiệp</a></p>{% endif %}
+{% endblock %}
