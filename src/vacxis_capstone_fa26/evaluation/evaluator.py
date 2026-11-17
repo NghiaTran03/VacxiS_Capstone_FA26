@@ -218,6 +218,7 @@ class VacxisRAGEvaluator:
         *,
         max_concurrent: int = 20,
         write_cache: bool = True,
+        use_cache: bool = True,
     ) -> EvaluationSummary:
         """Evaluate precomputed results against the golden dataset with DeepEval.
 
@@ -237,7 +238,12 @@ class VacxisRAGEvaluator:
         test_cases = [
             self._build_test_case(record, info) for record, info in zip(goldens, case_infos)
         ]
-        eval_result = self._run_deepeval(test_cases, max_concurrent=max_concurrent, write_cache=write_cache)
+        eval_result = self._run_deepeval(
+            test_cases,
+            max_concurrent=max_concurrent,
+            write_cache=write_cache,
+            use_cache=use_cache,
+        )
         return self.build_summary(goldens, eval_result, case_infos)
 
     def evaluate_live(
@@ -247,6 +253,8 @@ class VacxisRAGEvaluator:
         chunk_texts: dict[str, str] | None = None,
         *,
         max_concurrent: int = 20,
+        write_cache: bool = True,
+        use_cache: bool = True,
     ) -> EvaluationSummary:
         """Run a live RAG pipeline per golden, then evaluate with DeepEval.
 
@@ -267,7 +275,12 @@ class VacxisRAGEvaluator:
             case_infos.append(info)
             test_cases.append(self._build_test_case(record, info))
 
-        eval_result = self._run_deepeval(test_cases, max_concurrent=max_concurrent)
+        eval_result = self._run_deepeval(
+            test_cases,
+            max_concurrent=max_concurrent,
+            write_cache=write_cache,
+            use_cache=use_cache,
+        )
         return self.build_summary(goldens, eval_result, case_infos)
 
     def _run_deepeval(
@@ -276,8 +289,13 @@ class VacxisRAGEvaluator:
         *,
         max_concurrent: int,
         write_cache: bool = True,
+        use_cache: bool = True,
     ) -> Any:
-        """Run DeepEval over the test cases with quiet, non-interactive settings."""
+        """Run DeepEval over the test cases with quiet, non-interactive settings.
+
+        The cache round-trip lets a stopped or crashed run resume: already scored
+        test cases are reused by content key, and only the rest are re-judged.
+        """
         if not test_cases:
             raise ValueError("No test cases to evaluate.")
         return deepeval_evaluate(
@@ -289,7 +307,7 @@ class VacxisRAGEvaluator:
                 print_results=False,
                 inspect_after_run=False,
             ),
-            cache_config=CacheConfig(write_cache=write_cache),
+            cache_config=CacheConfig(write_cache=write_cache, use_cache=use_cache),
             async_config=AsyncConfig(run_async=True, max_concurrent=max_concurrent),
             error_config=ErrorConfig(ignore_errors=True, skip_on_missing_params=True),
         )

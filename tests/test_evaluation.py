@@ -1,7 +1,9 @@
 """Tests for the DeepEval-based VacxiS evaluation module."""
 from __future__ import annotations
 
+import argparse
 import json
+import os
 from pathlib import Path
 
 import pyarrow.parquet as pq
@@ -379,3 +381,87 @@ def test_summary_to_dict_is_json_safe(tmp_path: Path):
     # A JSON round-trip must not raise (no sets, no non-serializable objects).
     serialized = json.dumps(summary.to_dict(), ensure_ascii=False)
     assert "refusal_correctness" in serialized
+
+
+# ---------------------------------------------------------------------------
+# DeepEval cache (resume) wiring
+# ---------------------------------------------------------------------------
+
+
+def test_run_deepeval_defaults_read_the_cache():
+    """_run_deepeval must read and write the cache so stopped runs can resume."""
+    from vacxis_capstone_fa26.evaluation import evaluator as evaluator_module
+    from vacxis_capstone_fa26.evaluation.datasets import to_record
+
+    captured = {}
+
+    def _fake_deepeval_evaluate(**kwargs):
+        captured.update(kwargs)
+        return _fake_result(1, [])
+
+    evaluator = _make_evaluator()
+    record = to_record(
+        {"QUERY_ID": "Q1", "QUERY": "q", "REFERENCE_ANSWER": "a"}
+    )
+    info = evaluator._case_info(
+        {"actual_output": "a", "is_refusal": False, "retrieved_chunk_ids": []}, {}
+    )
+    cases = [evaluator._build_test_case(record, info)]
+
+    original = evaluator_module.deepeval_evaluate
+    evaluator_module.deepeval_evaluate = _fake_deepeval_evaluate
+    try:
+        evaluator._run_deepeval(cases, max_concurrent=1)
+    finally:
+        evaluator_module.deepeval_evaluate = original
+
+    cache_config = captured["cache_config"]
+    assert cache_config.write_cache is True
+    assert cache_config.use_cache is True
+
+
+def test_evaluate_live_forwards_cache_flags():
+    """evaluate_live must forward use_cache/write_cache down to _run_deepeval."""
+    evaluator = _make_evaluator()
+    dataset, results = _small_dataset_and_results({})
+    metric_names = [m.__name__ for m in evaluator.build_metrics()]
+
+    seen: dict = {}
+
+    def _capture(cases, **kw):
+        seen.update(kw)
+        return _fake_result(len(cases), metric_names)
+
+    evaluator._run_deepeval = _capture
+    evaluator.evaluate_live(
+        dataset,
+        lambda query, golden: {"answer": "a", "is_refusal": False, "retrieved_chunk_ids": []},
+        chunk_texts={},
+        use_cache=False,
+        write_cache=False,
+    )
+    assert seen["use_cache"] is False
+    assert seen["write_cache"] is False
+
+
+# ---------------------------------------------------------------------------
+# Judge-timeout CLI flag
+# ---------------------------------------------------------------------------
+
+
+def test_apply_judge_timeout_sets_env_override(monkeypatch):
+    from vacxis_capstone_fa26.evaluation import cli as eval_cli
+
+    monkeypatch.delenv("DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE", raising=False)
+    args = argparse.Namespace(judge_timeout=1200.0)
+    eval_cli._apply_judge_timeout(args)
+    assert os.environ.get("DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE") == "1200.0"
+
+
+def test_apply_judge_timeout_noop_when_unset(monkeypatch):
+    from vacxis_capstone_fa26.evaluation import cli as eval_cli
+
+    monkeypatch.delenv("DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE", raising=False)
+    args = argparse.Namespace(judge_timeout=None)
+    eval_cli._apply_judge_timeout(args)
+    assert "DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE" not in os.environ

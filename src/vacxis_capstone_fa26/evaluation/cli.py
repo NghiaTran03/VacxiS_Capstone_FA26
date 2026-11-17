@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -121,6 +122,14 @@ def parse_args() -> argparse.Namespace:
         default=480,
         help="Per-request LLM timeout in seconds for the live pipeline "
         "(default: 480)",
+    )
+    parser.add_argument(
+        "--judge-timeout",
+        type=float,
+        default=None,
+        help="Per-task timeout in seconds for DeepEval's judge-metric phase. "
+        "When set, DeepEval's per-task budget (default 180s) is raised so slow "
+        "judge models do not cancel in-flight cases mid-run",
     )
     return parser.parse_args()
 
@@ -252,6 +261,23 @@ def _evaluate_live(
         return evaluator.evaluate_live(dataset_items, answer_fn, chunk_texts=chunk_texts)
 
 
+def _apply_judge_timeout(args: argparse.Namespace) -> None:
+    """Raise DeepEval's per-task judge timeout when --judge-timeout is set.
+
+    DeepEval enforces a 180s per-task budget by default; a slow judge model
+    (or heavy GEval) that exceeds it gets its in-flight cases cancelled at
+    the gather step, which is exactly what truncates a run to fewer results
+    than goldens. Setting the env var here (before ``evaluate`` runs) lets
+    ``get_settings`` pick up the override.
+    """
+    if args.judge_timeout is None:
+        return
+    os.environ["DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE"] = str(args.judge_timeout)
+    logger.info(
+        "DeepEval per-task judge timeout set to %.0fs", args.judge_timeout
+    )
+
+
 def main() -> None:
     """Run evaluation CLI entrypoint.
 
@@ -261,6 +287,7 @@ def main() -> None:
     pipeline.
     """
     args = parse_args()
+    _apply_judge_timeout(args)
 
     # Fail fast when the OpenRouter key is missing (the judge needs it to run).
     try:
