@@ -154,7 +154,7 @@ def reserve_operation(db, operation):
 
 def release_unstarted(db, reviewer_id):
     changed = db.execute(
-        "UPDATE review_items SET reviewer_id = NULL WHERE reviewer_id = ? AND status = 'pending' AND revision = 0",
+        "UPDATE review_items SET reviewer_id = NULL WHERE reviewer_id = ? AND status = 'pending'",
         (reviewer_id,),
     ).rowcount
     if not changed:
@@ -267,16 +267,25 @@ def save_review(db, item, reviewer_id, revision, status, answer, answerability, 
     record_event(db, updated, reviewer_id, now)
 
 
-def reopen(db, scope, question_id, revision):
+def reopen(db, scope, question_id, revision, *, unassign=False):
     item = db.locked("SELECT * FROM review_items WHERE scope = ? AND question_id = ?", (scope, question_id))
-    if not item or item["status"] not in {"flagged", "verified"} or item["revision"] != revision:
+    statuses = {"draft", "flagged", "verified"} if unassign else {"flagged", "verified"}
+    if not item or item["status"] not in statuses or item["revision"] != revision:
         raise ReviewConflict("Trạng thái câu hỏi đã thay đổi. Hãy tải lại trang.")
     updated = dict(item, status="draft", revision=revision + 1, verified_at=None)
-    db.execute(
-        "UPDATE review_items SET status = 'draft', revision = ?, verified_at = NULL "
-        "WHERE scope = ? AND question_id = ?",
-        (updated["revision"], scope, question_id),
-    )
+    if unassign:
+        updated.update(status="pending", answer=None, answerability=None, evidence_ids=None, notes="")
+        db.execute(
+            "UPDATE review_items SET reviewer_id = NULL, status = 'pending', revision = ?, verified_at = NULL, "
+            "answer = NULL, answerability = NULL, evidence_ids = NULL, notes = '' WHERE scope = ? AND question_id = ?",
+            (updated["revision"], scope, question_id),
+        )
+    else:
+        db.execute(
+            "UPDATE review_items SET status = 'draft', revision = ?, verified_at = NULL "
+            "WHERE scope = ? AND question_id = ?",
+            (updated["revision"], scope, question_id),
+        )
     record_event(db, updated, "admin", timestamp())
 
 

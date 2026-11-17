@@ -213,6 +213,34 @@ class ReviewWorkflow(unittest.TestCase):
         self.assertIn("Đang duyệt", client.get(FIRST).text)
         self.assertEqual(self.admin.get("/admin/export/live").json(), [])
 
+    def test_return_confirmed_question_to_unassigned_pool(self):
+        client = self.join(self.make_invite(count=1))
+        self.assertEqual(self.review(client, FIRST, "confirm", answer="Bản duyệt nhầm", notes="Ghi chú thử").status_code, 303)
+        self.assertEqual(len(self.admin.get("/admin/export/live").json()), 1)
+        history_path = "/admin/history/live/VAX_Q_0001"
+        self.assertIn("Trả về chưa phân công", self.admin.get(history_path).text)
+
+        recovery = {"scope": "live", "identifier": "VAX_Q_0001", "revision": 1, "action": "unassign"}
+        self.assertEqual(self.admin_post("/admin/reopen", recovery).status_code, 303)
+        self.assertEqual(self.admin_post("/admin/reopen", recovery).status_code, 409)
+        self.assertEqual(self.admin.get("/admin/export/live").json(), [])
+        self.assertIn("3 câu chưa phân công", self.admin.get("/admin").text)
+        self.assertEqual(client.get(FIRST).status_code, 404)
+        self.assertIn("Bản duyệt nhầm", self.admin.get(history_path).text)
+
+        new_reviewer = self.join(self.make_invite(count=1))
+        question = new_reviewer.get(FIRST)
+        self.assertEqual(question.status_code, 200)
+        self.assertNotIn("Bản duyệt nhầm", question.text)
+        self.assertNotIn("Ghi chú thử", question.text)
+        with connect(self.location) as db:
+            assigned = db.one("SELECT reviewer_id FROM review_items WHERE scope = 'live' AND question_id = 'VAX_Q_0001'")
+        dashboard = self.admin.get("/admin")
+        operations = re.findall(r'name="operation" value="([a-f0-9]{32})"', dashboard.text)
+        released = self.admin_post("/admin/release", {"reviewer_id": assigned["reviewer_id"], "operation": operations[-1]})
+        self.assertEqual(released.status_code, 200)
+        self.assertIn("3 câu chưa phân công", released.text)
+
     def test_table_preview_and_edited_export_keep_evidence_in_sync(self):
         client = self.join(self.make_invite())
         page = client.get(WITH_TABLE)

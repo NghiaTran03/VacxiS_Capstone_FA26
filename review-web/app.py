@@ -548,7 +548,8 @@ def create_app(location=None):
         scope, identifier = form.get("scope", ""), form.get("identifier", "")
         try:
             with connect(location, write=True) as db:
-                reopen(db, scope, identifier, integer(form.get("revision"), "Hãy tải lại trang."))
+                reopen(db, scope, identifier, integer(form.get("revision"), "Hãy tải lại trang."),
+                       unassign=form.get("action") == "unassign")
         except ReviewError as error:
             raise HTTPException(409, str(error)) from error
         return redirect(f"/admin/history/{scope}/{identifier}")
