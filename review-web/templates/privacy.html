@@ -10,9 +10,9 @@
     <h2>Thông tin được sử dụng như thế nào?</h2>
     <p>Họ tên và vai trò giúp nhóm phụ trách ghi nhận người đã xác nhận câu trả lời. Nơi công tác chỉ dùng để đối chiếu trong đồ án. Thông tin do người duyệt tự khai và được lưu trong hồ sơ riêng.</p>
     <h2>Ai có thể xem?</h2>
-    <p>Người duyệt có thể xem hồ sơ của mình. Nhóm phụ trách có thể xem thông tin được chia sẻ để quản lý đợt duyệt. Tệp JSON dành cho benchmark dùng mã người duyệt.</p>
+    <p>Người duyệt có thể xem hồ sơ của mình. Nhóm phụ trách có thể xem hồ sơ và tải tệp JSON. Tệp dùng họ tên và vai trò khi người duyệt đã đồng ý với mục đích này. Trường hợp còn lại, tệp ghi mã người duyệt.</p>
     <h2>Thay đổi hoặc xóa thông tin</h2>
-    <p>Bạn có thể xóa thông tin đã chia sẻ. Sau khi xóa, các bài duyệt tiếp tục được ghi nhận bằng mã người duyệt. Hệ thống cũng xóa thông tin nếu nhóm thu hồi toàn bộ câu được giao và đóng quyền truy cập của bạn.</p>
+    <p>Bạn có thể xóa thông tin đã chia sẻ. Sau khi xóa, các lần tải JSON tiếp theo sẽ ghi mã người duyệt. Hệ thống cũng xóa thông tin nếu nhóm thu hồi toàn bộ câu được giao và đóng quyền truy cập của bạn.</p>
     <p>{% if email %}Bạn có thể liên hệ <a href="mailto:{{ email }}">{{ email }}</a> để hỏi về dữ liệu của mình.{% else %}Để hỏi về dữ liệu của mình, hãy liên hệ người gửi lời mời tham gia đồ án.{% endif %}</p>
   </section>
   {% if person and person.scope == 'live' %}
@@ -37,6 +37,7 @@
           <input type="hidden" name="csrf" value="{{ csrf }}">
           <input type="hidden" name="profile_revision" value="{{ person.profile_revision }}">
           {{ fields(person, professions) }}
+          <input type="hidden" name="consent_version" value="{{ consent_version }}">
           <div><button type="submit" class="primary" name="action" value="share">Lưu thông tin</button></div>
         </form>
       </details>

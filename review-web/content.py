@@ -93,6 +93,11 @@ def export_record(row):
     claims = []
     if same_answer and record.get("ANSWERABILITY") == label:
         claims = [claim for claim in (record.get("CLAIM_EVIDENCE_MAP") or []) if claim.get("chunk_id") in evidence_ids]
+    reviewer_note = row["notes"].strip()
+    notes = [note for note in (record.get("VERIFICATION_NOTES"), reviewer_note) if note]
+    if not same_answer:
+        notes.append(f"Câu trả lời sau chỉnh sửa:\n{row['answer']}")
+    annotator = reviewer_label(row) if row["full_name"] else row["reviewer_id"]
     record.update({
         "REFERENCE_ANSWER": answer,
         "ANSWERABILITY": label,
@@ -102,6 +107,8 @@ def export_record(row):
         "RELEVANT_DOCS": [doc for doc in (record.get("RELEVANT_DOCS") or []) if doc in docs],
         "CLAIM_EVIDENCE_MAP": claims,
         "VERIFIED": True,
-        "ANNOTATOR_IDS": list(dict.fromkeys([*(record.get("ANNOTATOR_IDS") or []), row["reviewer_id"]])),
+        "ANNOTATOR_IDS": list(dict.fromkeys([*(record.get("ANNOTATOR_IDS") or []), annotator])),
+        "ADJUDICATED": not same_answer or bool(reviewer_note),
+        "VERIFICATION_NOTES": "\n\n".join(notes) or None,
     })
     return record

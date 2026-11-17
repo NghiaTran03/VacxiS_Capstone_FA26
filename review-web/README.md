@@ -7,6 +7,7 @@ Trang riêng để đọc câu hỏi, đối chiếu đoạn nguồn điểm 3, 
 Từ thư mục gốc của repo, dùng PowerShell và `uv`.
 
 ```powershell
+uv run scripts/prepare_review_dataset.py evaluation/eval_dataset_300_final.json chunks_storage/chunks.parquet review-web/eval_dataset_300_review.json
 Set-Location review-web
 uv sync
 Copy-Item .env.example .env
@@ -14,9 +15,10 @@ uv run python -c "import secrets; print(secrets.token_urlsafe(48)); print(secret
 ```
 
 Điền lần lượt hai giá trị vừa tạo vào `REVIEW_SECRET_KEY` và `REVIEW_ADMIN_PASSWORD` trong `.env`. Đặt `REVIEW_PRIVACY_EMAIL` nếu muốn công khai địa chỉ liên hệ của nhóm trên trang quyền riêng tư. Giữ `DATABASE_URL` trống để dùng SQLite cục bộ.
+Nếu SQLite hiện tại đang chứa bộ 460 câu, đặt `REVIEW_DB_PATH=review-300.sqlite3` trong `.env` để nhập bộ mới vào tệp riêng.
 
 ```powershell
-uv run --env-file .env store.py ../test_dataset.json
+uv run --env-file .env store.py eval_dataset_300_review.json
 uv run --env-file .env uvicorn app:app --host 127.0.0.1 --port 8000
 ```
 
@@ -27,10 +29,10 @@ Mở [trang chủ](http://127.0.0.1:8000), bấm **Đăng nhập quản trị** 
 1. Đưa thư mục `review-web` lên repo Git mà Vercel có quyền đọc. Trong Vercel, chọn **Add New → Project**, nhập repo và đặt **Root Directory** thành `review-web`. Dùng preset FastAPI và để Vercel tự cài thư viện từ `pyproject.toml` và `uv.lock`. [FastAPI trên Vercel](https://vercel.com/docs/frameworks/backend/fastapi) · [Chọn thư mục dự án](https://vercel.com/docs/monorepos#add-a-monorepo-through-the-vercel-dashboard)
 2. Trong **Storage** hoặc **Marketplace**, kết nối Neon Postgres với project. Kiểm tra môi trường **Production** có `DATABASE_URL` trỏ đến cơ sở dữ liệu này. Nếu integration đặt tên biến khác, thêm `DATABASE_URL` với chuỗi kết nối có TLS của Neon. Dùng URL kết nối dạng pooled nếu Neon cung cấp. [Neon trên Vercel](https://vercel.com/marketplace/neon) · [Kết nối Postgres](https://vercel.com/docs/postgres)
 3. Trong **Settings → Environment Variables**, đặt `REVIEW_SECRET_KEY` và `REVIEW_ADMIN_PASSWORD` bằng hai giá trị ngẫu nhiên riêng cho Production. Có thể thêm `REVIEW_PRIVACY_EMAIL` để hiện địa chỉ liên hệ. Bật **Enable access to System Environment Variables** để ứng dụng lấy tên miền `vercel.app` của project. Dùng `REVIEW_PUBLIC_URL=https://<tên-miền>` nếu muốn đặt tên miền phát lời mời cụ thể. Nếu bật Preview, dùng cơ sở dữ liệu và bí mật riêng cho Preview. [Biến môi trường](https://vercel.com/docs/environment-variables) · [Tên miền tự động](https://vercel.com/docs/environment-variables/system-environment-variables#vercelprojectproductionurl)
-4. Nạp dữ liệu vào Neon từ máy bạn. Tạo tệp `.env.neon` trong `review-web` với `DATABASE_URL` của Production. Chạy lệnh dưới đây. Lần chạy lại với tệp đầu vào giống hệt giữ nguyên các lượt duyệt hiện có. Với một phiên bản bộ câu hỏi khác, dùng cơ sở dữ liệu mới.
+4. Chuẩn bị tệp `eval_dataset_300_review.json` bằng lệnh chuyển đổi ở trên. Từ `review-web`, tạo tệp `.env.neon` với `DATABASE_URL` của Production rồi chạy lệnh nạp. Lần chạy lại với tệp đầu vào giống hệt giữ các lượt duyệt hiện có. Nếu Neon đang chứa bộ 460 câu, dùng một database trống cho bộ 300 câu rồi trỏ Vercel tới database đó.
 
    ```powershell
-   uv run --env-file .env.neon store.py ../test_dataset.json
+   uv run --env-file .env.neon store.py eval_dataset_300_review.json
    ```
 
 5. Deploy hoặc redeploy sau khi các biến đã được lưu. Trên tên miền Vercel cấp, mở `/admin/login`, đăng nhập, rồi tạo một lời mời **Thử nghiệm nội bộ** để kiểm tra. Sau đó mở một lời mời **Duyệt thật** để kiểm tra màn hình xin phép ngay khi bắt đầu.
@@ -42,7 +44,7 @@ Mở [trang chủ](http://127.0.0.1:8000), bấm **Đăng nhập quản trị** 
 - Để tiếp tục, người duyệt mở lại trang bằng cùng trình duyệt. Nhóm có thể cấp lời mời mới nếu người duyệt đổi trình duyệt hoặc phiên hết hạn. Giữ `REVIEW_SECRET_KEY` ổn định qua các lần deploy để mã đã cấp tiếp tục hoạt động trong thời hạn của chúng.
 - Với lời mời **Duyệt thật** lần đầu, trang xin phép chia sẻ thông tin mở ngay. Người duyệt có thể điền các trường tùy chọn hoặc bấm **Bỏ qua và bắt đầu duyệt**. Cả hai cách đều mở câu hỏi đầu tiên. Người duyệt có thể xem, sửa hoặc xóa các trường đã chia sẻ tại **Bảo vệ thông tin cá nhân**. Lời mời **Thử nghiệm nội bộ** đi thẳng tới bước bắt đầu duyệt.
 - Nhóm quản lý có thể xem lịch sử, mở lại câu đã xác nhận hoặc cần xem lại, và thu hồi các câu chưa bắt đầu để giao cho người khác. Khi thu hồi câu cuối cùng, tài khoản mất quyền truy cập và hồ sơ tùy chọn được xóa.
-- Nút tải JSON của lượt thật xuất các câu đã xác nhận. Khi câu trả lời thay đổi, web dùng đoạn nguồn được chọn để tạo trích dẫn và bỏ bản đồ mệnh đề cũ. Tệp xuất ghi mã người duyệt. Họ tên, nơi công tác, vai trò và ghi chú do người duyệt nhập được lưu riêng trong trang duyệt.
+- Nút tải JSON của lượt thật xuất các câu đã xác nhận. Khi câu trả lời thay đổi, web dùng đoạn nguồn được chọn để tạo trích dẫn và bỏ bản đồ mệnh đề cũ. Trường `VERIFICATION_NOTES` gồm ghi chú người duyệt và nội dung câu trả lời nếu đã sửa. Trường `ADJUDICATED` là `true` khi người duyệt đã sửa câu trả lời hoặc để lại ghi chú. `ANNOTATOR_IDS` ghi họ tên và vai trò khi người duyệt đã đồng ý đưa tên vào tệp JSON, hoặc ghi mã người duyệt. Hồ sơ đã chia sẻ trước đây có thể cập nhật tại **Bảo vệ thông tin cá nhân**.
 - Trang nguồn sử dụng Markdown, các bảng HTML đã được lọc và văn bản nguyên gốc. Nút mở PDF theo trang cần tệp PDF và bảng đối chiếu đoạn với trang PDF.
 
 ## Kiểm thử

@@ -14,7 +14,7 @@ import sqlite3
 
 BASE_DIR = Path(__file__).resolve().parent
 SCOPES = {"live": "Duyệt thật", "test": "Thử nghiệm nội bộ"}
-CONSENT_VERSION = 1
+CONSENT_VERSION = 2
 QUESTION_ID = re.compile(r"[A-Za-z0-9_-]{1,100}")
 
 

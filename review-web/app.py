@@ -20,8 +20,8 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from content import ANSWERABILITY, PROFESSIONS, STATUS, export_record, remove_citations, render_chunk, reviewer_label, score_three
 from store import (
-    BASE_DIR, SCOPES, ReviewConflict, ReviewError, accept_invite, connect, database_location, digest, invite,
-    invited_reviewer, issue_link,
+    BASE_DIR, CONSENT_VERSION, SCOPES, ReviewConflict, ReviewError, accept_invite, connect, database_location, digest,
+    invite, invited_reviewer, issue_link,
     release_unstarted, reopen, reserve_operation, save_review, timestamp, update_profile,
 )
 
@@ -174,7 +174,8 @@ def create_app(location=None):
             "csrf": request.session.setdefault("csrf", secrets.token_urlsafe(32)),
             "admin": is_admin(request), "statuses": STATUS, "scopes": SCOPES, "professions": PROFESSIONS,
             "labels": ANSWERABILITY, "reviewer_label": reviewer_label,
-            "signed_in": bool(request.session.get("reviewer_id")) or is_admin(request), **context,
+            "signed_in": bool(request.session.get("reviewer_id")) or is_admin(request),
+            "consent_version": CONSENT_VERSION, **context,
         })
 
     @app.middleware("http")
@@ -216,7 +217,7 @@ def create_app(location=None):
 
     def permission_intent(person, token):
         context = digest(token) if token else person["access_version"]
-        return consent_signer.dumps([person["id"], person["profile_revision"], context])
+        return consent_signer.dumps([person["id"], person["profile_revision"], context, CONSENT_VERSION])
 
     def invitation_page(request, person, *, token=None, form=None, error=None, code=200):
         ask_profile = needs_profile(person)
@@ -419,6 +420,9 @@ def create_app(location=None):
                 update_profile(db, person, "withdrawn", {})
                 request.session["message"] = "Đã xóa thông tin cá nhân khỏi hồ sơ. Bạn vẫn có thể duyệt bằng mã người duyệt."
             elif action == "share":
+                if form.get("consent_version") != str(CONSENT_VERSION):
+                    return page(request, "privacy", person=person, code=409, email=os.environ.get("REVIEW_PRIVACY_EMAIL", ""),
+                                error="Nội dung xin phép vừa thay đổi. Hãy đọc lại trước khi lưu.")
                 try:
                     update_profile(db, person, "accepted", profile_from(form))
                 except ReviewError as error:
@@ -556,8 +560,11 @@ def create_app(location=None):
             raise HTTPException(404, "Lượt duyệt không tồn tại.")
         with connect(location) as db:
             rows = db.all(
-                "SELECT r.*, q.original FROM review_items r JOIN questions q ON q.id = r.question_id "
-                "WHERE r.scope = ? AND r.status = 'verified' ORDER BY q.position", (scope,),
+                "SELECT r.*, q.original, u.full_name, u.profession "
+                "FROM review_items r JOIN questions q ON q.id = r.question_id "
+                "LEFT JOIN reviewers u ON u.id = r.reviewer_id AND u.scope = 'live' "
+                "AND u.consent = 'accepted' AND u.consent_version >= ? "
+                "WHERE r.scope = ? AND r.status = 'verified' ORDER BY q.position", (CONSENT_VERSION, scope),
             )
         filename = "test_dataset_verified.json" if scope == "live" else "internal_review_test_only.json"
         content = json.dumps([export_record(row) for row in rows], ensure_ascii=False, allow_nan=False, indent="\t")

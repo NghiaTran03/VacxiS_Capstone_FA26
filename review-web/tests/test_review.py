@@ -126,6 +126,9 @@ class ReviewWorkflow(unittest.TestCase):
     def test_live_permission_profile_and_withdrawal(self):
         token = self.make_invite()
         client = TestClient(self.app, follow_redirects=False)
+        with patch("app.CONSENT_VERSION", 1):
+            old_notice = self.open_invite(client, token)
+        self.assertEqual(self.complete_invite(client, old_notice, "share", full_name="Tên nhập ở bản cũ").status_code, 409)
         notice = self.open_invite(client, token)
         self.assertEqual(notice.status_code, 200)
         self.assertIn("Nhóm đồ án xin phép", notice.text)
@@ -143,16 +146,30 @@ class ReviewWorkflow(unittest.TestCase):
         self.assertEqual(self.review(client, FIRST, "confirm").status_code, 303)
         self.assertIn("Bác sĩ Nguyễn Văn A", client.get(FIRST).text)
         response = self.admin.get("/admin/export/live")
-        self.assertNotIn("Nguyễn Văn A", response.text)
         self.assertNotIn("Đơn vị kiểm thử", response.text)
         self.assertEqual(response.headers["cache-control"], "no-store")
         [record] = response.json()
         self.assertTrue(record["VERIFIED"])
-        self.assertTrue(record["ANNOTATOR_IDS"][-1].startswith("R-"))
+        self.assertEqual(record["ANNOTATOR_IDS"][-1], "Bác sĩ Nguyễn Văn A")
+        self.assertTrue(record["ADJUDICATED"])
+        self.assertEqual(record["VERIFICATION_NOTES"], "Câu trả lời sau chỉnh sửa:\nCâu trả lời mẫu")
         self.assertEqual(record["RELEVANT_CHUNKS"], [])
 
+        with connect(self.location, write=True) as db:
+            db.execute("UPDATE reviewers SET consent_version = 1 WHERE scope = 'live'")
+        [legacy] = self.admin.get("/admin/export/live").json()
+        self.assertTrue(legacy["ANNOTATOR_IDS"][-1].startswith("R-"))
         privacy = client.get("/quyen-rieng-tu")
         self.assertIn("Đơn vị kiểm thử", privacy.text)
+        renewal = {"csrf": csrf(privacy), "profile_revision": field(privacy, "profile_revision"), "action": "share",
+                   "full_name": "Nguyễn Văn A", "profession": "doctor", "workplace": "Đơn vị kiểm thử"}
+        self.assertEqual(client.post("/quyen-rieng-tu", data=renewal).status_code, 409)
+        renewal["consent_version"] = field(privacy, "consent_version")
+        self.assertEqual(client.post("/quyen-rieng-tu", data=renewal).status_code, 303)
+        [renewed] = self.admin.get("/admin/export/live").json()
+        self.assertEqual(renewed["ANNOTATOR_IDS"][-1], "Bác sĩ Nguyễn Văn A")
+
+        privacy = client.get("/quyen-rieng-tu")
         profile_revision = field(privacy, "profile_revision")
         profile_action = {"csrf": csrf(privacy), "profile_revision": profile_revision}
         self.assertEqual(client.post("/quyen-rieng-tu", data={**profile_action, "action": "withdraw"}).status_code, 303)
@@ -160,6 +177,8 @@ class ReviewWorkflow(unittest.TestCase):
         self.assertEqual(stale.status_code, 409)
         self.assertNotIn("Nguyễn Văn A", self.admin.get("/admin/history/live/VAX_Q_0001").text)
         self.assertIn("Người duyệt R-", client.get(FIRST).text)
+        [withdrawn] = self.admin.get("/admin/export/live").json()
+        self.assertTrue(withdrawn["ANNOTATOR_IDS"][-1].startswith("R-"))
 
     def test_test_scope_verifies_without_profile_and_never_exports_live(self):
         token = self.make_invite("test")
@@ -203,7 +222,7 @@ class ReviewWorkflow(unittest.TestCase):
         chunk_id = "gardasil_9_001310178700_c_0009"
         review = {"answerability": "PARTIALLY_ANSWERABLE", "evidence_id": chunk_id}
         self.assertEqual(self.review(client, WITH_TABLE, "confirm", answerability="PARTIALLY_ANSWERABLE").status_code, 422)
-        result = self.review(client, WITH_TABLE, "confirm", **review)
+        result = self.review(client, WITH_TABLE, "confirm", notes="Cần lưu ý cách diễn đạt.", **review)
         self.assertEqual(result.status_code, 303)
         exported = self.admin.get("/admin/export/live")
         self.assertIn('\n\t\t"QUERY_ID":', exported.text)
@@ -212,6 +231,28 @@ class ReviewWorkflow(unittest.TestCase):
         self.assertEqual(record["REFERENCE_ANSWER"], f"Câu trả lời mẫu [{chunk_id}]")
         self.assertEqual(record["CLAIM_EVIDENCE_MAP"], [])
         self.assertEqual(record["RELEVANT_DOCS"], ["gardasil_9_001310178700"])
+        self.assertTrue(record["ADJUDICATED"])
+        self.assertEqual(record["VERIFICATION_NOTES"],
+                         "Cần lưu ý cách diễn đạt.\n\nCâu trả lời sau chỉnh sửa:\nCâu trả lời mẫu")
+
+    def test_export_distinguishes_confirmation_from_notes_without_answer_edits(self):
+        client = self.join(self.make_invite(count=1))
+        with connect(self.location) as db:
+            original = json.loads(db.one("SELECT original FROM questions WHERE id = 'VAX_Q_0001'")["original"])
+        answer = original["REFERENCE_ANSWER"]
+        self.assertEqual(self.review(client, FIRST, "confirm", answer=answer, notes="  ").status_code, 303)
+        [confirmed] = self.admin.get("/admin/export/live").json()
+        self.assertTrue(confirmed["VERIFIED"])
+        self.assertFalse(confirmed["ADJUDICATED"])
+        self.assertIsNone(confirmed["VERIFICATION_NOTES"])
+
+        reopened = self.admin_post("/admin/reopen", {"scope": "live", "identifier": "VAX_Q_0001", "revision": 1})
+        self.assertEqual(reopened.status_code, 303)
+        result = self.review(client, FIRST, "confirm", revision=2, answer=answer, notes="Đối chiếu xong.")
+        self.assertEqual(result.status_code, 303)
+        [annotated] = self.admin.get("/admin/export/live").json()
+        self.assertTrue(annotated["ADJUDICATED"])
+        self.assertEqual(annotated["VERIFICATION_NOTES"], "Đối chiếu xong.")
 
     def test_referral_needs_admin_and_assigns_a_distinct_account(self):
         requester = self.join(self.make_invite(count=1, can_refer="yes"))
@@ -283,7 +324,8 @@ class ReviewWorkflow(unittest.TestCase):
 
         profile = other.get("/quyen-rieng-tu")
         saved = other.post("/quyen-rieng-tu", data={"csrf": csrf(profile), "action": "share",
-                           "profile_revision": field(profile, "profile_revision"), "full_name": "Tên sẽ được xóa"})
+                           "profile_revision": field(profile, "profile_revision"), "full_name": "Tên sẽ được xóa",
+                           "consent_version": field(profile, "consent_version")})
         self.assertEqual(saved.status_code, 303)
         with connect(self.location) as db:
             active = db.one("SELECT id FROM reviewers WHERE consent = 'accepted'")
