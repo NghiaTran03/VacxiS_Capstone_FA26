@@ -92,7 +92,7 @@ def parse_args() -> argparse.Namespace:
     choices=["deepeval", "legacy"],
     default="deepeval",
     help="Input dataset format",
-)
+    )
     parser.add_argument(
         "--out-file",
         type=Path,
@@ -111,11 +111,34 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Limit number of queries processed from input file",
     )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume generation by skipping queries already saved in the output file",
+    )
     from vacxis_capstone_fa26.cli import add_retrieval_arguments
     add_retrieval_arguments(parser)
     return parser.parse_args()
 
-def save_results(results: list[dict], out_path: Path) -> None:
+def _get_query_id(item: dict[str, Any]) -> str | None:
+    """Extract a stable query ID from either supported dataset format."""
+    metadata = item.get("additional_metadata") or {}
+
+    query_id = (
+        metadata.get("query_id")
+        or item.get("query_id")
+        or item.get("QUERY_ID")
+        or item.get("id")
+    )
+
+    if query_id is None or not str(query_id).strip():
+        return None
+
+    return str(query_id)
+
+
+def save_results(results: list[dict[str, Any]], out_path: Path) -> None:
+    """Atomically save generation results to avoid partially written JSON."""
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     temp_path = out_path.with_suffix(out_path.suffix + ".tmp")
@@ -124,6 +147,70 @@ def save_results(results: list[dict], out_path: Path) -> None:
         json.dump(results, f, ensure_ascii=False, indent=2)
 
     temp_path.replace(out_path)
+
+
+def load_resume_results(
+    out_path: Path,
+    items: list,
+) -> tuple[list[dict[str, Any]], set[str]]:
+    """Load existing results and validate them against the input dataset."""
+    if not out_path.exists():
+        logger.info("No previous output found. Starting fresh.")
+        return [], set()
+
+    try:
+        existing = json.loads(out_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        raise ValueError(f"Cannot read existing results file: {exc}") from exc
+
+    if not isinstance(existing, list):
+        raise ValueError("Existing results file must contain a JSON list.")
+
+    input_ids = [_get_query_id(item.original) for item in items]
+
+    if any(query_id is None for query_id in input_ids):
+        raise ValueError(
+            "Resume requires every input record to have a query ID. "
+            "Use query_id, QUERY_ID, or additional_metadata.query_id."
+        )
+
+    if len(input_ids) != len(set(input_ids)):
+        raise ValueError("Input dataset contains duplicate query IDs.")
+
+    valid_ids = set(input_ids)
+    completed_ids: set[str] = set()
+
+    for result in existing:
+        if not isinstance(result, dict):
+            raise ValueError("Existing results contain an invalid record.")
+
+        query_id = _get_query_id(result)
+
+        if query_id is None:
+            raise ValueError(
+                "An existing result has no query ID. Cannot safely resume."
+            )
+
+        if query_id not in valid_ids:
+            raise ValueError(
+                f"Existing result ID {query_id!r} is not in the input dataset. "
+                "Check that you are using the correct output file."
+            )
+
+        if query_id in completed_ids:
+            raise ValueError(
+                f"Duplicate query ID {query_id!r} in existing results."
+            )
+
+        completed_ids.add(query_id)
+
+    logger.info(
+        "Resuming from %d existing results. %d questions remaining.",
+        len(completed_ids),
+        len(items) - len(completed_ids),
+    )
+
+    return existing, completed_ids
 
 def main() -> None:
     """Run generation CLI entrypoint."""
@@ -164,12 +251,40 @@ def main() -> None:
             args.dataset_format,
         )
 
-        results = []
+        out_path = args.out_file or Path("generation_results.json")
+
+        if args.resume:
+            try:
+                results, completed_ids = load_resume_results(out_path, items)
+            except ValueError as exc:
+                logger.error("Cannot resume generation: %s", exc)
+                sys.exit(1)
+        else:
+            results = []
+            completed_ids = set()
+
+            if out_path.exists():
+                logger.warning(
+                    "Starting fresh. Existing output file will be overwritten: %s",
+                    out_path,
+                )
 
         if args.use_ground_truth_chunks:
             logger.info("Using provided ground-truth contexts.")
 
             for item in items:
+                query_id = _get_query_id(item.original)
+
+                if args.resume and query_id in completed_ids:
+                    logger.info("Skipping completed query: %s", query_id)
+                    continue
+                
+                logger.info(
+                    "Generating query %s (%s)",
+                    item.query,
+                    query_id or "no ID",
+                )
+
                 ans = generator.generate(
                     query=item.query,
                     chunks=item.chunks,
@@ -177,7 +292,12 @@ def main() -> None:
 
                 result = item.original.copy()
                 result["GENERATED_ANSWER"] = ans.to_dict()
+
                 results.append(result)
+
+                if query_id:
+                    completed_ids.add(query_id)
+
                 save_results(results, out_path)
 
         else:
@@ -201,6 +321,18 @@ def main() -> None:
                 )
 
                 for item in items:
+                    query_id = _get_query_id(item.original)
+
+                    if args.resume and query_id in completed_ids:
+                        logger.info("Skipping completed query: %s", query_id)
+                        continue
+                    
+                    logger.info(
+                        "Generating query %s (%s)",
+                        item.query,
+                        query_id or "no ID",
+                    )
+
                     ans = pipeline.answer(
                         query=item.query,
                         top_k=args.top_k,
@@ -209,26 +341,20 @@ def main() -> None:
 
                     result = item.original.copy()
                     result["GENERATED_ANSWER"] = ans.to_dict()
+
                     results.append(result)
+
+                    if query_id:
+                        completed_ids.add(query_id)
+
                     save_results(results, out_path)
-
-        out_path = args.out_file or Path("generation_results.json")
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-
-        with out_path.open("w", encoding="utf-8") as f:
-            json.dump(
-                results,
-                f,
-                ensure_ascii=False,
-                indent=2,
-            )
-
+        save_results(results, out_path)
+        
         logger.info(
             "Saved %d generation results to %s",
             len(results),
             out_path,
         )
-        return
 
     # Mode 2: Single interactive query
     if not args.query or not args.query.strip():
