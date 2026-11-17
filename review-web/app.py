@@ -18,7 +18,8 @@ from itsdangerous import URLSafeSerializer
 from starlette.datastructures import FormData
 from starlette.middleware.sessions import SessionMiddleware
 
-from content import ANSWERABILITY, PROFESSIONS, STATUS, export_record, remove_citations, render_chunk, reviewer_label, score_three
+from content import ANSWERABILITY, PROFESSIONS, STATUS, export_record, remove_citations, render_chunk, review_content, reviewer_label
+from dataset_format import as_golden, is_golden
 from store import (
     BASE_DIR, CONSENT_VERSION, SCOPES, ReviewConflict, ReviewError, accept_invite, connect, database_location, digest,
     invite, invited_reviewer, issue_link,
@@ -336,16 +337,17 @@ def create_app(location=None):
 
     def question_page(request, person, item, *, form=None, error=None, code=200):
         original = json.loads(item["original"])
-        sources = score_three(original)
-        answer = item["answer"] if item["answer"] is not None else remove_citations(original["REFERENCE_ANSWER"])
-        label = item["answerability"] or original.get("ANSWERABILITY", "UNANSWERABLE")
+        reference, original_label, sources = review_content(original)
+        reference = remove_citations(reference)
+        answer = item["answer"] if item["answer"] is not None else reference
+        label = item["answerability"] or original_label
         selected = json.loads(item["evidence_ids"]) if item["evidence_ids"] is not None else [c["CHUNK_ID"] for c in sources]
         values = {"answer": answer, "answerability": label, "evidence_ids": selected, "notes": item["notes"]}
         if form is not None:
             values = {field: str(form.get(field, "")) for field in ("answer", "answerability", "notes")}
             values["evidence_ids"] = form.getlist("evidence_id")
         return page(request, "question", person=person, item=item, values=values,
-                    original_answer=remove_citations(original["REFERENCE_ANSWER"]),
+                    original_answer=reference,
                     sources=[render_chunk(chunk) for chunk in sources], error=error, code=code,
                     message=request.session.pop("message", ""))
 
@@ -381,7 +383,8 @@ def create_app(location=None):
                     raise ReviewError("Kiểm tra độ dài câu trả lời, ghi chú và mức độ tài liệu trả lời được.")
                 choices = set(form.getlist("evidence_id"))
                 original = json.loads(item["original"])
-                selected = [chunk["CHUNK_ID"] for chunk in score_three(original) if chunk["CHUNK_ID"] in choices]
+                _, _, sources = review_content(original)
+                selected = [chunk["CHUNK_ID"] for chunk in sources if chunk["CHUNK_ID"] in choices]
                 if label == "UNANSWERABLE":
                     selected = []
                 if status == "flagged" and not notes:
@@ -560,6 +563,15 @@ def create_app(location=None):
         if scope not in SCOPES:
             raise HTTPException(404, "Lượt duyệt không tồn tại.")
         with connect(location) as db:
+            first = db.one("SELECT original FROM questions ORDER BY position LIMIT 1")
+            original = json.loads(first["original"]) if first else {}
+            golden = as_golden(original)
+            metadata = None
+            if is_golden(original):
+                entry = db.one("SELECT metadata FROM dataset_metadata WHERE id = 1")
+                metadata = json.loads(entry["metadata"])
+            elif golden is not None:
+                metadata = {"total_generated": db.one("SELECT COUNT(*) AS total FROM questions")["total"]}
             rows = db.all(
                 "SELECT r.*, q.original, u.full_name, u.profession "
                 "FROM review_items r JOIN questions q ON q.id = r.question_id "
@@ -568,7 +580,9 @@ def create_app(location=None):
                 "WHERE r.scope = ? AND r.status = 'verified' ORDER BY q.position", (CONSENT_VERSION, scope),
             )
         filename = "test_dataset_verified.json" if scope == "live" else "internal_review_test_only.json"
-        content = json.dumps([export_record(row) for row in rows], ensure_ascii=False, allow_nan=False, indent="\t")
+        records = [export_record(row) for row in rows]
+        payload = {"metadata": metadata, "goldens": records} if metadata is not None else records
+        content = json.dumps(payload, ensure_ascii=False, allow_nan=False, indent="\t")
         return Response(content + "\n", media_type="application/json",
                         headers={"Content-Disposition": f'attachment; filename="{filename}"'})
 

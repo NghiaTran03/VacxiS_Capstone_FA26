@@ -11,6 +11,7 @@ import re
 import secrets
 import sqlite3
 
+from dataset_format import as_golden, context_title, is_golden
 
 BASE_DIR = Path(__file__).resolve().parent
 SCOPES = {"live": "Duyệt thật", "test": "Thử nghiệm nội bộ"}
@@ -88,22 +89,67 @@ def connect(location, *, write=False):
         raw.close()
 
 
-def import_dataset(location, path):
+def upgrade_eval_import(db, records, source_hash):
+    existing = db.all("SELECT id, original FROM questions ORDER BY position")
+    if len(existing) != len(records):
+        raise ReviewError("Số câu hiện có khác bộ DeepEval được chọn.")
+    for current, (identifier, _, record) in zip(existing, records, strict=True):
+        golden = as_golden(json.loads(current["original"]))
+        if golden is None or current["id"] != identifier or any(
+            golden[field] != record[field] for field in ("input", "expected_output", "context")
+        ) or any(
+            golden["additional_metadata"].get(field) != record["additional_metadata"].get(field)
+            for field in ("query_id", "source_chunk_ids", "doc_ids", "answerability", "complexity",
+                          "multi_hop_type", "query_style")
+        ):
+            raise ReviewError(f"Câu {current['id']} không khớp nguồn DeepEval, nên không thể nâng định dạng.")
+    for identifier, _, record in records:
+        db.execute("UPDATE questions SET original = ? WHERE id = ?", (json.dumps(record, ensure_ascii=False), identifier))
+    db.execute("UPDATE dataset SET source_hash = ? WHERE id = 1", (source_hash,))
+
+
+def import_dataset(location, path, *, upgrade_eval=False):
     contents = path.read_bytes()
     source_hash = hashlib.sha256(contents).hexdigest()
-    records = json.loads(contents.decode("utf-8-sig"))
+    payload = json.loads(contents.decode("utf-8-sig"))
+    native = isinstance(payload, dict) and isinstance(payload.get("metadata"), dict)
+    records = payload.get("goldens") if native else payload
     if not isinstance(records, list) or not records:
         raise ReviewError("Bộ dữ liệu phải là một danh sách câu hỏi.")
     ids = set()
+    entries = []
     for record in records:
         if not isinstance(record, dict):
             raise ReviewError("Mỗi câu hỏi phải là một bản ghi JSON.")
-        identifier = record.get("QUERY_ID", "")
+        if native:
+            if not is_golden(record) or not isinstance(record["additional_metadata"], dict):
+                raise ReviewError("Mỗi golden cần có input, expected_output, context và additional_metadata.")
+            metadata = record["additional_metadata"]
+            identifier = metadata.get("query_id", "")
+            query, answer = record["input"], record["expected_output"]
+            if metadata.get("answerability") not in ("ANSWERABLE", "PARTIALLY_ANSWERABLE", "UNANSWERABLE"):
+                raise ReviewError(f"{identifier}: answerability không hợp lệ.")
+            contexts = record["context"]
+            chunk_ids = metadata.get("source_chunk_ids")
+            if (not isinstance(contexts, list) or not isinstance(chunk_ids, list) or len(contexts) != len(chunk_ids)
+                    or any(not isinstance(value, str) or not value for value in (*contexts, *chunk_ids))):
+                raise ReviewError(f"{identifier}: context và source_chunk_ids phải khớp từng mục.")
+            doc_titles = metadata.get("doc_titles")
+            doc_ids = metadata.get("doc_ids")
+            context_titles = {title for text in contexts if (title := context_title(text))}
+            if (not isinstance(doc_titles, list) or not isinstance(doc_ids, list)
+                    or any(title not in doc_titles for title in context_titles)
+                    or any(chunk_id.rsplit("_c_", 1)[0] not in doc_ids for chunk_id in chunk_ids)):
+                raise ReviewError(f"{identifier}: nguồn không khớp. Hãy chạy prepare_review_dataset.py trước khi nhập.")
+        else:
+            identifier = record.get("QUERY_ID", "")
+            query, answer = record.get("QUERY"), record.get("REFERENCE_ANSWER")
         if not isinstance(identifier, str) or not QUESTION_ID.fullmatch(identifier) or identifier in ids:
             raise ReviewError("QUERY_ID phải hợp lệ và duy nhất.")
-        if any(not isinstance(record.get(field), str) for field in ("QUERY", "REFERENCE_ANSWER")):
+        if not isinstance(query, str) or not isinstance(answer, str):
             raise ReviewError(f"{identifier} thiếu nội dung câu hỏi hoặc câu trả lời.")
         ids.add(identifier)
+        entries.append((identifier, query, record))
 
     with connect(location, write=True) as db:
         for statement in (BASE_DIR / "schema.sql").read_text(encoding="utf-8").split(";"):
@@ -112,12 +158,19 @@ def import_dataset(location, path):
         db.execute("INSERT INTO dataset VALUES (1, ?) ON CONFLICT (id) DO NOTHING", (source_hash,))
         existing = db.locked("SELECT source_hash FROM dataset WHERE id = 1")
         if existing["source_hash"] != source_hash:
-            raise ReviewError("Cơ sở dữ liệu đã chứa một phiên bản khác. Hãy dùng cơ sở dữ liệu mới.")
-        for position, record in enumerate(records):
-            identifier = record["QUERY_ID"]
+            if not (native and upgrade_eval):
+                raise ReviewError("Cơ sở dữ liệu đã chứa một phiên bản khác. Hãy dùng cơ sở dữ liệu mới.")
+            upgrade_eval_import(db, entries, source_hash)
+        if native:
+            db.execute(
+                "INSERT INTO dataset_metadata (id, metadata) VALUES (1, ?) "
+                "ON CONFLICT (id) DO UPDATE SET metadata = excluded.metadata",
+                (json.dumps(payload["metadata"], ensure_ascii=False),),
+            )
+        for position, (identifier, query, record) in enumerate(entries):
             db.execute(
                 "INSERT INTO questions VALUES (?, ?, ?, ?) ON CONFLICT (id) DO NOTHING",
-                (identifier, position, record["QUERY"], json.dumps(record, ensure_ascii=False)),
+                (identifier, position, query, json.dumps(record, ensure_ascii=False)),
             )
             for scope in SCOPES:
                 db.execute(
@@ -291,10 +344,11 @@ def reopen(db, scope, question_id, revision, *, unassign=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Import the VacxiS review dataset into the configured database.")
+    parser.add_argument("--upgrade-eval", action="store_true", help="Upgrade a matching existing eval import in place.")
     parser.add_argument("dataset", type=Path)
     args = parser.parse_args()
     try:
-        count = import_dataset(database_location(), args.dataset)
+        count = import_dataset(database_location(), args.dataset, upgrade_eval=args.upgrade_eval)
     except (ReviewError, OSError) as error:
         parser.exit(1, f"{error}\n")
     print(f"Đã chuẩn bị {count} câu cho hai lượt duyệt.")

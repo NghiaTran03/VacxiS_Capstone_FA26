@@ -103,7 +103,15 @@ input[type="checkbox"] { width: 1.2rem; height: 1.2rem; accent-color: var(--acce
 .review-fields { border: 0; padding: 0; min-inline-size: 0; }
 .disclosure { border: 1px solid var(--line); border-radius: 7px; }
 .disclosure summary { min-height: 44px; padding: .5rem .7rem; cursor: pointer; color: var(--accent); font-weight: 650; }
+.source-index { padding: .65rem .8rem; border-radius: 7px; background: var(--tint); }
+.source-index ul { list-style: none; padding: 0; margin: 0; }
+.source-index li + li { border-top: 1px solid var(--line); }
+.source-index a, .source-return { display: block; min-height: 44px; padding-block: .5rem; }
+.source-index a { padding-inline: .25rem; }
+.source-index a:hover { background: var(--paper); }
+.source-index, .source > summary { scroll-margin-top: 1rem; overflow-wrap: anywhere; }
 .source[open] > summary { border-bottom: 1px solid var(--line); }
+.source-return { justify-self: start; }
 .original { padding: .15rem .75rem .65rem; white-space: pre-wrap; overflow-wrap: anywhere; }
 .source-content, .section-body { padding: .75rem; }
 .source-content { display: grid; gap: .75rem; min-width: 0; }

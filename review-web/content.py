@@ -7,6 +7,7 @@ from markdown_it import MarkdownIt
 from markupsafe import Markup
 import nh3
 
+from dataset_format import as_golden, context_title
 
 STATUS = {"pending": "Chưa duyệt", "draft": "Đang duyệt", "flagged": "Cần xem lại", "verified": "Đã xác nhận"}
 ANSWERABILITY = {
@@ -40,6 +41,18 @@ def score_three(record):
     return [chunk for chunk in (record.get("RELEVANT_CHUNKS") or []) if chunk.get("RELEVANCE_SCORE") == 3]
 
 
+def review_content(record):
+    golden = as_golden(record)
+    if golden is None:
+        return record["REFERENCE_ANSWER"], record.get("ANSWERABILITY", "UNANSWERABLE"), score_three(record)
+    metadata = golden["additional_metadata"]
+    sources = [
+        {"CHUNK_ID": identifier, "TEXT": text}
+        for identifier, text in zip(metadata["source_chunk_ids"], golden["context"], strict=True)
+    ]
+    return golden["expected_output"], metadata["answerability"], sources
+
+
 def _simple_math(match):
     source = match.group(1)
     for command, glyph in ((r"\le", "≤ "), (r"\ge", "≥ "), (r"\%", "%")):
@@ -57,8 +70,17 @@ def render_chunk(chunk):
     raw = chunk["TEXT"]
     body = raw.replace("\r\n", "\n")
     heading = SOURCE_HEADING.match(body)
-    subject, section = heading.groups() if heading else ("Đoạn trích", "")
+    if heading is None:
+        prefix, _, rest = body.partition("\n")
+        if prefix.startswith("[") and prefix.endswith("]"):
+            heading = SOURCE_HEADING.match(rest)
+            if heading:
+                body = rest
+    subject, section = heading.groups() if heading else ("", "")
     if heading:
+        section = section.replace(" | ", " · ")
+        if section == "CHỐNG CHỈ ĐỊNH":
+            section = "Chống chỉ định"
         body = body[heading.end():]
     if not re.search(r"<[a-zA-Z][^>]*>", body):
         body = PAGE_BREAK.sub(_page_label, body)
@@ -76,8 +98,46 @@ def render_chunk(chunk):
     return {"id": chunk["CHUNK_ID"], "subject": subject, "section": section, "raw": raw, "html": Markup(safe)}
 
 
+def review_fields(row, original, same_answer):
+    reviewer_note = row["notes"].strip()
+    notes = [note for note in (original.get("VERIFICATION_NOTES"), reviewer_note) if note]
+    if not same_answer:
+        notes.append(f"Câu trả lời sau chỉnh sửa:\n{row['answer']}")
+    annotator = reviewer_label(row) if row["full_name"] else row["reviewer_id"]
+    return {
+        "VERIFIED": True,
+        "ANNOTATOR_IDS": list(dict.fromkeys([*(original.get("ANNOTATOR_IDS") or []), annotator])),
+        "ADJUDICATED": not same_answer or bool(reviewer_note),
+        "VERIFICATION_NOTES": "\n\n".join(notes) or None,
+    }
+
+
+def export_golden(row, golden):
+    metadata = golden["additional_metadata"]
+    evidence_ids = set(json.loads(row["evidence_ids"]))
+    selected = [(identifier, text) for identifier, text in
+                zip(metadata["source_chunk_ids"], golden["context"], strict=True) if identifier in evidence_ids]
+    doc_ids = {identifier.rsplit("_c_", 1)[0] for identifier, _ in selected}
+    doc_titles = {context_title(text) for _, text in selected}
+    same_answer = remove_citations(golden["expected_output"]) == row["answer"]
+    return dict(golden,
+                expected_output=golden["expected_output"] if same_answer else row["answer"],
+                context=[text for _, text in selected],
+                additional_metadata={
+                    **metadata,
+                    "answerability": row["answerability"],
+                    "source_chunk_ids": [identifier for identifier, _ in selected],
+                    "doc_ids": [doc for doc in metadata["doc_ids"] if doc in doc_ids],
+                    "doc_titles": [title for title in metadata["doc_titles"] if title in doc_titles],
+                    **review_fields(row, metadata, same_answer),
+                })
+
+
 def export_record(row):
     record = json.loads(row["original"])
+    golden = as_golden(record)
+    if golden is not None:
+        return export_golden(row, golden)
     answer = row["answer"]
     label = row["answerability"]
     evidence_ids = set(json.loads(row["evidence_ids"]))
@@ -93,11 +153,6 @@ def export_record(row):
     claims = []
     if same_answer and record.get("ANSWERABILITY") == label:
         claims = [claim for claim in (record.get("CLAIM_EVIDENCE_MAP") or []) if claim.get("chunk_id") in evidence_ids]
-    reviewer_note = row["notes"].strip()
-    notes = [note for note in (record.get("VERIFICATION_NOTES"), reviewer_note) if note]
-    if not same_answer:
-        notes.append(f"Câu trả lời sau chỉnh sửa:\n{row['answer']}")
-    annotator = reviewer_label(row) if row["full_name"] else row["reviewer_id"]
     record.update({
         "REFERENCE_ANSWER": answer,
         "ANSWERABILITY": label,
@@ -106,9 +161,6 @@ def export_record(row):
                             or chunk["CHUNK_ID"] in evidence_ids] if selected else [],
         "RELEVANT_DOCS": [doc for doc in (record.get("RELEVANT_DOCS") or []) if doc in docs],
         "CLAIM_EVIDENCE_MAP": claims,
-        "VERIFIED": True,
-        "ANNOTATOR_IDS": list(dict.fromkeys([*(record.get("ANNOTATOR_IDS") or []), annotator])),
-        "ADJUDICATED": not same_answer or bool(reviewer_note),
-        "VERIFICATION_NOTES": "\n\n".join(notes) or None,
+        **review_fields(row, record, same_answer),
     })
     return record

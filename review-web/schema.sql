@@ -3,6 +3,11 @@ CREATE TABLE IF NOT EXISTS dataset (
     source_hash TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS dataset_metadata (
+    id INTEGER PRIMARY KEY REFERENCES dataset (id),
+    metadata TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS questions (
     id TEXT PRIMARY KEY,
     position INTEGER NOT NULL,

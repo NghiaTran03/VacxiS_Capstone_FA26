@@ -1,4 +1,8 @@
 {% extends "base.html" %}
+{% macro source_title(source, number, show_subject) -%}
+  {%- if show_subject and source.subject %}<strong>{{ source.subject }}</strong> · {% endif -%}
+  {{- source.section or ('Đoạn trích ' ~ number) -}}
+{%- endmacro %}
 {% block title %}Duyệt {{ item.question_id }}{% endblock %}
 {% block content %}
 <div class="reading-width stack">
@@ -20,15 +24,29 @@
         <details class="disclosure"><summary>Xem câu trả lời ban đầu</summary><p class="original">{{ original_answer }}</p></details>
       </div>
       <section class="panel stack" aria-labelledby="sources-title">
-        <h2 id="sources-title">Đoạn trích trong tài liệu</h2>
+        <h2 id="sources-title">Đoạn trích trong tài liệu{% if sources %} ({{ sources|length }}){% endif %}</h2>
+        {% set has_index = sources|length > 1 %}
+        {% set subjects = sources|map(attribute='subject')|unique|list %}
+        {% set shared_subject = subjects[0] if has_index and subjects|length == 1 else '' %}
+        {% if has_index %}
+          <nav class="source-index" id="source-index" aria-label="Danh sách đoạn trích" tabindex="-1" data-source-index>
+            {% if shared_subject %}<p><strong>{{ shared_subject }}</strong></p>{% endif %}
+            <ul>
+              {% for source in sources %}
+                <li><a href="#source-{{ loop.index }}">{{ source_title(source, loop.index, not shared_subject) }}</a></li>
+              {% endfor %}
+            </ul>
+          </nav>
+        {% endif %}
         {% for source in sources %}
           <details class="disclosure source"{% if loop.first %} open{% endif %}>
-            <summary>{{ source.subject }}{% if source.section %} · {{ source.section }}{% endif %}</summary>
+            <summary id="source-{{ loop.index }}">{{ source_title(source, loop.index, not shared_subject) }}</summary>
             <div class="source-content">
               <p class="code">{{ source.id }}</p>
               <div class="source-text">{{ source.html }}</div>
               <details class="disclosure raw"><summary>Xem nguyên văn</summary><pre>{{ source.raw }}</pre></details>
               <label class="check"><input name="evidence_id" type="checkbox" value="{{ source.id }}"{% if source.id in values.evidence_ids %} checked{% endif %}> Dùng đoạn này làm căn cứ</label>
+              {% if has_index %}<a class="source-return" href="#source-index">Về danh sách đoạn trích</a>{% endif %}
             </div>
           </details>
         {% else %}<p class="muted">Chưa có đoạn trích đính kèm.</p>{% endfor %}

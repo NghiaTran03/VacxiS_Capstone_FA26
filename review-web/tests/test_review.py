@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 
 from app import create_app
 from content import render_chunk
-from store import connect, import_dataset, invite
+from store import ReviewError, connect, import_dataset, invite
 
 
 PASSWORD = "test-admin-password-for-review-web"
@@ -44,6 +44,9 @@ class ReviewWorkflow(unittest.TestCase):
         fixture = Path(self.temp.name) / "fixture.json"
         fixture.write_text(json.dumps(dataset, ensure_ascii=False), encoding="utf-8")
         import_dataset(self.location, fixture)
+        self.open_app()
+
+    def open_app(self):
         with patch.dict(os.environ, {"REVIEW_ADMIN_PASSWORD": PASSWORD}, clear=False):
             self.app = create_app(self.location)
         self.admin = TestClient(self.app, follow_redirects=False)
@@ -86,6 +89,81 @@ class ReviewWorkflow(unittest.TestCase):
         data = {"answer": "Câu trả lời mẫu", "answerability": "UNANSWERABLE", "notes": "",
                 "csrf": csrf(client.get(path)), "revision": revision, "action": action, **extra}
         return client.post(path, data=data)
+
+    def test_deepeval_export_and_upgrade_preserve_review(self):
+        temp = Path(self.temp.name)
+        self.location = str(temp / "eval.sqlite3")
+        contexts = [
+            "[Tài liệu A | Chống chỉ định]\n[CHỦ ĐỀ: Vắc xin A] > [MỤC: CHỐNG CHỈ ĐỊNH]\nĐoạn đối chiếu A",
+            "[Tài liệu B | Chống chỉ định]\n[CHỦ ĐỀ: Vắc xin B] > [MỤC: CHỐNG CHỈ ĐỊNH]\nĐoạn đối chiếu B",
+        ]
+        golden = {
+            "input": "Câu hỏi DeepEval", "expected_output": "Đáp án gốc", "context": contexts,
+            "additional_metadata": {
+                "query_id": "eval_0001", "answerability": "ANSWERABLE", "complexity": "easy",
+                "multi_hop_type": None, "query_style": "formal", "source_chunk_ids": ["a_c_0000", "b_c_0000"],
+                "doc_ids": ["a", "b"], "doc_titles": ["Tài liệu A", "Tài liệu B"],
+            },
+        }
+        converted = [{
+            "QUERY_ID": "eval_0001", "QUERY": golden["input"], "REFERENCE_ANSWER": golden["expected_output"],
+            "ANSWERABILITY": "ANSWERABLE", "QUERY_COMPLEXITY": "easy", "MULTI_HOP_TYPE": None,
+            "QUERY_STYLE": "formal", "RELEVANT_DOCS": ["a", "b"], "ANNOTATOR_IDS": ["GEN"],
+            "RELEVANT_CHUNKS": [{"CHUNK_ID": identifier, "TEXT": text, "RELEVANCE_SCORE": 3}
+                                for identifier, text in zip(["a_c_0000", "b_c_0000"], contexts, strict=True)],
+        }]
+        old_path = temp / "converted.json"
+        old_path.write_text(json.dumps(converted), encoding="utf-8")
+        import_dataset(self.location, old_path)
+        self.open_app()
+        self.assertEqual(self.admin.get("/admin/export/live").json(), {"metadata": {"total_generated": 1}, "goldens": []})
+
+        client = self.join(self.make_invite(count=1))
+        path = "/review/eval_0001"
+        page = client.get(path)
+        self.assertIn("Đáp án gốc", page.text)
+        self.assertIn("Đoạn đối chiếu B", page.text)
+        self.assertIn('Đoạn trích trong tài liệu (2)', page.text)
+        self.assertIn('<a href="#source-1"><strong>Vắc xin A</strong> · Chống chỉ định</a>', page.text)
+        self.assertIn('<a href="#source-2"><strong>Vắc xin B</strong> · Chống chỉ định</a>', page.text)
+        self.assertLess(page.text.index('href="#source-2"'), page.text.index('id="source-1"'))
+        self.assertIn('<details class="disclosure source" open>', page.text)
+        self.assertIn('<summary id="source-2"><strong>Vắc xin B</strong> · Chống chỉ định</summary>', page.text)
+        self.assertIn('<div class="source-text"><p>Đoạn đối chiếu B</p>', page.text)
+        self.assertIn('<pre>[Tài liệu B | Chống chỉ định]', page.text)
+        self.assertEqual(page.text.count('href="#source-index"'), 2)
+        self.assertEqual(self.review(client, path, "confirm", answerability="ANSWERABLE", evidence_id="b_c_0000",
+                                     notes="Ghi chú cho nhóm").status_code, 303)
+        response = self.admin.get("/admin/export/live")
+        [exported] = response.json()["goldens"]
+        self.assertEqual(set(exported), set(golden))
+        self.assertNotIn("RELEVANCE_SCORE", response.text)
+        self.assertEqual(exported["input"], golden["input"])
+        self.assertEqual(exported["expected_output"], "Câu trả lời mẫu")
+        self.assertEqual(exported["context"], contexts[1:])
+        metadata = exported["additional_metadata"]
+        self.assertEqual(metadata["source_chunk_ids"], ["b_c_0000"])
+        self.assertEqual(metadata["doc_ids"], ["b"])
+        self.assertEqual(metadata["doc_titles"], ["Tài liệu B"])
+        self.assertTrue(metadata["VERIFIED"])
+        self.assertTrue(metadata["ADJUDICATED"])
+        self.assertEqual(metadata["VERIFICATION_NOTES"], "Ghi chú cho nhóm\n\nCâu trả lời sau chỉnh sửa:\nCâu trả lời mẫu")
+
+        prepared_path = temp / "prepared.json"
+        source_metadata = {"total_generated": 1, "model": "test-model"}
+        unrelated = dict(golden, input="Câu hỏi khác")
+        prepared_path.write_text(json.dumps({"metadata": source_metadata, "goldens": [unrelated]}), encoding="utf-8")
+        with self.assertRaises(ReviewError):
+            import_dataset(self.location, prepared_path, upgrade_eval=True)
+        self.assertEqual(self.admin.get("/admin/export/live").json(), response.json())
+
+        prepared_path.write_text(json.dumps({"metadata": source_metadata, "goldens": [golden]}), encoding="utf-8")
+        with self.assertRaises(ReviewError):
+            import_dataset(self.location, prepared_path)
+        import_dataset(self.location, prepared_path, upgrade_eval=True)
+        import_dataset(self.location, prepared_path)
+        self.assertIn("Đoạn đối chiếu B", client.get(path).text)
+        self.assertEqual(self.admin.get("/admin/export/live").json(), {"metadata": source_metadata, "goldens": [exported]})
 
     def test_invitation_can_be_entered_on_home_or_opened_as_link_once(self):
         home = TestClient(self.app, follow_redirects=False).get("/")

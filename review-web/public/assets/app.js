@@ -67,6 +67,17 @@
       element.textContent = formatter.format(new Date(element.dateTime));
     });
 
+    document.querySelectorAll("[data-source-index] a").forEach(link => {
+      link.addEventListener("click", event => {
+        const summary = document.getElementById(link.hash.slice(1));
+        if (!summary) return;
+        event.preventDefault();
+        summary.parentElement.open = true;
+        summary.focus({ preventScroll: true });
+        summary.scrollIntoView({ block: "start" });
+      });
+    });
+
     const review = document.querySelector("[data-review-form]");
     if (review) {
       let edited = false;
