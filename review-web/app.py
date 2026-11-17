@@ -11,7 +11,7 @@ from typing import Annotated
 from urllib.parse import urlsplit
 
 from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from itsdangerous import URLSafeSerializer
@@ -560,8 +560,9 @@ def create_app(location=None):
                 "WHERE r.scope = ? AND r.status = 'verified' ORDER BY q.position", (scope,),
             )
         filename = "test_dataset_verified.json" if scope == "live" else "internal_review_test_only.json"
-        return JSONResponse([export_record(row) for row in rows],
-                            headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+        content = json.dumps([export_record(row) for row in rows], ensure_ascii=False, allow_nan=False, indent="\t")
+        return Response(content + "\n", media_type="application/json",
+                        headers={"Content-Disposition": f'attachment; filename="{filename}"'})
 
     return app
 
