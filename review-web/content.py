@@ -95,6 +95,9 @@ def render_chunk(chunk):
             lines.append(line)
         body = "\n".join(lines)
     safe = nh3.clean(MARKDOWN.render(body), tags=TAGS, attributes=ATTRIBUTES)
+    safe = safe.replace(
+        "<table>", '<div class="source-table" role="region" aria-label="Bảng trong tài liệu" tabindex="0"><table>'
+    ).replace("</table>", "</table></div>")
     return {"id": chunk["CHUNK_ID"], "subject": subject, "section": section, "raw": raw, "html": Markup(safe)}
 
 

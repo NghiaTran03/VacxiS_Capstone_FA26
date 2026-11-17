@@ -118,6 +118,7 @@ input[type="checkbox"] { width: 1.2rem; height: 1.2rem; accent-color: var(--acce
 .source-text { overflow-x: auto; overflow-wrap: anywhere; line-height: 1.65; }
 .source-text > * { margin: 0 0 .65rem; }
 .source-text > :last-child { margin-bottom: 0; }
+.source-table { overflow-x: auto; }
 .source-text table { border-collapse: collapse; width: 100%; font-size: 1rem; }
 .source-text td, .source-text th { border: 1px solid var(--line); padding: .45rem .55rem; text-align: start; vertical-align: top; }
 .source-text th { background: var(--tint); }
@@ -136,4 +137,6 @@ input[type="checkbox"] { width: 1.2rem; height: 1.2rem; accent-color: var(--acce
   .question-list a { flex-wrap: wrap; padding: .75rem .85rem; }
   .admin-grid { grid-template-columns: 1fr; }
   .page { padding-top: 1.15rem; }
+  .source-table th, .source-table td { min-width: 4.5rem; overflow-wrap: normal; }
+  .source-table td { font-variant-numeric: tabular-nums; }
 }

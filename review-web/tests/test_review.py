@@ -322,7 +322,8 @@ class ReviewWorkflow(unittest.TestCase):
     def test_table_preview_and_edited_export_keep_evidence_in_sync(self):
         client = self.join(self.make_invite())
         page = client.get(WITH_TABLE)
-        self.assertIn("<table>", page.text)
+        self.assertIn('<div class="source-table" role="region" aria-label="Bảng trong tài liệu" tabindex="0"><table>',
+                      page.text)
         self.assertIn('rowspan="2"', page.text)
         self.assertEqual(page.text.count('name="evidence_id"'), 1)
         chunk_id = "gardasil_9_001310178700_c_0009"
