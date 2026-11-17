@@ -13,6 +13,7 @@ from vacxis_capstone_fa26.generation.generator import MedicalGenerator
 from vacxis_capstone_fa26.generation.pipeline import VacxisRAGPipeline
 from vacxis_capstone_fa26.generation.prompts import get_chunk_field
 from vacxis_capstone_fa26.generation.schemas import GenerationConfig
+from vacxis_capstone_fa26.generation.datasets import load_dataset
 
 logging.basicConfig(
     level=logging.INFO,
@@ -87,6 +88,12 @@ def parse_args() -> argparse.Namespace:
         help="Input JSON file containing queries (e.g. test_dataset.json)",
     )
     parser.add_argument(
+    "--dataset-format",
+    choices=["deepeval", "legacy"],
+    default="deepeval",
+    help="Input dataset format",
+)
+    parser.add_argument(
         "--out-file",
         type=Path,
         default=None,
@@ -126,64 +133,90 @@ def main() -> None:
     generator = MedicalGenerator(config=gen_config)
 
     # Mode 1: Batch process from input file (e.g. test_dataset.json)
+
     if args.input_file:
         if not args.input_file.exists():
             logger.error("Input file not found: %s", args.input_file)
             sys.exit(1)
 
-        with open(args.input_file, "r", encoding="utf-8") as f:
-            data: list[dict[str, Any]] = json.load(f)
-
-        if not isinstance(data, list):
-            logger.error("Expected a list of query items in %s", args.input_file)
+        try:
+            items = load_dataset(
+                path=args.input_file,
+                dataset_format=args.dataset_format,
+                limit=args.limit,
+            )
+        except (ValueError, KeyError, TypeError) as exc:
+            logger.error("Failed to load dataset: %s", exc)
             sys.exit(1)
 
-        items = data[:args.limit] if args.limit else data
-        logger.info("Processing %d items from %s...", len(items), args.input_file)
+        logger.info(
+            "Processing %d items using %s format...",
+            len(items),
+            args.dataset_format,
+        )
 
-        results: list[dict[str, Any]] = []
+        results = []
 
         if args.use_ground_truth_chunks:
-            logger.info("Using ground truth RELEVANT_CHUNKS directly (bypassing retrieval).")
+            logger.info("Using provided ground-truth contexts.")
+
             for item in items:
-                q_text = item.get("QUERY") or ""
-                raw_chunks = item.get("RELEVANT_CHUNKS") or []
-                chunks = [
-                    _GroundTruthChunk(
-                        chunk_id=c.get("CHUNK_ID", "") if isinstance(c, dict) else getattr(c, "chunk_id", ""),
-                        doc_title=(item.get("ENTITIES") or {}).get("vaccine", "") if isinstance(item, dict) else "",
-                        text=c.get("TEXT", "") if isinstance(c, dict) else getattr(c, "text", ""),
-                        score=float((c.get("RELEVANCE_SCORE") if isinstance(c, dict) else getattr(c, "score", 0.0)) or 0.0),
-                    )
-                    for c in raw_chunks
-                ]
-                ans = generator.generate(query=q_text, chunks=chunks)
-                res_dict = item.copy()
-                res_dict["GENERATED_ANSWER"] = ans.to_dict()
-                results.append(res_dict)
+                ans = generator.generate(
+                    query=item.query,
+                    chunks=item.chunks,
+                )
+
+                result = item.original.copy()
+                result["GENERATED_ANSWER"] = ans.to_dict()
+                results.append(result)
+
         else:
             try:
-                from vacxis_capstone_fa26.retrieval.retriever import VacxisRetriever
+                from vacxis_capstone_fa26.retrieval.retriever import (
+                    VacxisRetriever,
+                )
             except ImportError as exc:
-                logger.error("Retrieval module requires PyTorch/CUDA dependencies (%s).", exc)
+                logger.error(
+                    "Retrieval module requires PyTorch/CUDA dependencies (%s).",
+                    exc,
+                )
                 sys.exit(1)
 
             ret_config = retrieval_config(args)
+
             with VacxisRetriever(config=ret_config) as retriever:
-                pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
+                pipeline = VacxisRAGPipeline(
+                    retriever=retriever,
+                    generator=generator,
+                )
+
                 for item in items:
-                    q_text = item.get("QUERY") or ""
-                    ans = pipeline.answer(query=q_text, top_k=args.top_k, skip_rerank=args.skip_rerank)
-                    res_dict = item.copy()
-                    res_dict["GENERATED_ANSWER"] = ans.to_dict()
-                    results.append(res_dict)
+                    ans = pipeline.answer(
+                        query=item.query,
+                        top_k=args.top_k,
+                        skip_rerank=args.skip_rerank,
+                    )
+
+                    result = item.original.copy()
+                    result["GENERATED_ANSWER"] = ans.to_dict()
+                    results.append(result)
 
         out_path = args.out_file or Path("generation_results.json")
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(out_path, "w", encoding="utf-8") as f:
-            json.dump(results, f, ensure_ascii=False, indent=2)
 
-        logger.info("Saved %d generation results to %s", len(results), out_path)
+        with out_path.open("w", encoding="utf-8") as f:
+            json.dump(
+                results,
+                f,
+                ensure_ascii=False,
+                indent=2,
+            )
+
+        logger.info(
+            "Saved %d generation results to %s",
+            len(results),
+            out_path,
+        )
         return
 
     # Mode 2: Single interactive query
