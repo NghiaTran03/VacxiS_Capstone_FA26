@@ -13,9 +13,10 @@ from typing import Any
 
 from json_repair import json_repair
 from openai import AsyncOpenAI, OpenAI
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from deepeval.models import DeepEvalBaseLLM
+import time
 
 JUDGE_API_KEY_ENV = "OPENROUTER_API_KEY"
 JUDGE_BASE_URL_ENV = "VACXIS_LLM_BASE_URL"
@@ -60,6 +61,7 @@ class OpenRouterJudgeLLM(DeepEvalBaseLLM):
         api_key: str | None = None,
         base_url: str | None = None,
         temperature: float = 0.0,
+        schema_retries: int = 3,
     ) -> None:
         self.model_name = resolve_judge_model(model)
         self.api_key = (api_key or os.getenv(JUDGE_API_KEY_ENV, "")).strip()
@@ -67,6 +69,7 @@ class OpenRouterJudgeLLM(DeepEvalBaseLLM):
             base_url or os.getenv(JUDGE_BASE_URL_ENV, "https://openrouter.ai/api/v1")
         ).rstrip("/")
         self.temperature = temperature
+        self.schema_retries = max(0, schema_retries)
         self._sync_client: OpenAI | None = None
         self._async_client: AsyncOpenAI | None = None
         super().__init__(model=self.model_name)
@@ -97,6 +100,48 @@ class OpenRouterJudgeLLM(DeepEvalBaseLLM):
     def get_model_name(self) -> str:
         return self.model_name
 
+    def _build_schema_retry_prompt(
+        self,
+        original_prompt: str,
+        raw_response: str,
+        schema: type[BaseModel],
+        error: ValidationError,
+    ) -> str:
+        """Ask the judge to correct an invalid structured response."""
+
+        validation_errors = error.errors(
+            include_url=False,
+            include_context=False,
+        )
+
+        return f"""
+    Your previous response did not conform to the required output schema.
+
+    Original task:
+    {original_prompt}
+
+    Required JSON schema:
+    {schema.model_json_schema()}
+
+    Previous invalid response:
+    {raw_response}
+
+    Validation errors:
+    {validation_errors}
+
+    Please correct your previous response.
+
+    Requirements:
+    - Return a complete, valid JSON object.
+    - Include ALL required fields.
+    - Ensure every nested object conforms to the schema.
+    - Do not omit any items from arrays.
+    - Do not include explanations, markdown fences, or additional text.
+    - Preserve the original meaning and information wherever possible.
+
+    Return ONLY the corrected JSON.
+    """.strip()
+
     @staticmethod
     def _parse_schema(raw: str, schema: type[BaseModel]) -> BaseModel:
         """Parse the judge's text into ``schema``, tolerating stray prose.
@@ -126,11 +171,37 @@ class OpenRouterJudgeLLM(DeepEvalBaseLLM):
         schema: type[BaseModel] | None = None,
     ) -> str | BaseModel:
         client = self.load_model()
-        response = client.chat.completions.create(**self._build_request_kwargs(prompt))
-        content = response.choices[0].message.content or ""
-        if schema is not None:
-            return self._parse_schema(content, schema)
-        return content
+
+        if schema is None:
+            response = client.chat.completions.create(
+                **self._build_request_kwargs(prompt)
+            )
+            return response.choices[0].message.content or ""
+
+        current_prompt = prompt
+
+        for attempt in range(self.schema_retries + 1):
+            response = client.chat.completions.create(
+                **self._build_request_kwargs(current_prompt)
+            )
+            content = response.choices[0].message.content or ""
+
+            try:
+                return self._parse_schema(content, schema)
+
+            except ValidationError as exc:
+
+                if attempt >= self.schema_retries:
+                    break
+
+                current_prompt = self._build_schema_retry_prompt(
+                    original_prompt=prompt,
+                    raw_response=content,
+                    schema=schema,
+                    error=exc,
+                )
+                time.sleep(3)
+                print("Sleeping for 3 sec before retry judge")
 
     async def a_generate(
         self,
@@ -138,10 +209,34 @@ class OpenRouterJudgeLLM(DeepEvalBaseLLM):
         schema: type[BaseModel] | None = None,
     ) -> str | BaseModel:
         client = self._load_async_model()
-        response = await client.chat.completions.create(
-            **self._build_request_kwargs(prompt)
-        )
-        content = response.choices[0].message.content or ""
-        if schema is not None:
-            return self._parse_schema(content, schema)
-        return content
+
+        if schema is None:
+            response = await client.chat.completions.create(
+                **self._build_request_kwargs(prompt)
+            )
+            return response.choices[0].message.content or ""
+
+        current_prompt = prompt
+
+        for attempt in range(self.schema_retries + 1):
+            response = await client.chat.completions.create(
+                **self._build_request_kwargs(current_prompt)
+            )
+            content = response.choices[0].message.content or ""
+
+            try:
+                return self._parse_schema(content, schema)
+
+            except ValidationError as exc:
+
+                if attempt >= self.schema_retries:
+                    break
+
+                current_prompt = self._build_schema_retry_prompt(
+                    original_prompt=prompt,
+                    raw_response=content,
+                    schema=schema,
+                    error=exc,
+                )
+                time.sleep(3)
+                print("Sleeping for 3 sec before retry judge")
