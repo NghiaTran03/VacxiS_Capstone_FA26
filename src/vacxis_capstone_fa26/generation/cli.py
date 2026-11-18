@@ -13,6 +13,7 @@ from vacxis_capstone_fa26.generation.generator import MedicalGenerator
 from vacxis_capstone_fa26.generation.pipeline import VacxisRAGPipeline
 from vacxis_capstone_fa26.generation.prompts import get_chunk_field
 from vacxis_capstone_fa26.generation.schemas import GenerationConfig
+from vacxis_capstone_fa26.generation.datasets import load_dataset
 
 logging.basicConfig(
     level=logging.INFO,
@@ -87,6 +88,12 @@ def parse_args() -> argparse.Namespace:
         help="Input JSON file containing queries (e.g. test_dataset.json)",
     )
     parser.add_argument(
+    "--dataset-format",
+    choices=["deepeval", "legacy"],
+    default="deepeval",
+    help="Input dataset format",
+    )
+    parser.add_argument(
         "--out-file",
         type=Path,
         default=None,
@@ -104,10 +111,106 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Limit number of queries processed from input file",
     )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume generation by skipping queries already saved in the output file",
+    )
     from vacxis_capstone_fa26.cli import add_retrieval_arguments
     add_retrieval_arguments(parser)
     return parser.parse_args()
 
+def _get_query_id(item: dict[str, Any]) -> str | None:
+    """Extract a stable query ID from either supported dataset format."""
+    metadata = item.get("additional_metadata") or {}
+
+    query_id = (
+        metadata.get("query_id")
+        or item.get("query_id")
+        or item.get("QUERY_ID")
+        or item.get("id")
+    )
+
+    if query_id is None or not str(query_id).strip():
+        return None
+
+    return str(query_id)
+
+
+def save_results(results: list[dict[str, Any]], out_path: Path) -> None:
+    """Atomically save generation results to avoid partially written JSON."""
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    temp_path = out_path.with_suffix(out_path.suffix + ".tmp")
+
+    with temp_path.open("w", encoding="utf-8") as f:
+        json.dump(results, f, ensure_ascii=False, indent=2)
+
+    temp_path.replace(out_path)
+
+
+def load_resume_results(
+    out_path: Path,
+    items: list,
+) -> tuple[list[dict[str, Any]], set[str]]:
+    """Load existing results and validate them against the input dataset."""
+    if not out_path.exists():
+        logger.info("No previous output found. Starting fresh.")
+        return [], set()
+
+    try:
+        existing = json.loads(out_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        raise ValueError(f"Cannot read existing results file: {exc}") from exc
+
+    if not isinstance(existing, list):
+        raise ValueError("Existing results file must contain a JSON list.")
+
+    input_ids = [_get_query_id(item.original) for item in items]
+
+    if any(query_id is None for query_id in input_ids):
+        raise ValueError(
+            "Resume requires every input record to have a query ID. "
+            "Use query_id, QUERY_ID, or additional_metadata.query_id."
+        )
+
+    if len(input_ids) != len(set(input_ids)):
+        raise ValueError("Input dataset contains duplicate query IDs.")
+
+    valid_ids = set(input_ids)
+    completed_ids: set[str] = set()
+
+    for result in existing:
+        if not isinstance(result, dict):
+            raise ValueError("Existing results contain an invalid record.")
+
+        query_id = _get_query_id(result)
+
+        if query_id is None:
+            raise ValueError(
+                "An existing result has no query ID. Cannot safely resume."
+            )
+
+        if query_id not in valid_ids:
+            raise ValueError(
+                f"Existing result ID {query_id!r} is not in the input dataset. "
+                "Check that you are using the correct output file."
+            )
+
+        if query_id in completed_ids:
+            raise ValueError(
+                f"Duplicate query ID {query_id!r} in existing results."
+            )
+
+        completed_ids.add(query_id)
+
+    logger.info(
+        "Resuming from %d existing results. %d questions remaining.",
+        len(completed_ids),
+        len(items) - len(completed_ids),
+    )
+
+    return existing, completed_ids
 
 def main() -> None:
     """Run generation CLI entrypoint."""
@@ -126,65 +229,132 @@ def main() -> None:
     generator = MedicalGenerator(config=gen_config)
 
     # Mode 1: Batch process from input file (e.g. test_dataset.json)
+
     if args.input_file:
         if not args.input_file.exists():
             logger.error("Input file not found: %s", args.input_file)
             sys.exit(1)
 
-        with open(args.input_file, "r", encoding="utf-8") as f:
-            data: list[dict[str, Any]] = json.load(f)
-
-        if not isinstance(data, list):
-            logger.error("Expected a list of query items in %s", args.input_file)
+        try:
+            items = load_dataset(
+                path=args.input_file,
+                dataset_format=args.dataset_format,
+                limit=args.limit,
+            )
+        except (ValueError, KeyError, TypeError) as exc:
+            logger.error("Failed to load dataset: %s", exc)
             sys.exit(1)
 
-        items = data[:args.limit] if args.limit else data
-        logger.info("Processing %d items from %s...", len(items), args.input_file)
+        logger.info(
+            "Processing %d items using %s format...",
+            len(items),
+            args.dataset_format,
+        )
 
-        results: list[dict[str, Any]] = []
+        out_path = args.out_file or Path("generation_results.json")
+
+        if args.resume:
+            try:
+                results, completed_ids = load_resume_results(out_path, items)
+            except ValueError as exc:
+                logger.error("Cannot resume generation: %s", exc)
+                sys.exit(1)
+        else:
+            results = []
+            completed_ids = set()
+
+            if out_path.exists():
+                logger.warning(
+                    "Starting fresh. Existing output file will be overwritten: %s",
+                    out_path,
+                )
 
         if args.use_ground_truth_chunks:
-            logger.info("Using ground truth RELEVANT_CHUNKS directly (bypassing retrieval).")
+            logger.info("Using provided ground-truth contexts.")
+
             for item in items:
-                q_text = item.get("QUERY") or ""
-                raw_chunks = item.get("RELEVANT_CHUNKS") or []
-                chunks = [
-                    _GroundTruthChunk(
-                        chunk_id=c.get("CHUNK_ID", "") if isinstance(c, dict) else getattr(c, "chunk_id", ""),
-                        doc_title=(item.get("ENTITIES") or {}).get("vaccine", "") if isinstance(item, dict) else "",
-                        text=c.get("TEXT", "") if isinstance(c, dict) else getattr(c, "text", ""),
-                        score=float((c.get("RELEVANCE_SCORE") if isinstance(c, dict) else getattr(c, "score", 0.0)) or 0.0),
-                    )
-                    for c in raw_chunks
-                ]
-                ans = generator.generate(query=q_text, chunks=chunks)
-                res_dict = item.copy()
-                res_dict["GENERATED_ANSWER"] = ans.to_dict()
-                results.append(res_dict)
+                query_id = _get_query_id(item.original)
+
+                if args.resume and query_id in completed_ids:
+                    logger.info("Skipping completed query: %s", query_id)
+                    continue
+                
+                logger.info(
+                    "Generating query %s (%s)",
+                    item.query,
+                    query_id or "no ID",
+                )
+
+                ans = generator.generate(
+                    query=item.query,
+                    chunks=item.chunks,
+                )
+
+                result = item.original.copy()
+                result["GENERATED_ANSWER"] = ans.to_dict()
+
+                results.append(result)
+
+                if query_id:
+                    completed_ids.add(query_id)
+
+                save_results(results, out_path)
+
         else:
             try:
-                from vacxis_capstone_fa26.retrieval.retriever import VacxisRetriever
+                from vacxis_capstone_fa26.retrieval.retriever import (
+                    VacxisRetriever,
+                )
             except ImportError as exc:
-                logger.error("Retrieval module requires PyTorch/CUDA dependencies (%s).", exc)
+                logger.error(
+                    "Retrieval module requires PyTorch/CUDA dependencies (%s).",
+                    exc,
+                )
                 sys.exit(1)
 
             ret_config = retrieval_config(args)
+
             with VacxisRetriever(config=ret_config) as retriever:
-                pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
+                pipeline = VacxisRAGPipeline(
+                    retriever=retriever,
+                    generator=generator,
+                )
+
                 for item in items:
-                    q_text = item.get("QUERY") or ""
-                    ans = pipeline.answer(query=q_text, top_k=args.top_k, skip_rerank=args.skip_rerank)
-                    res_dict = item.copy()
-                    res_dict["GENERATED_ANSWER"] = ans.to_dict()
-                    results.append(res_dict)
+                    query_id = _get_query_id(item.original)
 
-        out_path = args.out_file or Path("generation_results.json")
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(out_path, "w", encoding="utf-8") as f:
-            json.dump(results, f, ensure_ascii=False, indent=2)
+                    if args.resume and query_id in completed_ids:
+                        logger.info("Skipping completed query: %s", query_id)
+                        continue
+                    
+                    logger.info(
+                        "Generating query %s (%s)",
+                        item.query,
+                        query_id or "no ID",
+                    )
 
-        logger.info("Saved %d generation results to %s", len(results), out_path)
-        return
+                    ans = pipeline.answer(
+                        query=item.query,
+                        top_k=args.top_k,
+                        skip_rerank=args.skip_rerank,
+                    )
+
+                    result = item.original.copy()
+                    result["GENERATED_ANSWER"] = ans.to_dict()
+
+                    results.append(result)
+
+                    if query_id:
+                        completed_ids.add(query_id)
+
+                    save_results(results, out_path)
+        save_results(results, out_path)
+        
+        logger.info(
+            "Saved %d generation results to %s",
+            len(results),
+            out_path,
+        )
 
     # Mode 2: Single interactive query
     if not args.query or not args.query.strip():

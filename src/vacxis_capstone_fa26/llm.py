@@ -68,6 +68,19 @@ def completion(*, model: str, messages: list[dict[str, str]], timeout: float = 3
             response = client.chat.completions.create(
                 model=resolved, messages=messages, extra_body=extra_body or {}, **kwargs,
             )
-    except Exception:
-        raise LLMError("OpenRouter request failed; check credentials, service and timeout.") from None
+    except Exception as exc:
+        raise LLMError(f"OpenRouter request failed ({safe_detail(exc)}).") from exc
     return validate_response(response)
+
+
+def safe_detail(exc: BaseException, limit: int = 300) -> str:
+    """One-line, credential-safe description of a transport failure.
+
+    ``LLMError`` must never carry provider payloads or the API key, so the
+    detail is the exception class plus a redacted, truncated message.
+    """
+    key = os.getenv("OPENROUTER_API_KEY", "")
+    text = f"{type(exc).__name__}: {exc}"
+    if key:
+        text = text.replace(key, "***")
+    return text[:limit]

@@ -25,7 +25,9 @@ table.md
 !scripts/lightrag_ingestion.py
 .bin/
 bugs-review/
+.local/
 
 #models
 models/
 .pytest_cache
+.deepeval/
