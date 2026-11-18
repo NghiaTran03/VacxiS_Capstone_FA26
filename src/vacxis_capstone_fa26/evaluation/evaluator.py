@@ -36,6 +36,10 @@ from deepeval.test_case import LLMTestCase, SingleTurnParams
 
 from vacxis_capstone_fa26.evaluation import datasets
 from vacxis_capstone_fa26.evaluation.datasets import GoldenRecord
+from vacxis_capstone_fa26.evaluation.ir_metrics import (
+    DEFAULT_K_VALUES,
+    compute_query_ir_metrics,
+)
 from vacxis_capstone_fa26.evaluation.judge import OpenRouterJudgeLLM
 from vacxis_capstone_fa26.evaluation.schemas import (
     EvaluationSummary,
@@ -107,10 +111,12 @@ class _CaseInfo:
         actual_output: str,
         is_refusal: bool,
         retrieval_context: list[str],
+        retrieved_chunk_ids: list[str] | None = None,
     ) -> None:
         self.actual_output = actual_output
         self.is_refusal = is_refusal
         self.retrieval_context = retrieval_context
+        self.retrieved_chunk_ids = retrieved_chunk_ids or []
 
 
 class VacxisRAGEvaluator:
@@ -122,6 +128,8 @@ class VacxisRAGEvaluator:
         threshold: float = 0.5,
         *,
         enable_geval: bool = True,
+        enable_ir_metrics: bool = True,
+        ir_k_values: Sequence[int] = DEFAULT_K_VALUES,
     ) -> None:
         # Judge resolution is deferred so constructing an evaluator never raises
         # on missing credentials; it only matters once LLM-judged metrics run.
@@ -129,6 +137,8 @@ class VacxisRAGEvaluator:
         self._judge: DeepEvalBaseLLM | None = None
         self.threshold = threshold
         self.enable_geval = enable_geval
+        self.enable_ir_metrics = enable_ir_metrics
+        self.ir_k_values = tuple(ir_k_values)
 
     @property
     def judge(self) -> DeepEvalBaseLLM:
@@ -183,6 +193,7 @@ class VacxisRAGEvaluator:
             retrieval_context=datasets.retrieval_context_from_answer(
                 {"retrieved_chunk_ids": fields["retrieved_chunk_ids"]}, chunk_texts
             ),
+            retrieved_chunk_ids=fields.get("retrieved_chunk_ids", []),
         )
 
     def _build_test_case(
@@ -283,6 +294,82 @@ class VacxisRAGEvaluator:
         )
         return self.build_summary(goldens, eval_result, case_infos)
 
+    def evaluate_retrieval(
+        self,
+        dataset_items: Sequence[dict[str, Any]],
+        generation_results: Sequence[dict[str, Any]],
+        *,
+        k_values: Sequence[int] | None = None,
+    ) -> EvaluationSummary:
+        """Evaluate deterministic IR metrics without invoking any LLM judge."""
+        k_vals = tuple(k_values) if k_values is not None else self.ir_k_values
+        aligned = align_results(dataset_items, generation_results)
+        goldens = [datasets.to_record(item) for item in aligned]
+        case_infos: list[_CaseInfo] = []
+        for result in generation_results:
+            fields = datasets.answer_fields(result)
+            case_infos.append(self._case_info(fields, {}))
+
+        ir_metric_names = [
+            f"{m}@{k}"
+            for k in k_vals
+            for m in ("Hit", "Recall", "Precision", "MRR", "NDCG", "MAP")
+        ]
+        per_query: list[QueryEvalResult] = []
+        for record, info in zip(goldens, case_infos):
+            scores: dict[str, float] = {}
+            details: dict[str, dict[str, Any]] = {}
+            if record.relevant_chunk_ids:
+                ir_scores = compute_query_ir_metrics(
+                    info.retrieved_chunk_ids,
+                    record.relevant_chunk_ids,
+                    k_values=k_vals,
+                )
+                scores.update(ir_scores)
+                for ir_name, ir_score in ir_scores.items():
+                    details[ir_name] = {
+                        "score": ir_score,
+                        "success": ir_score >= self.threshold,
+                        "reason": f"Deterministic IR metric {ir_name}",
+                        "error": None,
+                    }
+            per_query.append(
+                QueryEvalResult(
+                    query_id=record.query_id,
+                    query=record.query,
+                    actual_output=info.actual_output,
+                    expected_output=record.expected_output,
+                    retrieval_context=info.retrieval_context,
+                    is_refusal=info.is_refusal,
+                    answerability=record.answerability,
+                    metric_scores=scores,
+                    metric_results=details,
+                    metadata={
+                        "answerability": record.answerability,
+                        "complexity": record.complexity,
+                        "query_style": record.query_style,
+                        "difficulty": record.difficulty,
+                        "query_type": record.query_type,
+                    },
+                )
+            )
+
+        aggregates = _aggregate_stats(per_query, ir_metric_names)
+        summary = EvaluationSummary(
+            task="retrieval",
+            num_queries=len(per_query),
+            metric_names=ir_metric_names,
+            overall_metrics={name: agg.mean for name, agg in aggregates.items()},
+            metric_aggregates=aggregates,
+            per_query_results=[q.to_dict() for q in per_query],
+            metadata={"threshold": self.threshold, "k_values": list(k_vals)},
+        )
+        summary.by_answerability = _group_breakdown(per_query, "answerability", ir_metric_names)
+        summary.by_complexity = _group_breakdown(per_query, "complexity", ir_metric_names)
+        summary.by_query_style = _group_breakdown(per_query, "query_style", ir_metric_names)
+        summary.by_difficulty = _group_breakdown(per_query, "difficulty", ir_metric_names)
+        return summary
+
     def _run_deepeval(
         self,
         test_cases: list[LLMTestCase],
@@ -344,6 +431,12 @@ class VacxisRAGEvaluator:
             )
 
         metric_names = self._metric_names()
+        ir_metric_names = [
+            f"{m}@{k}"
+            for k in self.ir_k_values
+            for m in ("Hit", "Recall", "Precision", "MRR", "NDCG", "MAP")
+        ]
+        has_ir_metrics = False
         per_query: list[QueryEvalResult] = []
         for record, metrics_data, info in zip(goldens, by_case, case_infos):
             scores: dict[str, float] = {}
@@ -373,6 +466,22 @@ class VacxisRAGEvaluator:
                     "error": None,
                 }
 
+            if self.enable_ir_metrics and record.relevant_chunk_ids:
+                has_ir_metrics = True
+                ir_scores = compute_query_ir_metrics(
+                    info.retrieved_chunk_ids,
+                    record.relevant_chunk_ids,
+                    k_values=self.ir_k_values,
+                )
+                scores.update(ir_scores)
+                for ir_name, ir_score in ir_scores.items():
+                    details[ir_name] = {
+                        "score": ir_score,
+                        "success": ir_score >= self.threshold,
+                        "reason": f"Deterministic IR metric {ir_name}",
+                        "error": None,
+                    }
+
             per_query.append(
                 QueryEvalResult(
                     query_id=record.query_id,
@@ -394,20 +503,21 @@ class VacxisRAGEvaluator:
                 )
             )
 
-        aggregates = _aggregate_stats(per_query, metric_names)
+        all_metric_names = [*metric_names, *(ir_metric_names if has_ir_metrics else [])]
+        aggregates = _aggregate_stats(per_query, all_metric_names)
         summary = EvaluationSummary(
             task="rag",
             num_queries=len(per_query),
-            metric_names=metric_names,
+            metric_names=all_metric_names,
             overall_metrics={name: agg.mean for name, agg in aggregates.items()},
             metric_aggregates=aggregates,
             per_query_results=[q.to_dict() for q in per_query],
             metadata={"threshold": self.threshold},
         )
-        summary.by_answerability = _group_breakdown(per_query, "answerability", metric_names)
-        summary.by_complexity = _group_breakdown(per_query, "complexity", metric_names)
-        summary.by_query_style = _group_breakdown(per_query, "query_style", metric_names)
-        summary.by_difficulty = _group_breakdown(per_query, "difficulty", metric_names)
+        summary.by_answerability = _group_breakdown(per_query, "answerability", all_metric_names)
+        summary.by_complexity = _group_breakdown(per_query, "complexity", all_metric_names)
+        summary.by_query_style = _group_breakdown(per_query, "query_style", all_metric_names)
+        summary.by_difficulty = _group_breakdown(per_query, "difficulty", all_metric_names)
         return summary
 
     # ------------------------------------------------------------------
