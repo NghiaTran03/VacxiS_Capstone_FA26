@@ -20,9 +20,10 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from content import (
     ADMIN_STATUSES, ANSWERABILITY, BATCH_LABELS, PROFESSIONS, STATUS,
-    export_record, remove_citations, render_chunk, review_content, reviewer_label,
+    changed_content, export_record, remove_citations, render_chunk, review_content, review_data, reviewer_label,
 )
 from dataset_format import as_golden, is_golden
+from documents import packaged_documents
 from store import (
     BASE_DIR, CONSENT_VERSION, SCOPES, ReviewConflict, ReviewError, accept_invite, adjudicate_item,
     connect, database_location, digest, expert_slot_for, invite, invited_reviewer, issue_link,
@@ -239,7 +240,7 @@ def create_app(location=None):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Robots-Tag"] = "noindex, nofollow"
         response.headers["Content-Security-Policy"] = (
-            "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; form-action 'self'; "
+            "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; form-action 'self'; "
             "base-uri 'none'; frame-ancestors 'none'"
         )
         if not request.url.path.startswith("/assets/"):
@@ -357,6 +358,31 @@ def create_app(location=None):
             raise ReviewError("Hãy điền câu trả lời và chọn đoạn làm căn cứ nếu tài liệu trả lời được.")
         return answer, label, selected, notes
 
+    def parse_review_data(form, original_json, answer, label, evidence, action):
+        original = json.loads(original_json)
+        original_query = original.get("input", original.get("QUERY", ""))
+        query = str(form.get("query", original_query)).strip()
+        question_reason = str(form.get("question_reason", "")).strip()
+        answer_reason = str(form.get("answer_reason", "")).strip()
+        if not query or len(query) > 10000 or max(len(question_reason), len(answer_reason)) > 3000:
+            raise ReviewError("Kiểm tra độ dài câu hỏi và lý do chỉnh sửa.")
+        reference, _, _ = review_content(original)
+        query_changed = query != original_query.strip()
+        answer_changed = answer != remove_citations(reference)
+        if action == "confirm" and ((query_changed and not question_reason) or (answer_changed and not answer_reason)):
+            raise ReviewError("Vui lòng ghi lý do cho từng phần câu hỏi hoặc câu trả lời đã chỉnh sửa.")
+        result = None
+        if action == "reject":
+            result = "REJECTED"
+        elif action == "confirm":
+            result = "EDITED" if changed_content(original, query, answer, label, evidence) else "APPROVED"
+        return {
+            "query": query,
+            "question_reason": question_reason if query_changed else "",
+            "answer_reason": answer_reason if answer_changed else "",
+            "status": result,
+        }
+
     @app.get("/review")
     def review_list(request: Request, status: str = "", q: str = "", role: str = ""):
         with connect(location) as db:
@@ -366,7 +392,7 @@ def create_app(location=None):
             slot = expert_slot_for(db, person["id"])
             if not slot:
                 rows = db.all(
-                    "SELECT r.question_id, r.status, q.query FROM review_items r JOIN questions q ON q.id = r.question_id "
+                    "SELECT r.question_id, r.status, r.review_data, q.query FROM review_items r JOIN questions q ON q.id = r.question_id "
                     "WHERE r.scope = ? AND r.reviewer_id = ? ORDER BY q.position",
                     (person["scope"], person["id"]),
                 )
@@ -374,8 +400,8 @@ def create_app(location=None):
                 expert_summary = None
             else:
                 rows = db.all(
-                    "SELECT er.question_id, er.status, er.role, er.review_note, q.query, "
-                    "pr.status AS primary_status "
+                    "SELECT er.question_id, er.status, er.role, er.review_note, er.review_data, q.query, "
+                    "pr.status AS primary_status, pr.review_data AS primary_data "
                     "FROM expert_reviews er JOIN questions q ON q.id = er.question_id "
                     "LEFT JOIN expert_reviews pr ON pr.scope = er.scope AND pr.question_id = er.question_id "
                     "AND pr.role = 'primary' "
@@ -409,6 +435,9 @@ def create_app(location=None):
                     },
                 }
                 next_row = next_item(db, person)
+        for row in rows:
+            detail = json.loads(row.get("primary_data") or "{}") if row.get("role") == "auditor" else review_data(row)
+            row["query"] = detail.get("query") or row["query"]
         search = q.strip()[:120].casefold()
         filtered = [
             row for row in rows
@@ -452,6 +481,7 @@ def create_app(location=None):
             erow = expert_ctx["erow"]
             is_auditor = erow["role"] == "auditor"
             source_row = expert_ctx["primary"] if is_auditor else erow
+            data = review_data(source_row)
             answer = source_row["answer"] if source_row["answer"] is not None else reference
             label = source_row["answerability"] or original_label
             selected = json.loads(source_row["evidence_ids"]) if source_row["evidence_ids"] is not None else [c["CHUNK_ID"] for c in sources]
@@ -480,19 +510,29 @@ def create_app(location=None):
                 ),
             }
         else:
+            data = review_data(item)
             answer = item["answer"] if item["answer"] is not None else reference
             label = item["answerability"] or original_label
             selected = json.loads(item["evidence_ids"]) if item["evidence_ids"] is not None else [c["CHUNK_ID"] for c in sources]
             notes = item["notes"]
             view_item = dict(item)
             audit_ctx = {"locked": item["status"] == "verified", "is_auditor": False}
-        values = {"answer": answer, "answerability": label, "evidence_ids": selected, "notes": notes, "audit_note": notes}
+        if selected and label == "UNANSWERABLE":
+            selected = []
+        values = {
+            "answer": answer, "answerability": label, "evidence_ids": selected, "notes": notes, "audit_note": notes,
+            "query": data.get("query") or item["query"],
+            "question_reason": data.get("question_reason", ""), "answer_reason": data.get("answer_reason", ""),
+        }
         if form is not None:
-            values = {field: str(form.get(field, "")) for field in ("answer", "answerability", "notes", "audit_note")}
+            values.update({field: str(form.get(field, values.get(field, ""))) for field in
+                           ("query", "answer", "answerability", "notes", "audit_note", "question_reason", "answer_reason")})
             values["evidence_ids"] = form.getlist("evidence_id")
+        result_status = data.get("status") if view_item["status"] in ("verified", "submitted", "approved") else None
+        rendered_sources = [dict(render_chunk(chunk), doc_id=chunk["CHUNK_ID"].rsplit("_c_", 1)[0]) for chunk in sources]
         return page(request, "question", person=person, item=view_item, values=values,
-                    audit_ctx=audit_ctx, original_answer=reference,
-                    sources=[render_chunk(chunk) for chunk in sources], error=error, code=code,
+                    audit_ctx=audit_ctx, original_answer=reference, original_query=item["query"], result_status=result_status,
+                    sources=rendered_sources, error=error, code=code,
                     message=request.session.pop("message", ""))
 
     @app.get("/review/{identifier}")
@@ -503,6 +543,39 @@ def create_app(location=None):
             if needs_profile(person):
                 return redirect(REVIEW_START)
         return question_page(request, person, item, expert_ctx)
+
+    @app.get("/review/{identifier}/documents")
+    def documents(request: Request, identifier: str):
+        with connect(location) as db:
+            person = require_reviewer(db, request)
+            item, _ = get_item(db, person, identifier)
+            if needs_profile(person):
+                raise HTTPException(403, "Vui lòng hoàn tất bước bắt đầu duyệt.")
+            original = json.loads(item["original"])
+            golden = as_golden(original)
+            doc_ids = golden["additional_metadata"]["doc_ids"] if golden else original.get("RELEVANT_DOCS", [])
+            documents = []
+            for doc_id in dict.fromkeys(doc_ids):
+                rows = db.all("SELECT * FROM document_chunks WHERE doc_id = ? ORDER BY position, chunk_id", (doc_id,))
+                if not rows:
+                    rows = packaged_documents().get(doc_id, [])
+                if not rows:
+                    documents.append({"id": doc_id, "title": doc_id, "categories": [], "missing": True})
+                    continue
+                groups = {}
+                previous_header = None
+                for row in rows:
+                    category = row["category"] or "Thông tin khác"
+                    header = "" if (category, row["header"]) == previous_header else row["header"]
+                    groups.setdefault(category, []).append(dict(
+                        render_chunk({"CHUNK_ID": row["chunk_id"], "TEXT": row["text"]}), header=header,
+                    ))
+                    previous_header = (category, row["header"])
+                documents.append({
+                    "id": doc_id, "title": rows[0]["doc_title"],
+                    "categories": [{"name": name.capitalize(), "chunks": chunks} for name, chunks in groups.items()],
+                })
+        return templates.TemplateResponse(request=request, name="documents.html", context={"documents": documents})
 
     @app.post("/review/{identifier}")
     def review_save(request: Request, identifier: str, form: PostForm):
@@ -525,31 +598,33 @@ def create_app(location=None):
                     following = next_item(db, person, identifier)
                 elif expert_ctx:
                     erow = expert_ctx["erow"]
-                    actions = {"draft": "draft", "flag": "flagged", "confirm": "submitted"}
+                    actions = {"draft": "draft", "flag": "flagged", "confirm": "submitted", "reject": "submitted"}
                     if action not in actions:
                         raise ReviewError("Hãy chọn một thao tác duyệt.")
                     status = actions[action]
                     answer, label, selected, notes = _parse_submission(
-                        form, item["original"], require_content=(status == "submitted"),
+                        form, item["original"], require_content=(action == "confirm"),
                     )
                     if status == "flagged" and not notes:
                         raise ReviewError("Hãy ghi lý do cần xem lại.")
+                    data = parse_review_data(form, item["original"], answer, label, selected, action)
                     save_expert_review(db, item, erow, expert_ctx["alloc"], person["id"], revision,
-                                       status, answer, label, selected, notes)
+                                       status, answer, label, selected, notes, review_data=data)
                     following = next_item(db, person, identifier) if status == "submitted" else None
                 else:
                     if item["revision"] != revision or item["status"] == "verified":
                         raise ReviewConflict("Câu này vừa được cập nhật. Hãy mở lại để xem bản mới.")
-                    actions = {"draft": "draft", "flag": "flagged", "confirm": "verified"}
+                    actions = {"draft": "draft", "flag": "flagged", "confirm": "verified", "reject": "verified"}
                     if action not in actions:
                         raise ReviewError("Hãy chọn một thao tác duyệt.")
                     status = actions[action]
                     answer, label, selected, notes = _parse_submission(
-                        form, item["original"], require_content=(status == "verified"),
+                        form, item["original"], require_content=(action == "confirm"),
                     )
                     if status == "flagged" and not notes:
                         raise ReviewError("Hãy ghi lý do cần xem lại.")
-                    save_review(db, item, person["id"], revision, status, answer, label, selected, notes)
+                    data = parse_review_data(form, item["original"], answer, label, selected, action)
+                    save_review(db, item, person["id"], revision, status, answer, label, selected, notes, review_data=data)
                     following = next_item(db, person, identifier) if status == "verified" else None
         except ReviewConflict as error:
             with connect(location) as db:
@@ -748,13 +823,19 @@ def create_app(location=None):
         )
         for er in expert_rows:
             er["evidence_list"] = json.loads(er["evidence_ids"] or "[]")
+            er["review_detail"] = review_data(er)
         reference, original_label, sources = review_content(json.loads(item["original"]))
         reference = remove_citations(reference)
         adjudicate_seed = next(
             (er for er in expert_rows if er["status"] == "submitted"),
             None,
         )
+        detail = review_data(item) or (review_data(adjudicate_seed) if adjudicate_seed else {})
         adj_values = {
+            "query": detail.get("query") or item["query"],
+            "question_reason": detail.get("question_reason", ""),
+            "answer_reason": detail.get("answer_reason", ""),
+            "result_action": "reject" if detail.get("status") == "REJECTED" else "confirm",
             "answer": item["answer"] if item["answer"] is not None else (
                 adjudicate_seed["answer"] if adjudicate_seed and adjudicate_seed["answer"] is not None else reference
             ),
@@ -791,8 +872,14 @@ def create_app(location=None):
                 if not item:
                     raise HTTPException(404, "Không tìm thấy câu hỏi.")
                 revision = integer(form.get("revision"), "Hãy tải lại trang.")
-                answer, label, selected, notes = _parse_submission(form, item["original"], require_content=True)
-                adjudicate_item(db, scope, identifier, revision, answer, label, selected, notes)
+                result_action = form.get("result_action", "confirm")
+                if result_action not in ("confirm", "reject"):
+                    raise ReviewError("Kết quả thống nhất không hợp lệ.")
+                answer, label, selected, notes = _parse_submission(
+                    form, item["original"], require_content=(result_action == "confirm"),
+                )
+                data = parse_review_data(form, item["original"], answer, label, selected, result_action)
+                adjudicate_item(db, scope, identifier, revision, answer, label, selected, notes, review_data=data)
         except ReviewConflict as error:
             with connect(location) as db:
                 ctx = _history_context(db, scope, identifier)
@@ -801,6 +888,10 @@ def create_app(location=None):
             with connect(location) as db:
                 ctx = _history_context(db, scope, identifier)
             ctx["adj_values"] = {
+                "query": str(form.get("query", item.get("query", ""))),
+                "question_reason": str(form.get("question_reason", "")),
+                "answer_reason": str(form.get("answer_reason", "")),
+                "result_action": str(form.get("result_action", "confirm")),
                 "answer": str(form.get("answer", "")),
                 "answerability": str(form.get("answerability", "")),
                 "evidence_ids": form.getlist("evidence_id"),

@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS review_items (
     evidence_ids TEXT,
     notes TEXT NOT NULL DEFAULT '',
     verified_at TEXT,
+    review_data TEXT NOT NULL DEFAULT '{}',
     PRIMARY KEY (scope, question_id)
 );
 
@@ -108,8 +109,21 @@ CREATE TABLE IF NOT EXISTS expert_reviews (
     notes TEXT NOT NULL DEFAULT '',
     review_note TEXT NOT NULL DEFAULT '',
     updated_at TEXT,
+    review_data TEXT NOT NULL DEFAULT '{}',
     PRIMARY KEY (scope, question_id, role, reviewer_id),
     FOREIGN KEY (scope, question_id) REFERENCES review_items (scope, question_id)
 );
 
 CREATE INDEX IF NOT EXISTS expert_reviews_assignee ON expert_reviews (scope, reviewer_id, status);
+
+CREATE TABLE IF NOT EXISTS document_chunks (
+    chunk_id TEXT PRIMARY KEY,
+    doc_id TEXT NOT NULL,
+    doc_title TEXT NOT NULL,
+    category TEXT NOT NULL,
+    header TEXT NOT NULL,
+    text TEXT NOT NULL,
+    position INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS document_chunks_document ON document_chunks (doc_id, position);

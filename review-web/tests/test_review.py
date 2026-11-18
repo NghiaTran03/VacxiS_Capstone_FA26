@@ -12,9 +12,9 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from app import create_app
-from content import render_chunk
+from content import remove_citations, render_chunk, review_content
 from sampling import allocate_scientific_batches, compute_fleiss_kappa
-from store import ReviewError, connect, import_dataset, invite
+from store import ReviewError, connect, ensure_schema, import_dataset, import_documents, invite
 
 
 PASSWORD = "test-admin-password-for-review-web"
@@ -89,6 +89,7 @@ class ReviewWorkflow(unittest.TestCase):
 
     def review(self, client, path, action, revision=0, **extra):
         data = {"answer": "Câu trả lời mẫu", "answerability": "UNANSWERABLE", "notes": "",
+                "answer_reason": "Điều chỉnh câu trả lời mẫu.",
                 "csrf": csrf(client.get(path)), "revision": revision, "action": action, **extra}
         return client.post(path, data=data)
 
@@ -186,6 +187,94 @@ class ReviewWorkflow(unittest.TestCase):
         other = self.join(other_url)
         self.assertEqual(other.get(FIRST).status_code, 404)
         self.join(other_code, expected=400)
+
+    def test_question_edits_reasons_drafts_and_rejection_export(self):
+        client = self.join(self.make_invite(count=1))
+        page = client.get(FIRST)
+        self.assertIn("Đầu mục cần review", page.text)
+        self.assertIn("Tổng kết đánh giá", page.text)
+        self.assertIn("Tài liệu vô nghĩa", page.text)
+        self.assertIn("Lưu chỉnh sửa", page.text)
+        missing = self.review(client, FIRST, "confirm", query="Câu hỏi đã làm rõ", question_reason="", answer_reason="")
+        self.assertEqual(missing.status_code, 422)
+        self.assertIn("Câu hỏi đã làm rõ", missing.text)
+        saved = self.review(client, FIRST, "draft", query="Câu hỏi đã làm rõ",
+                            question_reason="", answer_reason="", notes="Ghi chú độc lập")
+        self.assertEqual(saved.status_code, 303)
+        with connect(self.location) as db:
+            row = db.one("SELECT * FROM review_items WHERE scope = 'live' AND question_id = 'VAX_Q_0001'")
+        self.assertIsNone(json.loads(row["review_data"])["status"])
+        self.assertIn("Câu hỏi đã làm rõ", client.get(FIRST).text)
+        result = self.review(client, FIRST, "confirm", revision=1, query="Câu hỏi đã làm rõ",
+                             question_reason="Làm rõ đối tượng.", answer_reason="Bổ sung điều kiện.",
+                             notes="Ghi chú độc lập")
+        self.assertEqual(result.status_code, 303)
+        [record] = self.admin.get("/admin/export/live").json()
+        self.assertEqual(record["QUERY"], "Câu hỏi đã làm rõ")
+        self.assertEqual(record["status"], "EDITED")
+        self.assertEqual(record["annotator_notes"], {
+            "lí do sửa câu hỏi": "Làm rõ đối tượng.", "lí do sửa câu trả lời": "Bổ sung điều kiện.",
+            "ghi chú cho nhóm đồ án": "Ghi chú độc lập",
+        })
+        history = self.admin.get("/admin/history/live/VAX_Q_0001")
+        self.assertIn("Làm rõ đối tượng.", history.text)
+        self.assertIn("Bổ sung điều kiện.", history.text)
+        self.assertEqual(self.review(client, FIRST, "confirm", revision=1).status_code, 409)
+
+        self.assertEqual(self.admin_post("/admin/reopen", {
+            "scope": "live", "identifier": "VAX_Q_0001", "revision": 2, "action": "reopen",
+        }).status_code, 303)
+        rejected = self.review(client, FIRST, "reject", revision=3, query="Câu hỏi đã làm rõ",
+                               notes="Nguồn chưa phù hợp.", question_reason="Làm rõ đối tượng.")
+        self.assertEqual(rejected.status_code, 303)
+        [record] = self.admin.get("/admin/export/live").json()
+        self.assertEqual(record["status"], "REJECTED")
+        self.assertFalse(record["VERIFIED"])
+        self.assertEqual(record["annotator_notes"]["ghi chú cho nhóm đồ án"], "Nguồn chưa phù hợp.")
+
+    def test_notes_only_approval_and_source_document_access(self):
+        client = self.join(self.make_invite(count=3))
+        with connect(self.location) as db:
+            original = json.loads(db.one("SELECT original FROM questions WHERE id = 'VAX_Q_0003'")["original"])
+        answer, label, sources = review_content(original)
+        doc_id = original["RELEVANT_DOCS"][0]
+        fixture = Path(self.temp.name) / "documents.json"
+        fixture.write_text(json.dumps([
+            {"chunk_id": f"{doc_id}_c_900{i}", "doc_id": doc_id, "doc_title": "Tài liệu đầy đủ",
+             "category": category, "header": f"Mục {i}", "text": text, "position": i}
+            for i, (category, text) in enumerate([
+                ("chống chỉ định", "Nội dung bổ sung A"), ("chống chỉ định", "Nội dung bổ sung B"),
+                ("bảo quản", "<script>unsafe()</script><p>Bảo quản nguồn</p>"),
+            ])
+        ]), encoding="utf-8")
+        import_documents(self.location, fixture)
+        self.assertEqual(TestClient(self.app).get(WITH_TABLE + "/documents").status_code, 401)
+        self.assertEqual(client.get("/review/not-assigned/documents").status_code, 404)
+        full = client.get(WITH_TABLE + "/documents")
+        self.assertEqual(full.status_code, 200)
+        self.assertEqual(full.text.count('class="document-category"'), 2)
+        self.assertIn("Nội dung bổ sung B", full.text)
+        self.assertNotIn("<script>", full.text)
+        values = {"answer": remove_citations(answer), "answerability": label, "notes": "Nguồn phù hợp."}
+        if label != "UNANSWERABLE":
+            values["evidence_id"] = [source["CHUNK_ID"] for source in sources]
+        self.assertEqual(self.review(client, WITH_TABLE, "confirm", **values).status_code, 303)
+        [record] = self.admin.get("/admin/export/live").json()
+        self.assertEqual(record["status"], "APPROVED")
+        self.assertEqual(record["annotator_notes"]["ghi chú cho nhóm đồ án"], "Nguồn phù hợp.")
+        self.assertIsNone(record["annotator_notes"]["lí do sửa câu trả lời"])
+
+    def test_schema_upgrade_preserves_existing_assignments(self):
+        self.join(self.make_invite(count=1))
+        with connect(self.location, write=True) as db:
+            before = db.one("SELECT reviewer_id FROM review_items WHERE question_id = 'VAX_Q_0001' AND scope = 'live'")
+            db.execute("ALTER TABLE review_items DROP COLUMN review_data")
+            db.execute("ALTER TABLE expert_reviews DROP COLUMN review_data")
+            ensure_schema(db)
+            ensure_schema(db)
+            after = db.one("SELECT reviewer_id, review_data FROM review_items WHERE question_id = 'VAX_Q_0001' AND scope = 'live'")
+        self.assertEqual(before["reviewer_id"], after["reviewer_id"])
+        self.assertEqual(json.loads(after["review_data"]), {})
 
     def test_reissued_invitation_replaces_previous_access_and_legacy_links_work(self):
         issued = self.create_invite("live", 1)
@@ -551,6 +640,33 @@ class ScientificReviewWorkflow(unittest.TestCase):
         self.assertEqual(len(both_indep), 15)
         self.assertTrue(all(row["requires_audit"] == 1 for row in both_indep))
 
+    def test_consensus_with_two_legacy_submissions_and_one_new_submission(self):
+        self._setup_app(12)
+        experts = self._join_experts("live")
+        with connect(self.location, write=True) as db:
+            allocation = db.one("SELECT question_id FROM question_allocations WHERE batch_type = 'calibration' LIMIT 1")
+            qid = allocation["question_id"]
+            original = json.loads(db.one("SELECT original FROM questions WHERE id = ?", (qid,))["original"])
+            answer, label, sources = review_content(original)
+            selected = [source["CHUNK_ID"] for source in sources] if label != "UNANSWERABLE" else []
+            db.execute(
+                "UPDATE expert_reviews SET status = 'submitted', revision = 1, answer = ?, answerability = ?, "
+                "evidence_ids = ?, review_data = '{}' WHERE question_id = ? AND reviewer_id IN "
+                "(SELECT reviewer_id FROM expert_slots WHERE slot IN (1, 2) AND scope = 'live')",
+                (remove_citations(answer), label, json.dumps(selected), qid),
+            )
+        page = experts[3].get(f"/review/{qid}")
+        result = experts[3].post(f"/review/{qid}", data={
+            "csrf": csrf(page), "revision": field(page, "revision"), "action": "confirm",
+            "answer": remove_citations(answer), "answerability": label, "evidence_id": selected, "notes": "",
+        })
+        self.assertEqual(result.status_code, 303, result.text)
+        with connect(self.location) as db:
+            item = db.one("SELECT status FROM review_items WHERE scope = 'live' AND question_id = ?", (qid,))
+        self.assertEqual(item["status"], "verified")
+        [golden] = self.admin.get("/admin/export/live").json()["goldens"]
+        self.assertEqual(golden["additional_metadata"]["status"], "APPROVED")
+
     def test_calibration_and_overlap_fleiss_kappa_and_adjudication(self):
         self._setup_app(12)
         experts = self._join_experts("live")
@@ -574,7 +690,7 @@ class ScientificReviewWorkflow(unittest.TestCase):
             resp = experts[slot].post(f"/review/{qid_c}", data={
                 "csrf": csrf(page), "revision": field(page, "revision"), "action": "confirm",
                 "answer": "Thống nhất từ calibration", "answerability": "ANSWERABLE",
-                "evidence_id": chunk_id, "notes": "",
+                "evidence_id": chunk_id, "notes": "", "answer_reason": "Làm rõ nội dung.",
             })
             self.assertEqual(resp.status_code, 303)
 
@@ -590,7 +706,7 @@ class ScientificReviewWorkflow(unittest.TestCase):
                 resp = experts[slot].post(f"/review/{qid_o}", data={
                     "csrf": csrf(page), "revision": field(page, "revision"), "action": "confirm",
                     "answer": f"Đáp án overlap {qid_o}", "answerability": label,
-                    "evidence_id": chunk_id, "notes": "",
+                    "evidence_id": chunk_id, "notes": "", "answer_reason": "Làm rõ nội dung.",
                 })
                 self.assertEqual(resp.status_code, 303)
 
@@ -609,7 +725,7 @@ class ScientificReviewWorkflow(unittest.TestCase):
         adj = self.admin.post(f"/admin/adjudicate/live/{overlap[1]}", data={
             "csrf": self.admin_csrf, "revision": disagreed["revision"],
             "answer": "Kết quả sau hội đồng thống nhất", "answerability": "PARTIALLY_ANSWERABLE",
-            "evidence_id": chunk_id_b, "notes": "Chốt theo đa số",
+            "evidence_id": chunk_id_b, "notes": "Chốt theo đa số", "answer_reason": "Chốt theo đa số.",
         })
         self.assertEqual(adj.status_code, 303)
 
@@ -663,7 +779,7 @@ class ScientificReviewWorkflow(unittest.TestCase):
         submit1 = experts[1].post(f"/review/{qid}", data={
             "csrf": csrf(p1), "revision": field(p1, "revision"), "action": "confirm",
             "answer": "Bản nháp sơ bộ của E1", "answerability": "PARTIALLY_ANSWERABLE",
-            "evidence_id": chunk_id, "notes": "",
+            "evidence_id": chunk_id, "notes": "", "answer_reason": "Làm rõ nội dung.",
         })
         self.assertEqual(submit1.status_code, 303)
         self.assertEqual(self.admin.get("/admin/export/live").json()["goldens"], [])
@@ -685,7 +801,7 @@ class ScientificReviewWorkflow(unittest.TestCase):
         submit2 = experts[1].post(f"/review/{qid}", data={
             "csrf": csrf(revisit), "revision": field(revisit, "revision"), "action": "confirm",
             "answer": "Bản đã bổ sung đủ liều dùng.", "answerability": "PARTIALLY_ANSWERABLE",
-            "evidence_id": chunk_id, "notes": "Đã bổ sung.",
+            "evidence_id": chunk_id, "notes": "Đã bổ sung.", "answer_reason": "Bổ sung liều dùng.",
         })
         self.assertEqual(submit2.status_code, 303)
 

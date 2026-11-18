@@ -70,6 +70,22 @@ def review_content(record):
     return golden["expected_output"], metadata["answerability"], sources
 
 
+def review_data(row):
+    return json.loads(row.get("review_data") or "{}")
+
+
+def changed_content(record, query, answer, label, evidence_ids):
+    reference, original_label, sources = review_content(record)
+    original_query = record["input"] if is_native(record) else record["QUERY"]
+    baseline = {source["CHUNK_ID"] for source in sources} if original_label != "UNANSWERABLE" else set()
+    return (query.strip() != original_query.strip() or answer != remove_citations(reference)
+            or label != original_label or set(evidence_ids) != baseline)
+
+
+def is_native(record):
+    return "input" in record and "additional_metadata" in record
+
+
 def _simple_math(match):
     source = match.group(1)
     for command, glyph in ((r"\le", "≤ "), (r"\ge", "≥ "), (r"\%", "%")):
@@ -119,23 +135,37 @@ def render_chunk(chunk):
 
 
 def review_fields(row, original, same_answer):
+    data = review_data(row)
     reviewer_note = row["notes"].strip()
     notes = [note for note in (original.get("VERIFICATION_NOTES"), reviewer_note) if note]
     if not same_answer:
         notes.append(f"Câu trả lời sau chỉnh sửa:\n{row['answer']}")
     annotator = reviewer_label(row) if row["full_name"] else row["reviewer_id"]
     annotators = row.get("annotator_labels") or [annotator]
+    result = data.get("status")
+    if result is None and row.get("status") == "verified":
+        source = json.loads(row["original"])
+        query = data.get("query") or source.get("input", source.get("QUERY"))
+        result = "EDITED" if changed_content(source, query, row["answer"], row["answerability"],
+                                             json.loads(row["evidence_ids"])) else "APPROVED"
     fields = {
-        "VERIFIED": True,
+        "VERIFIED": result != "REJECTED",
         "ANNOTATOR_IDS": list(dict.fromkeys([*(original.get("ANNOTATOR_IDS") or []), *annotators])),
-        "ADJUDICATED": not same_answer or bool(reviewer_note) or bool(row.get("adjudicated")),
+        "ADJUDICATED": not same_answer or bool(data.get("question_reason")) or bool(reviewer_note) or bool(row.get("adjudicated")),
         "VERIFICATION_NOTES": "\n\n".join(notes) or None,
+        "status": result,
+        "annotator_notes": {
+            "lí do sửa câu hỏi": data.get("question_reason") or None,
+            "lí do sửa câu trả lời": data.get("answer_reason") or None,
+            "ghi chú cho nhóm đồ án": reviewer_note or None,
+        },
     }
     return fields
 
 
 def export_golden(row, golden):
     metadata = golden["additional_metadata"]
+    data = review_data(row)
     evidence_ids = set(json.loads(row["evidence_ids"]))
     selected = [(identifier, text) for identifier, text in
                 zip(metadata["source_chunk_ids"], golden["context"], strict=True) if identifier in evidence_ids]
@@ -148,6 +178,7 @@ def export_golden(row, golden):
     if row.get("audited"):
         extra_meta["audited"] = True
     return dict(golden,
+                input=data.get("query") or golden["input"],
                 expected_output=golden["expected_output"] if same_answer else row["answer"],
                 context=[text for _, text in selected],
                 additional_metadata={
@@ -182,6 +213,7 @@ def export_record(row):
     if same_answer and record.get("ANSWERABILITY") == label:
         claims = [claim for claim in (record.get("CLAIM_EVIDENCE_MAP") or []) if claim.get("chunk_id") in evidence_ids]
     record.update({
+        "QUERY": review_data(row).get("query") or record["QUERY"],
         "REFERENCE_ANSWER": answer,
         "ANSWERABILITY": label,
         "EVIDENCE_COMPLETENESS": COMPLETENESS[label],

@@ -82,7 +82,9 @@
     if (review) {
       let edited = false;
       review.addEventListener("input", () => { edited = true; });
-      review.addEventListener("submit", () => { edited = false; });
+      review.addEventListener("submit", event => {
+        queueMicrotask(() => { if (!event.defaultPrevented) edited = false; });
+      });
       window.addEventListener("beforeunload", event => {
         if (edited) event.preventDefault();
       });

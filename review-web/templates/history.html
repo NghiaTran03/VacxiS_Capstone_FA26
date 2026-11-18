@@ -32,6 +32,10 @@
           <div class="metric-card">
             <div class="heading-row"><strong>{% if er.slot %}Expert {{ er.slot }} · {% endif %}{{ batch_labels[er.role] }}</strong><span class="state state-{{ er.status }}">{{ statuses[er.status] }}</span></div>
             <p class="muted">{{ reviewer_label(er) }}</p>
+            {% if er.review_detail.query %}<p><strong>Câu hỏi sau duyệt</strong> · {{ er.review_detail.query }}</p>{% endif %}
+            {% if er.review_detail.status %}<p><strong>Kết quả</strong> · {{ er.review_detail.status }}</p>{% endif %}
+            {% if er.review_detail.question_reason %}<p class="original">Lí do sửa câu hỏi · {{ er.review_detail.question_reason }}</p>{% endif %}
+            {% if er.review_detail.answer_reason %}<p class="original">Lí do sửa câu trả lời · {{ er.review_detail.answer_reason }}</p>{% endif %}
             {% if er.answerability %}<p><strong>Nhãn:</strong> {{ labels[er.answerability] }}</p>{% endif %}
             {% if er.evidence_list %}<p class="code"><strong>Căn cứ:</strong> {{ er.evidence_list|join(', ') }}</p>{% endif %}
             {% if er.answer %}<p class="original">{{ er.answer }}</p>{% endif %}
@@ -49,9 +53,18 @@
       <form method="post" action="/admin/adjudicate/{{ scope }}/{{ item.question_id }}" class="stack">
         <input type="hidden" name="csrf" value="{{ csrf }}">
         <input type="hidden" name="revision" value="{{ item.revision }}">
+        <div class="field"><label for="adj-query">Câu hỏi thống nhất</label>
+          <textarea id="adj-query" name="query" rows="2" maxlength="10000">{{ adj_values.query }}</textarea>
+        </div>
+        <div class="field"><label for="adj-question-reason">Lí do sửa câu hỏi</label>
+          <textarea id="adj-question-reason" name="question_reason" rows="2" maxlength="3000">{{ adj_values.question_reason }}</textarea>
+        </div>
         <div class="field">
           <label for="adj-answer">Câu trả lời thống nhất</label>
           <textarea id="adj-answer" name="answer" rows="4" maxlength="20000">{{ adj_values.answer }}</textarea>
+        </div>
+        <div class="field"><label for="adj-answer-reason">Lí do sửa câu trả lời</label>
+          <textarea id="adj-answer-reason" name="answer_reason" rows="2" maxlength="3000">{{ adj_values.answer_reason }}</textarea>
         </div>
         <div class="field">
           <label for="adj-answerability">Mức độ trả lời</label>
@@ -69,6 +82,9 @@
           <label for="adj-notes">Ghi chú thống nhất</label>
           <textarea id="adj-notes" name="notes" rows="2" maxlength="3000">{{ adj_values.notes }}</textarea>
         </div>
+        <div class="field"><label for="adj-result">Kết quả thống nhất</label>
+          <select id="adj-result" name="result_action"><option value="confirm">Chấp nhận bản đã duyệt</option><option value="reject"{% if adj_values.result_action == 'reject' %} selected{% endif %}>Tài liệu vô nghĩa</option></select>
+        </div>
         <div><button class="primary" type="submit">Chốt kết quả thống nhất</button></div>
       </form>
     </section>
@@ -80,6 +96,12 @@
         <summary>{{ 'Trả về chưa phân công' if entry.status == 'pending' else statuses[entry.status] }} · {{ reviewer_label(entry) if entry.id else 'Nhóm đồ án' }}</summary>
         <div class="stack section-body">
           <p class="muted"><time datetime="{{ entry.created_at }}" data-local-time>{{ entry.created_at }}</time></p>
+          {% if entry.snapshot.review_data %}
+            {% if entry.snapshot.review_data.query %}<p class="original">Câu hỏi sau duyệt · {{ entry.snapshot.review_data.query }}</p>{% endif %}
+            {% if entry.snapshot.review_data.status %}<p>Kết quả · {{ entry.snapshot.review_data.status }}</p>{% endif %}
+            {% if entry.snapshot.review_data.question_reason %}<p class="original">Lí do sửa câu hỏi · {{ entry.snapshot.review_data.question_reason }}</p>{% endif %}
+            {% if entry.snapshot.review_data.answer_reason %}<p class="original">Lí do sửa câu trả lời · {{ entry.snapshot.review_data.answer_reason }}</p>{% endif %}
+          {% endif %}
           {% if entry.snapshot.answer %}<p class="original">{{ entry.snapshot.answer }}</p>{% endif %}
           {% if entry.snapshot.notes %}<p class="original">Ghi chú · {{ entry.snapshot.notes }}</p>{% endif %}
         </div>
