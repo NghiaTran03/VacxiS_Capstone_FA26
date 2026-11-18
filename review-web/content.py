@@ -90,7 +90,7 @@ def _simple_math(match):
     source = match.group(1)
     for command, glyph in ((r"\le", "≤ "), (r"\ge", "≥ "), (r"\%", "%")):
         source = source.replace(command, glyph)
-    return source if re.fullmatch(r"[\dnN\s≤≥=.,%+\-<>]+", source) else match.group(0)
+    return source if re.fullmatch(r"[\dnN\s≤≥=.,%+\-/<>]+", source) else match.group(0)
 
 
 def _page_label(match):
@@ -115,9 +115,9 @@ def render_chunk(chunk):
         if section == "CHỐNG CHỈ ĐỊNH":
             section = "Chống chỉ định"
         body = body[heading.end():]
+    body = re.sub(r"\$([^$\n]+)\$", _simple_math, body)
     if not re.search(r"<[a-zA-Z][^>]*>", body):
         body = PAGE_BREAK.sub(_page_label, body)
-        body = re.sub(r"\$([^$\n]+)\$", _simple_math, body)
         lines = []
         for line in body.splitlines():
             if len(line) >= 400 and not line.lstrip().startswith(("- ", "* ", "+ ", "|", ">")):

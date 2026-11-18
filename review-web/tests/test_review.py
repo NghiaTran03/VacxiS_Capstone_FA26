@@ -824,6 +824,25 @@ class ScientificReviewWorkflow(unittest.TestCase):
 
 
 class SourceRendering(unittest.TestCase):
+    def test_frequency_fractions_render_in_plain_text_and_html(self):
+        frequency = (
+            r"Rất thường gặp ($\ge1/10$);" "\n"
+            r"Thường gặp ($\ge1/100$ đến $<1/10$);" "\n"
+            r"Ít gặp ($\ge1/1.000$ đến $<1/100$)" "\n"
+            r"Hiếm gặp ($\ge1/10.000$ đến $<1/1.000$);" "\n"
+            r"Rất hiếm gặp ($<1/10.000$);"
+        )
+        for text in (frequency, "<table><tr><td>" + frequency + "</td></tr></table>"):
+            with self.subTest(html=text.startswith("<table>")):
+                rendered = render_chunk({"CHUNK_ID": "frequency", "TEXT": text})
+                self.assertEqual(rendered["raw"], text)
+                self.assertIn("≥ 1/10", rendered["html"])
+                self.assertIn("≥ 1/1.000", rendered["html"])
+                self.assertIn("≥ 1/10.000", rendered["html"])
+                self.assertIn("&lt;1/10.000", rendered["html"])
+                self.assertNotIn("$", rendered["html"])
+                self.assertNotIn(r"\ge", rendered["html"])
+
     def test_plain_text_repairs_are_display_only_and_html_is_sanitized(self):
         page_text = "8\n\n--- TRANG 9 ---\n\nThường gặp: văn bản ($\\le4,5\\%$)."
         display = render_chunk({"CHUNK_ID": "sample", "TEXT": page_text})
