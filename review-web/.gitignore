@@ -1,0 +1,7 @@
+/.env
+/.env.*
+!/.env.example
+/.uv-cache/
+/.vercel/
+/*.sqlite3*
+/eval_dataset_300_review.json

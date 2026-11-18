@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{% if login %}Đăng nhập quản trị{% else %}Duyệt câu trả lời{% endif %}{% endblock %}
+{% block admin_shortcut %}{% endblock %}
+{% block content %}
+{% if login %}
+<section class="intro panel stack">
+  <h1>Đăng nhập nhóm đồ án</h1>
+  <form method="post" action="/admin/login" class="stack">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="hidden" name="username" value="vacxis-admin" autocomplete="username">
+    <div class="field">
+      <label for="admin-password">Mật khẩu quản trị</label>
+      <div class="input-with-action">
+        <input id="admin-password" name="password" type="password" autocomplete="current-password" required>
+        <button type="button" data-password-toggle aria-controls="admin-password" hidden>Hiện mật khẩu</button>
+      </div>
+    </div>
+    <div><button class="primary" type="submit">Đăng nhập</button></div>
+  </form>
+  <p><a href="/join">Vào trang duyệt bằng lời mời</a></p>
+</section>
+{% else %}
+<div class="intro stack">
+  <section class="panel stack">
+    <h1>Vào trang duyệt câu trả lời</h1>
+    <form method="post" action="/join" class="stack" data-invite-form>
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="hidden" name="action" value="enter">
+      <div class="field">
+        <label for="invitation">Mã mời hoặc liên kết</label>
+        <input id="invitation" name="token" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"
+               placeholder="Ví dụ: 7K4M-29DC-H5RX" aria-describedby="invitation-help" maxlength="2048" required>
+        <p id="invitation-help" class="muted">Nhập mã 12 ký tự hoặc dán liên kết nhóm đồ án đã gửi.</p>
+      </div>
+      {% if joining and signed_in %}
+        <p class="muted">Tiếp tục sẽ chuyển phiên đăng nhập trong trình duyệt này.</p>
+      {% endif %}
+      <div><button class="primary" type="submit">Vào trang duyệt</button></div>
+    </form>
+    {% if joining and signed_in %}<p><a href="/">Về phiên đang dùng</a></p>{% endif %}
+  </section>
+  {% if not joining %}
+    <section class="panel access-row" aria-labelledby="project-team-title">
+      <h2 id="project-team-title">Nhóm đồ án</h2>
+      <a class="button" href="/admin/login">Đăng nhập quản trị</a>
+    </section>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "_profile.html" import permission, fields %}
+{% block title %}Bắt đầu duyệt{% endblock %}
+{% block admin_shortcut %}{% endblock %}
+{% block content %}
+{% set submit_url = "/join" if token else "/review/onboarding/start" %}
+{% macro hidden_fields() %}
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  {% if token %}<input type="hidden" name="token" value="{{ token }}">{% endif %}
+  {% if intent %}<input type="hidden" name="permission_intent" value="{{ intent }}">{% endif %}
+{% endmacro %}
+<section class="intro panel stack">
+  {% if ask_profile %}
+    <h1>Thông tin người duyệt</h1>
+    {{ permission() }}
+    {% if token and signed_in %}
+      <p class="muted">Tiếp tục sẽ chuyển phiên đăng nhập trong trình duyệt này.</p>
+    {% endif %}
+    <form method="post" action="{{ submit_url }}" class="stack">
+      {{ hidden_fields() }}
+      {{ fields(profile_values, professions) }}
+      <div><button class="primary" name="action" value="share" type="submit">Đồng ý và bắt đầu duyệt</button></div>
+    </form>
+    <form method="post" action="{{ submit_url }}">
+      {{ hidden_fields() }}
+      <button name="action" value="skip" type="submit">Bỏ qua và bắt đầu duyệt</button>
+    </form>
+  {% else %}
+    <h1>Bắt đầu duyệt câu trả lời</h1>
+    {% if token and signed_in %}
+      <p class="muted">Tiếp tục sẽ chuyển phiên đăng nhập trong trình duyệt này.</p>
+    {% endif %}
+    <form method="post" action="{{ submit_url }}">
+      {{ hidden_fields() }}
+      <button class="primary" name="action" value="begin" type="submit">Bắt đầu duyệt</button>
+    </form>
+  {% endif %}
+  {% if token and signed_in %}<p><a href="/">Về phiên đang dùng</a></p>{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Duyệt câu trả lời{% endblock %} · VacxiS</title>
+  <script src="/assets/app.js?v=3"></script>
+  <link rel="stylesheet" href="/assets/app.css?v=3">
+</head>
+<body>
+  <a class="skip-link" href="#main">Đến nội dung chính</a>
+  <header class="site-header">
+    <div class="shell header-row">
+      <a href="/" class="brand">VacxiS <span>Duyệt câu trả lời</span></a>
+      <button type="button" class="theme-button" data-theme-toggle hidden>Chế độ tối</button>
+    </div>
+  </header>
+  <main class="shell page" id="main">
+    {% if person and person.scope == 'test' %}<p class="test-notice">Thử nghiệm nội bộ</p>{% endif %}
+    {% if error %}<p class="notice error" role="alert">{{ error }}</p>{% endif %}
+    {% if message %}<p class="notice" role="status">{{ message }}</p>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">
+    <div class="shell footer-row">
+      <a href="/quyen-rieng-tu">Bảo vệ thông tin cá nhân</a>
+      {% if signed_in and not joining %}
+        <div class="actions">
+          {% if not joining %}<a href="/join">Dùng lời mời khác</a>{% endif %}
+          <form action="/logout" method="post">
+            <input type="hidden" name="csrf" value="{{ csrf }}">
+            <button type="submit" class="text-button"{% if not admin %} data-logout{% endif %}>Đăng xuất</button>
+          </form>
+        </div>
+      {% else %}
+        {% block admin_shortcut %}<a href="/admin/login">Dành cho nhóm đồ án</a>{% endblock %}
+      {% endif %}
+    </div>
+  </footer>
+</body>
+</html>

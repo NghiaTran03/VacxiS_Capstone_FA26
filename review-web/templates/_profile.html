@@ -1,0 +1,23 @@
+{% macro permission() %}
+  <p>Nhóm đồ án xin phép hỏi thêm họ tên, vai trò chuyên môn và nơi công tác. Nhóm sẽ bảo mật thông tin này và chỉ sử dụng cho mục đích đồ án.</p>
+  <p>Nếu bạn đồng ý chia sẻ, họ tên và vai trò sẽ xuất hiện trong tệp JSON mà nhóm tải về. Nơi công tác chỉ hiển thị trong hồ sơ.</p>
+  <p>Bạn có thể bỏ qua hoặc yêu cầu xóa thông tin đã chia sẻ. <a href="/quyen-rieng-tu" target="_blank" rel="noopener">Tìm hiểu về bảo vệ thông tin cá nhân</a>.</p>
+{% endmacro %}
+
+{% macro fields(values, professions) %}
+  <div class="field">
+    <label for="full-name">Họ tên <span class="muted">(tùy chọn)</span></label>
+    <input id="full-name" name="full_name" value="{{ values.get('full_name') or '' }}" maxlength="120" autocomplete="name">
+  </div>
+  <div class="field">
+    <label for="profession">Vai trò chuyên môn <span class="muted">(tùy chọn)</span></label>
+    <select id="profession" name="profession">
+      <option value="">Chọn nếu bạn muốn chia sẻ</option>
+      {% for value, label in professions.items() %}<option value="{{ value }}"{% if values.get('profession') == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label for="workplace">Nơi công tác <span class="muted">(tùy chọn)</span></label>
+    <input id="workplace" name="workplace" value="{{ values.get('workplace') or '' }}" maxlength="200" autocomplete="organization">
+  </div>
+{% endmacro %}
