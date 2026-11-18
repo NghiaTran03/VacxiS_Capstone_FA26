@@ -9,10 +9,7 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "deepeval>=4.3.4",
-    "flagembedding>=1.4.2",
-    "gradio>=6.31.0",
     "json-repair>=0.64.9",
-    "nano-vectordb>=0.0.4.3",
     "neo4j>=6.4.1",
     "networkx>=3.7",
     "openai>=2.54.0",
@@ -20,7 +17,6 @@ dependencies = [
     "pyarrow>=26.0.0",
     "pypinyin>=0.55.0",
     "python-dotenv>=1.2.4",
-    "qdrant-client>=1.19.1",
     "tenacity>=9.2.1",
     "tiktoken>=0.14.0",
 ]
@@ -40,6 +36,13 @@ requires = ["uv_build>=0.12.15,<0.13.0"]
 build-backend = "uv_build"
 
 [project.optional-dependencies]
+# Retrieval and indexing need BGE/torch and Qdrant; install only when using those paths.
+retrieval = [
+    "flagembedding>=1.4.2",
+    "nano-vectordb>=0.0.4.3",
+    "qdrant-client>=1.19.1",
+]
+web = ["gradio>=6.31.0"]
 # GPU-only extra for the query-driven dataset path (Colab/Kaggle).
 # Not in the core deps so CPU/offline environments stay lightweight and the
 # module remains importable without vLLM installed.

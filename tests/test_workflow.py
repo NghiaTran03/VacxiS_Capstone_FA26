@@ -204,7 +204,7 @@ def test_evaluation_rejects_ambiguous_ids(dataset, results):
         VacxisRAGEvaluator().evaluate_results(dataset, results)
 
 
-def test_evaluation_preserves_empty_retrieval_and_matches_reordered_ids():
+def test_evaluation_preserves_empty_retrieval_and_matches_reordered_ids(monkeypatch):
     dataset = [
         {"QUERY_ID": key, "QUERY": key, "REFERENCE_ANSWER": key,
          "RELEVANT_CHUNKS": [{"CHUNK_ID": "c1", "RELEVANCE_SCORE": 3}]}
@@ -212,12 +212,28 @@ def test_evaluation_preserves_empty_retrieval_and_matches_reordered_ids():
     ]
     results = [{"QUERY_ID": key, "GENERATED_ANSWER": {"answer": key, "retrieved_chunk_ids": []}}
                for key in ("b", "a")]
-    summary = VacxisRAGEvaluator().evaluate_results(dataset, results)
+
+    # DeepEval scoring is LLM-judged; stub the run so the test stays offline and
+    # exercises the alignment/summary path rather than a live judge.
+    from deepeval.evaluate.types import EvaluationResult, TestResult
+    evaluator = VacxisRAGEvaluator(judge_model="stub", enable_geval=False)
+    metric_names = [m.__name__ for m in evaluator.build_metrics()]
+    cases = []
+    for idx in range(len(results)):
+        cases.append(TestResult(
+            name=f"c{idx}", success=True, conversational=False, index=idx,
+            input=f"c{idx}", actual_output=f"a{idx}", expected_output=f"e{idx}",
+            retrieval_context=[], metadata={"query_id": f"q{idx}"}, metrics_data=[],
+        ))
+    fake = EvaluationResult(test_results=cases, confident_link=None, test_run_id="stub")
+    monkeypatch.setattr(evaluator, "_run_deepeval", lambda test_cases, **kw: fake)
+
+    summary = evaluator.evaluate_results(dataset, results)
     assert summary.task == "rag"
     assert summary.num_queries == 2
-    assert all(row["retrieved_chunk_ids"] == [] for row in summary.per_query_results)
-    assert all(row["metrics"]["exact_match"] == 1 for row in summary.per_query_results)
-    assert all(row["retrieval_metrics"]["recall@1"] == 0 for row in summary.per_query_results)
+    # Result order is preserved from `results` (b, a); retrieval stays empty.
+    assert [row["query_id"] for row in summary.per_query_results] == ["b", "a"]
+    assert all(row["retrieval_context"] == [] for row in summary.per_query_results)
 
 
 def test_benchmark_invalid_input_writes_no_results(config, monkeypatch):

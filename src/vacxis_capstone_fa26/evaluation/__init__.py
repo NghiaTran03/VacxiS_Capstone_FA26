@@ -1,74 +1,48 @@
-"""Evaluation metrics and assessment suites for VacxiS RAG."""
+"""DeepEval-based evaluation suite for the VacxiS RAG pipeline.
+
+Scoring is delegated to DeepEval's RAG metric family (generator, retriever, and
+a GEval correctness judge) plus a deterministic refusal-correctness check.
+The judge LLM is configurable; by default it runs through the project's
+OpenRouter endpoint so no OpenAI key is required.
+"""
 from __future__ import annotations
 
+from vacxis_capstone_fa26.evaluation.datasets import (
+    GoldenRecord,
+    answer_fields,
+    load_chunk_texts,
+    load_goldens,
+    retrieval_context_from_answer,
+)
 from vacxis_capstone_fa26.evaluation.evaluator import (
-    GenerationEvaluator,
-    RetrievalEvaluator,
     VacxisRAGEvaluator,
+    align_results,
+    validate_query_ids,
 )
-from vacxis_capstone_fa26.evaluation.generation import (
-    bleu_score,
-    citation_f1,
-    citation_precision,
-    citation_recall,
-    citation_validity,
-    compute_rouge,
-    exact_match,
-    normalize_text,
-    refusal_correctness,
-    rouge_l,
-    rouge_n,
-    token_precision_recall_f1,
-)
-from vacxis_capstone_fa26.evaluation.retrieval import (
-    average_precision,
-    dcg_at_k,
-    f1_at_k,
-    hit_rate_at_k,
-    idcg_at_k,
-    ndcg_at_k,
-    precision_at_k,
-    recall_at_k,
-    reciprocal_rank,
+from vacxis_capstone_fa26.evaluation.judge import (
+    OpenRouterJudgeLLM,
+    require_judge_credentials,
+    resolve_judge_model,
 )
 from vacxis_capstone_fa26.evaluation.schemas import (
     EvaluationSummary,
     MetricAggregate,
-    QueryGenerationResult,
-    QueryRetrievalResult,
+    QueryEvalResult,
 )
 
 __all__ = [
-    # Retrieval
-    "hit_rate_at_k",
-    "precision_at_k",
-    "recall_at_k",
-    "f1_at_k",
-    "reciprocal_rank",
-    "average_precision",
-    "dcg_at_k",
-    "idcg_at_k",
-    "ndcg_at_k",
-    # Generation & Grounding
-    "normalize_text",
-    "exact_match",
-    "token_precision_recall_f1",
-    "rouge_n",
-    "rouge_l",
-    "compute_rouge",
-    "bleu_score",
-    "citation_precision",
-    "citation_recall",
-    "citation_f1",
-    "citation_validity",
-    "refusal_correctness",
-    # Evaluators
-    "RetrievalEvaluator",
-    "GenerationEvaluator",
     "VacxisRAGEvaluator",
-    # Schemas
-    "QueryRetrievalResult",
-    "QueryGenerationResult",
-    "MetricAggregate",
+    "align_results",
+    "validate_query_ids",
+    "OpenRouterJudgeLLM",
+    "resolve_judge_model",
+    "require_judge_credentials",
+    "GoldenRecord",
+    "load_goldens",
+    "load_chunk_texts",
+    "retrieval_context_from_answer",
+    "answer_fields",
     "EvaluationSummary",
+    "MetricAggregate",
+    "QueryEvalResult",
 ]

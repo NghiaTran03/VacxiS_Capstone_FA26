@@ -7101,10 +7101,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "deepeval" },
-    { name = "flagembedding" },
-    { name = "gradio" },
     { name = "json-repair" },
-    { name = "nano-vectordb" },
     { name = "neo4j" },
     { name = "networkx" },
     { name = "openai" },
@@ -7112,15 +7109,22 @@ dependencies = [
     { name = "pyarrow" },
     { name = "pypinyin" },
     { name = "python-dotenv" },
-    { name = "qdrant-client" },
     { name = "tenacity" },
     { name = "tiktoken" },
 ]
 
 [package.optional-dependencies]
+retrieval = [
+    { name = "flagembedding" },
+    { name = "nano-vectordb" },
+    { name = "qdrant-client" },
+]
 vllm = [
     { name = "vllm", version = "0.25.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14' and platform_machine == 's390x' and sys_platform == 'darwin'" },
     { name = "vllm", version = "0.27.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14' or platform_machine != 's390x' or sys_platform != 'darwin'" },
+]
+web = [
+    { name = "gradio" },
 ]
 websearch = [
     { name = "playwright" },
@@ -7134,10 +7138,10 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "deepeval", specifier = ">=4.3.4" },
-    { name = "flagembedding", specifier = ">=1.4.2" },
-    { name = "gradio", specifier = ">=6.31.0" },
+    { name = "flagembedding", marker = "extra == 'retrieval'", specifier = ">=1.4.2" },
+    { name = "gradio", marker = "extra == 'web'", specifier = ">=6.31.0" },
     { name = "json-repair", specifier = ">=0.64.9" },
-    { name = "nano-vectordb", specifier = ">=0.0.4.3" },
+    { name = "nano-vectordb", marker = "extra == 'retrieval'", specifier = ">=0.0.4.3" },
     { name = "neo4j", specifier = ">=6.4.1" },
     { name = "networkx", specifier = ">=3.7" },
     { name = "openai", specifier = ">=2.54.0" },
@@ -7146,12 +7150,12 @@ requires-dist = [
     { name = "pyarrow", specifier = ">=26.0.0" },
     { name = "pypinyin", specifier = ">=0.55.0" },
     { name = "python-dotenv", specifier = ">=1.2.4" },
-    { name = "qdrant-client", specifier = ">=1.19.1" },
+    { name = "qdrant-client", marker = "extra == 'retrieval'", specifier = ">=1.19.1" },
     { name = "tenacity", specifier = ">=9.2.1" },
     { name = "tiktoken", specifier = ">=0.14.0" },
     { name = "vllm", marker = "extra == 'vllm'", specifier = ">=0.6.0" },
 ]
-provides-extras = ["vllm", "websearch"]
+provides-extras = ["retrieval", "web", "vllm", "websearch"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=9.1.1" }]

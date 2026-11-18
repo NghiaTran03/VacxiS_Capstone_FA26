@@ -5,7 +5,10 @@ Hệ thống RAG thông tin vắc xin: Markdown → chunks Parquet → BGE-M3/Qd
 ## Cấu hình
 
 ```bash
+# Core dependencies only; retrieval/web stacks are opt-in.
 uv sync --group dev
+# Use --extra retrieval for BGE/torch/Qdrant commands.
+# Use --extra web for the Gradio UI.
 cp .env.example .env
 ```
 
@@ -27,22 +30,22 @@ Chuẩn bị Qdrant tại `localhost:6333`, BGE-M3 tại `models/bge-m3` và rer
 
 ```bash
 # Markdown → Parquet → Qdrant
-uv run vacxis-pipeline prepare
+uv run --extra retrieval vacxis-pipeline prepare
 
 # Hỏi đáp, không planner
-uv run --env-file .env vacxis-pipeline ask --query "Verorab có phản ứng phụ nào?"
+uv run --extra retrieval --env-file .env vacxis-pipeline ask --query "Verorab có phản ứng phụ nào?"
 
 # Tạo dataset (GPU host): vLLM rewrite + answer, tách 300, mask triệu chứng phần cuối
 uv run generate-test-dataset --vllm-model <model> --checkpoint ckpt.json
 
 # Dataset → batch RAG → evaluation
-uv run --env-file .env vacxis-pipeline benchmark --dataset test_dataset.json
+uv run --extra retrieval --env-file .env vacxis-pipeline benchmark --dataset test_dataset.json
 
 # Chạy toàn bộ: prepare → benchmark (đòi dataset đã có ở --dataset)
-uv run --env-file .env vacxis-pipeline run
+uv run --extra retrieval --env-file .env vacxis-pipeline run
 
 # Toàn bộ luồng với generation offline
-uv run vacxis-pipeline run --dry-run
+uv run --extra retrieval vacxis-pipeline run --dry-run
 ```
 
 `generate-test-dataset` đọc `scrape_dataset/query.parquet` và `chunks_storage/chunks.parquet`: Qwen qua vLLM viết lại câu hỏi theo hướng vaccine và sinh reference answer, sau đó tách tại `--split-at` (mặc định 300): phần đầu viết vào `--out` (mặc định `test_dataset.json`), phần cuối được mask triệu chứng theo chunk bằng chứng (dữ kiện chứng minh) và viết vào `--out-masked` (mặc định `test_dataset_masked.json`). Cờ chính: `--source-queries`, `--vllm-model`, `--vllm-gpu-memory`, `--limit`, `--per-type`, `--distractors`, `--seed`, `--checkpoint`, `--answers-batch-size`, `--rewrite-batch-size`, `--verify-batch-size`, `--filter-no-han`, `--no-validate`, `--strict-validation`, `--dry-run-answers` (answer trích xuất offline thay vì vLLM), và `--relabel` (xác thực lại nhãn/trả lời/bằng chứng từ câu hỏi cuối; `--relabel-scope` `masked` (mặc định) hay `all`; loại các bản ghi vi phạm bất biến). Chạy trên GPU host vì cần vLLM.
@@ -66,7 +69,7 @@ Các CLI `vacxis-generation`, `vacxis-retrieval`, `vacxis-eval`, `vacxis-evaluat
 Chạy từ thư mục gốc sau khi cấu hình `.env`, chuẩn bị model và nạp collection vào Qdrant.
 
 ```bash
-uv run --env-file .env vacxis-web
+uv run --extra web --extra retrieval --env-file .env vacxis-web
 ```
 
 Mở [VacxiS tại localhost](http://127.0.0.1:8000). Giao diện Gradio có hai tab **Hỏi đáp** và **Tài liệu vắc xin**. Mục **Quá trình trả lời** cập nhật trong lúc hệ thống phân tích, tìm tài liệu, xếp hạng lại và soạn câu trả lời. Bấm nút nguồn dưới câu trả lời để mở đúng đoạn được trích dẫn.

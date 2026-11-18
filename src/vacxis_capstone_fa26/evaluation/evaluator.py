@@ -1,34 +1,72 @@
-"""Orchestrator classes for evaluating retrieval, generation, and end-to-end VacxiS RAG."""
+"""DeepEval-powered evaluation orchestrator for the VacxiS RAG pipeline.
+
+The module scores golden questions with DeepEval's RAG metric family:
+
+* generator-side: ``AnswerRelevancyMetric``, ``FaithfulnessMetric``
+* retriever-side: ``ContextualRelevancyMetric``, ``ContextualPrecisionMetric``,
+  ``ContextualRecallMetric``
+* a GEval ``Correctness`` judge comparing the answer with the reference
+* a deterministic refusal-correctness check against ANSWERABILITY
+
+All judges run through a configurable judge model (``judge.OpenRouterJudgeLLM``
+by default), so no OpenAI key is required. Evaluation can consume precomputed
+generation results (from the generation CLI) or run a live RAG pipeline via an
+injected answer callback.
+"""
 from __future__ import annotations
 
 import json
 import logging
-import math
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Callable
 
-import pyarrow as pa
-import pyarrow.compute as pc
-import pyarrow.parquet as pq
+from deepeval import evaluate as deepeval_evaluate
+from deepeval.evaluate.configs import AsyncConfig, CacheConfig, DisplayConfig, ErrorConfig
+from deepeval.metrics import (
+    AnswerRelevancyMetric,
+    ContextualPrecisionMetric,
+    ContextualRelevancyMetric,
+    ContextualRecallMetric,
+    FaithfulnessMetric,
+    GEval,
+)
+from deepeval.models import DeepEvalBaseLLM
+from deepeval.test_case import LLMTestCase, SingleTurnParams
 
-from vacxis_capstone_fa26.evaluation.generation import evaluate_generation_query
-from vacxis_capstone_fa26.evaluation.retrieval import evaluate_retrieval_query
+from vacxis_capstone_fa26.evaluation import datasets
+from vacxis_capstone_fa26.evaluation.datasets import GoldenRecord
+from vacxis_capstone_fa26.evaluation.judge import OpenRouterJudgeLLM
 from vacxis_capstone_fa26.evaluation.schemas import (
     EvaluationSummary,
     MetricAggregate,
-    QueryGenerationResult,
-    QueryRetrievalResult,
+    QueryEvalResult,
 )
 
 logger = logging.getLogger("vacxis.evaluation.evaluator")
 
+CORRECTNESS_CRITERIA = (
+    "Judge the medical correctness of 'actual_output' relative to "
+    "'expected_output'. Score 1.0 when the answer is medically accurate, fully "
+    "consistent with the reference, and covers the required points. Score lower "
+    "for missing facts, contradictions, or unsafe additions; a correct refusal "
+    "to answer an unanswerable question scores 1.0."
+)
 
-def _get_key(d: dict[str, Any], *keys: str, default: Any = "") -> Any:
-    """Helper to extract value trying multiple key case variations."""
-    for k in keys:
-        if k in d:
-            return d[k]
-    return default
+REFUSAL_CORRECTNESS = "refusal_correctness"
+
+
+def _resolve_query_id(item: dict[str, Any]) -> str | None:
+    """Find the query ID across the two dataset shapes (flat and DeepEval)."""
+    raw = item.get("QUERY_ID", item.get("query_id"))
+    if raw is not None and str(raw).strip():
+        return str(raw)
+    metadata = item.get("additional_metadata")
+    if isinstance(metadata, dict):
+        raw = metadata.get("query_id")
+        if raw is not None and str(raw).strip():
+            return str(raw)
+    return None
 
 
 def validate_query_ids(items: Sequence[dict[str, Any]]) -> dict[str, dict[str, Any]]:
@@ -37,382 +75,421 @@ def validate_query_ids(items: Sequence[dict[str, Any]]) -> dict[str, dict[str, A
     for item in items:
         if not isinstance(item, dict):
             raise ValueError("Query records must be objects.")
-        raw = _get_key(item, "QUERY_ID", "query_id", default=None)
-        if raw is None or not str(raw).strip():
-            raise ValueError("Every query record must have a nonblank QUERY_ID.")
-        qid = str(raw)
+        qid = _resolve_query_id(item)
+        if qid is None:
+            raise ValueError("Every record must have a nonblank query ID.")
         if qid in by_id:
-            raise ValueError("Duplicate QUERY_ID in evaluation records.")
+            raise ValueError(f"Duplicate QUERY_ID '{qid}' in evaluation records.")
         by_id[qid] = item
     return by_id
 
 
-def align_results(dataset_items, generation_results):
+def align_results(
+    dataset_items: Sequence[dict[str, Any]],
+    generation_results: Sequence[dict[str, Any]],
+) -> list[dict[str, Any]]:
     """Join complete result sets to the dataset while preserving result order."""
     items = validate_query_ids(dataset_items)
     results = validate_query_ids(generation_results)
     if items.keys() != results.keys():
-        raise ValueError("Dataset and result QUERY_ID sets must match.")
+        raise ValueError(
+            f"Dataset and results disagree on QUERY_IDs: "
+            f"{len(items)} dataset items vs {len(results)} results."
+        )
     return [items[qid] for qid in results]
 
 
-def compute_metric_aggregates(
-    metric_records: Sequence[dict[str, float]],
-) -> tuple[dict[str, float], dict[str, MetricAggregate]]:
-    """Compute overall means and detailed statistical aggregates for each metric."""
-    if not metric_records:
-        return {}, {}
+class _CaseInfo:
+    """Per-query answer fields kept alongside a golden for summary building."""
 
-    metric_names = set().union(*(r.keys() for r in metric_records))
-    overall: dict[str, float] = {}
-    aggregates: dict[str, MetricAggregate] = {}
-
-    for name in metric_names:
-        values = [r[name] for r in metric_records if name in r and not math.isnan(r[name])]
-        n = len(values)
-        if n == 0:
-            continue
-        mean_val = sum(values) / float(n)
-        variance = sum((x - mean_val) ** 2 for x in values) / float(n) if n > 1 else 0.0
-        std_val = math.sqrt(variance)
-        min_val = min(values)
-        max_val = max(values)
-
-        overall[name] = mean_val
-        aggregates[name] = MetricAggregate(
-            mean=mean_val,
-            std=std_val,
-            min=min_val,
-            max=max_val,
-            count=n,
-        )
-
-    return overall, aggregates
-
-
-def group_metrics_by_dimension(
-    queries: Sequence[dict[str, Any]],
-    per_query_metrics: Sequence[dict[str, float]],
-    dimension_key: str,
-) -> dict[str, dict[str, float]]:
-    """Aggregate metric scores grouped by metadata dimension (e.g. QUERY_TYPE)."""
-    groups: dict[str, list[dict[str, float]]] = {}
-    for q, m in zip(queries, per_query_metrics):
-        group_val = str(_get_key(q, dimension_key, dimension_key.lower(), default="UNKNOWN"))
-        groups.setdefault(group_val, []).append(m)
-
-    breakdown: dict[str, dict[str, float]] = {}
-    for group_name, records in groups.items():
-        mean_scores, _ = compute_metric_aggregates(records)
-        mean_scores["count"] = float(len(records))
-        breakdown[group_name] = mean_scores
-
-    return breakdown
-
-
-class RetrievalEvaluator:
-    """Evaluates retrieval quality against ground-truth relevant chunks and documents."""
-
-    def __init__(self, k_values: Sequence[int] = (1, 3, 5, 10)) -> None:
-        self.k_values = list(k_values)
-
-    def evaluate(
+    def __init__(
         self,
-        queries: Sequence[dict[str, Any]],
-        retrieved_per_query: Sequence[Sequence[Any]],
-    ) -> EvaluationSummary:
-        """Run retrieval evaluation across all queries."""
-        if len(queries) != len(retrieved_per_query):
-            raise ValueError("Expected one retrieval group per query.")
-        per_query_results: list[QueryRetrievalResult] = []
-        metrics_list: list[dict[str, float]] = []
-
-        for q, retrieved in zip(queries, retrieved_per_query):
-            qid = str(_get_key(q, "QUERY_ID", "query_id", default=""))
-            qtext = str(_get_key(q, "QUERY", "query", default=""))
-            rel_chunks = _get_key(q, "RELEVANT_CHUNKS", "relevant_chunks", default=[])
-            rel_docs = _get_key(q, "RELEVANT_DOCS", "relevant_docs", default=[])
-
-            metadata = {
-                "query_type": _get_key(q, "QUERY_TYPE", "query_type", default=""),
-                "difficulty": _get_key(q, "QUERY_DIFFICULTY", "query_difficulty", default=""),
-                "complexity": _get_key(q, "QUERY_COMPLEXITY", "query_complexity", default=""),
-                "answerability": _get_key(q, "ANSWERABILITY", "answerability", default=""),
-            }
-
-            res = evaluate_retrieval_query(
-                retrieved=retrieved,
-                relevant_chunks=rel_chunks,
-                relevant_docs=rel_docs,
-                k_values=self.k_values,
-                query_id=qid,
-                query_text=qtext,
-                metadata=metadata,
-            )
-            per_query_results.append(res)
-            metrics_list.append(res.metrics)
-
-        overall, aggregates = compute_metric_aggregates(metrics_list)
-        by_type = group_metrics_by_dimension(queries, metrics_list, "QUERY_TYPE")
-        by_diff = group_metrics_by_dimension(queries, metrics_list, "QUERY_DIFFICULTY")
-        by_comp = group_metrics_by_dimension(queries, metrics_list, "QUERY_COMPLEXITY")
-        by_ans = group_metrics_by_dimension(queries, metrics_list, "ANSWERABILITY")
-
-        return EvaluationSummary(
-            task="retrieval",
-            num_queries=len(queries),
-            overall_metrics=overall,
-            metric_aggregates=aggregates,
-            by_query_type=by_type,
-            by_difficulty=by_diff,
-            by_complexity=by_comp,
-            by_answerability=by_ans,
-            per_query_results=[r.to_dict() for r in per_query_results],
-        )
-
-
-class GenerationEvaluator:
-    """Evaluates answer generation quality (citations, text similarity, refusal)."""
-
-    def evaluate(
-        self,
-        queries: Sequence[dict[str, Any]],
-        answers: Sequence[Any],
-    ) -> EvaluationSummary:
-        """Run generation evaluation across all queries."""
-        if len(queries) != len(answers):
-            raise ValueError("Expected one answer per query.")
-        per_query_results: list[QueryGenerationResult] = []
-        metrics_list: list[dict[str, float]] = []
-
-        for q, ans in zip(queries, answers):
-            qid = str(_get_key(q, "QUERY_ID", "query_id", default=""))
-            qtext = str(_get_key(q, "QUERY", "query", default=""))
-            gold_ref = str(_get_key(q, "REFERENCE_ANSWER", "reference_answer", default=""))
-            rel_chunks = _get_key(q, "RELEVANT_CHUNKS", "relevant_chunks", default=[])
-            expected_ans = str(_get_key(q, "ANSWERABILITY", "answerability", default="ANSWERABLE"))
-
-            # Extract fields from GeneratedAnswer or dict
-            if isinstance(ans, dict):
-                # May be wrapped in GENERATED_ANSWER
-                gen_dict = ans.get("GENERATED_ANSWER", ans)
-                pred_text = gen_dict.get("answer", "")
-                citations = gen_dict.get("citations", [])
-                invalid_cits = gen_dict.get("invalid_citations", [])
-                ret_chunk_ids = (
-                    gen_dict.get("retrieved_chunk_ids")
-                    or [_get_key(c, "chunk_id", "CHUNK_ID") for c in gen_dict.get("retrieved_chunks", [])]
-                )
-                is_refusal = bool(gen_dict.get("is_refusal", False))
-                latency = float(gen_dict.get("latency_seconds", 0.0))
-                usage = gen_dict.get("usage", {})
-            else:
-                pred_text = getattr(ans, "answer", "")
-                citations = getattr(ans, "citations", [])
-                invalid_cits = getattr(ans, "invalid_citations", [])
-                ret_chunks = getattr(ans, "retrieved_chunks", [])
-                ret_chunk_ids = [
-                    getattr(c, "chunk_id", c.get("chunk_id", "") if isinstance(c, dict) else str(c))
-                    for c in ret_chunks
-                ]
-                is_refusal = bool(getattr(ans, "is_refusal", False))
-                latency = float(getattr(ans, "latency_seconds", 0.0))
-                usage = getattr(ans, "usage", {})
-
-            metadata = {
-                "query_type": _get_key(q, "QUERY_TYPE", "query_type", default=""),
-                "difficulty": _get_key(q, "QUERY_DIFFICULTY", "query_difficulty", default=""),
-                "complexity": _get_key(q, "QUERY_COMPLEXITY", "query_complexity", default=""),
-                "answerability": expected_ans,
-            }
-
-            res = evaluate_generation_query(
-                prediction=pred_text,
-                reference=gold_ref,
-                citations=citations,
-                invalid_citations=invalid_cits,
-                relevant_chunks=rel_chunks,
-                retrieved_chunk_ids=ret_chunk_ids,
-                is_refusal=is_refusal,
-                expected_answerability=expected_ans,
-                query_id=qid,
-                query_text=qtext,
-                latency_seconds=latency,
-                token_usage=usage,
-                metadata=metadata,
-            )
-            per_query_results.append(res)
-            metrics_list.append(res.metrics)
-
-        overall, aggregates = compute_metric_aggregates(metrics_list)
-        by_type = group_metrics_by_dimension(queries, metrics_list, "QUERY_TYPE")
-        by_diff = group_metrics_by_dimension(queries, metrics_list, "QUERY_DIFFICULTY")
-        by_comp = group_metrics_by_dimension(queries, metrics_list, "QUERY_COMPLEXITY")
-        by_ans = group_metrics_by_dimension(queries, metrics_list, "ANSWERABILITY")
-
-        return EvaluationSummary(
-            task="generation",
-            num_queries=len(queries),
-            overall_metrics=overall,
-            metric_aggregates=aggregates,
-            by_query_type=by_type,
-            by_difficulty=by_diff,
-            by_complexity=by_comp,
-            by_answerability=by_ans,
-            per_query_results=[r.to_dict() for r in per_query_results],
-        )
+        actual_output: str,
+        is_refusal: bool,
+        retrieval_context: list[str],
+    ) -> None:
+        self.actual_output = actual_output
+        self.is_refusal = is_refusal
+        self.retrieval_context = retrieval_context
 
 
 class VacxisRAGEvaluator:
-    """Unified Evaluator for Retrieval, Generation, and End-to-End RAG."""
+    """Unified DeepEval evaluator for retrieval and generation quality."""
 
-    def __init__(self, k_values: Sequence[int] = (1, 3, 5, 10)) -> None:
-        self.k_values = list(k_values)
-        self.retrieval_evaluator = RetrievalEvaluator(k_values=self.k_values)
-        self.generation_evaluator = GenerationEvaluator()
+    def __init__(
+        self,
+        judge_model: str | DeepEvalBaseLLM | None = None,
+        threshold: float = 0.5,
+        *,
+        enable_geval: bool = True,
+    ) -> None:
+        # Judge resolution is deferred so constructing an evaluator never raises
+        # on missing credentials; it only matters once LLM-judged metrics run.
+        self._judge_arg: str | DeepEvalBaseLLM | None = judge_model
+        self._judge: DeepEvalBaseLLM | None = None
+        self.threshold = threshold
+        self.enable_geval = enable_geval
+
+    @property
+    def judge(self) -> DeepEvalBaseLLM:
+        """Lazily build the judge LLM on first access."""
+        if self._judge is None:
+            self._judge = (
+                self._judge_arg
+                if isinstance(self._judge_arg, DeepEvalBaseLLM)
+                else OpenRouterJudgeLLM(model=self._judge_arg)
+            )
+        return self._judge
+
+    # ------------------------------------------------------------------
+    # Metric and test-case construction
+    # ------------------------------------------------------------------
+
+    def build_metrics(self) -> list:
+        """Instantiate the configured DeepEval metric set on the judge model."""
+        model = self.judge
+        metrics = [
+            AnswerRelevancyMetric(model=model, threshold=self.threshold),
+            FaithfulnessMetric(model=model, threshold=self.threshold),
+            ContextualRelevancyMetric(model=model, threshold=self.threshold),
+            ContextualPrecisionMetric(model=model, threshold=self.threshold),
+            ContextualRecallMetric(model=model, threshold=self.threshold),
+        ]
+        if self.enable_geval:
+            metrics.append(
+                GEval(
+                    name="Correctness",
+                    criteria=CORRECTNESS_CRITERIA,
+                    evaluation_params=[
+                        SingleTurnParams.ACTUAL_OUTPUT,
+                        SingleTurnParams.EXPECTED_OUTPUT,
+                    ],
+                    threshold=self.threshold,
+                    model=model,
+                )
+            )
+        return metrics
+
+    def _metric_names(self) -> list[str]:
+        """List of metric display names (DeepEval ``__name__``) plus refusal flag."""
+        names = [metric.__name__ for metric in self.build_metrics()]
+        return [*names, REFUSAL_CORRECTNESS]
+
+    def _case_info(self, fields: dict[str, Any], chunk_texts: dict[str, str]) -> _CaseInfo:
+        """Derive answer, refusal flag, and hydrated context for one result."""
+        return _CaseInfo(
+            actual_output=fields["actual_output"],
+            is_refusal=fields["is_refusal"],
+            retrieval_context=datasets.retrieval_context_from_answer(
+                {"retrieved_chunk_ids": fields["retrieved_chunk_ids"]}, chunk_texts
+            ),
+        )
+
+    def _build_test_case(
+        self,
+        record: GoldenRecord,
+        info: _CaseInfo,
+    ) -> LLMTestCase:
+        """Create one DeepEval test case from a golden and its answer fields."""
+        return LLMTestCase(
+            input=record.query,
+            actual_output=info.actual_output,
+            expected_output=record.expected_output,
+            retrieval_context=info.retrieval_context,
+            metadata={
+                "query_id": record.query_id,
+                "answerability": record.answerability,
+                "complexity": record.complexity,
+                "query_style": record.query_style,
+                "difficulty": record.difficulty,
+                "query_type": record.query_type,
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # Evaluation entrypoints
+    # ------------------------------------------------------------------
 
     def evaluate_results(
         self,
         dataset_items: Sequence[dict[str, Any]],
         generation_results: Sequence[dict[str, Any]],
+        chunk_texts: dict[str, str] | None = None,
+        *,
+        max_concurrent: int = 1,
+        write_cache: bool = True,
+        use_cache: bool = True,
     ) -> EvaluationSummary:
-        """Evaluate precomputed generation results against golden dataset."""
+        """Evaluate precomputed results against the golden dataset with DeepEval.
+
+        ``generation_results`` is the shape the generation CLI writes: a list of
+        dataset items each carrying a ``GENERATED_ANSWER`` dict (or the dict
+        itself). ``chunk_texts`` hydrates retrieved chunk ids into context text
+        so DeepEval's retrieval metrics have real material to judge.
+        """
         aligned = align_results(dataset_items, generation_results)
+        goldens = [datasets.to_record(item) for item in aligned]
+        chunk_texts = chunk_texts or {}
+        case_infos: list[_CaseInfo] = []
+        for result in generation_results:
+            fields = datasets.answer_fields(result)
+            case_infos.append(self._case_info(fields, chunk_texts))
 
-        matched_queries: list[dict[str, Any]] = []
-        matched_answers: list[dict[str, Any]] = []
-        retrieved_lists: list[list[Any]] = []
-
-        for query_item, res in zip(aligned, generation_results, strict=True):
-            matched_queries.append(query_item)
-            matched_answers.append(res)
-
-            gen_info = res.get("GENERATED_ANSWER", res)
-            ret_chunks = (
-                gen_info.get("retrieved_chunks")
-                or gen_info.get("retrieved_chunk_ids")
-                or []
-            )
-            retrieved_lists.append(ret_chunks)
-
-        gen_summary = self.generation_evaluator.evaluate(matched_queries, matched_answers)
-
-        # If retrieved chunks are present, also evaluate retrieval
-        has_retrieval = any(
-            "retrieved_chunks" in res.get("GENERATED_ANSWER", res)
-            or "retrieved_chunk_ids" in res.get("GENERATED_ANSWER", res)
-            for res in generation_results
+        test_cases = [
+            self._build_test_case(record, info) for record, info in zip(goldens, case_infos)
+        ]
+        eval_result = self._run_deepeval(
+            test_cases,
+            max_concurrent=max_concurrent,
+            write_cache=write_cache,
+            use_cache=use_cache,
         )
-        if has_retrieval:
-            ret_summary = self.retrieval_evaluator.evaluate(matched_queries, retrieved_lists)
-            # Combine metrics
-            combined_overall = {**ret_summary.overall_metrics, **gen_summary.overall_metrics}
-            combined_aggregates = {
-                **ret_summary.metric_aggregates,
-                **gen_summary.metric_aggregates,
-            }
+        return self.build_summary(goldens, eval_result, case_infos)
 
-            combined_by_type: dict[str, dict[str, float]] = {}
-            for qtype in set(gen_summary.by_query_type) | set(ret_summary.by_query_type):
-                combined_by_type[qtype] = {
-                    **ret_summary.by_query_type.get(qtype, {}),
-                    **gen_summary.by_query_type.get(qtype, {}),
-                }
+    def evaluate_live(
+        self,
+        dataset_items: Sequence[dict[str, Any]],
+        answer_fn: Callable[[str, dict[str, Any]], dict[str, Any]],
+        chunk_texts: dict[str, str] | None = None,
+        *,
+        max_concurrent: int = 1,
+        write_cache: bool = True,
+        use_cache: bool = True,
+    ) -> EvaluationSummary:
+        """Run a live RAG pipeline per golden, then evaluate with DeepEval.
 
-            combined_by_diff: dict[str, dict[str, float]] = {}
-            for diff in set(gen_summary.by_difficulty) | set(ret_summary.by_difficulty):
-                combined_by_diff[diff] = {
-                    **ret_summary.by_difficulty.get(diff, {}),
-                    **gen_summary.by_difficulty.get(diff, {}),
-                }
+        ``answer_fn(query, golden_dict)`` returns a dict shaped like the
+        generation CLI's ``GENERATED_ANSWER`` (``answer``,
+        ``retrieved_chunk_ids``, ``is_refusal``). This keeps the evaluator free
+        of retrieval dependencies; the caller injects its pipeline.
+        """
+        goldens = [datasets.to_record(item) for item in dataset_items]
+        chunk_texts = chunk_texts or {}
+        case_infos: list[_CaseInfo] = []
+        test_cases: list[LLMTestCase] = []
+        for record in goldens:
+            logger.info("Answering live %s", record.query_id)
+            answer = answer_fn(record.query, record.to_dict())
+            fields = datasets.answer_fields(answer)
+            info = self._case_info(fields, chunk_texts)
+            case_infos.append(info)
+            test_cases.append(self._build_test_case(record, info))
 
-            combined_by_comp: dict[str, dict[str, float]] = {}
-            for comp in set(gen_summary.by_complexity) | set(ret_summary.by_complexity):
-                combined_by_comp[comp] = {
-                    **ret_summary.by_complexity.get(comp, {}),
-                    **gen_summary.by_complexity.get(comp, {}),
-                }
+        eval_result = self._run_deepeval(
+            test_cases,
+            max_concurrent=max_concurrent,
+            write_cache=write_cache,
+            use_cache=use_cache,
+        )
+        return self.build_summary(goldens, eval_result, case_infos)
 
-            combined_by_ans: dict[str, dict[str, float]] = {}
-            for ans in set(gen_summary.by_answerability) | set(ret_summary.by_answerability):
-                combined_by_ans[ans] = {
-                    **ret_summary.by_answerability.get(ans, {}),
-                    **gen_summary.by_answerability.get(ans, {}),
-                }
+    def _run_deepeval(
+        self,
+        test_cases: list[LLMTestCase],
+        *,
+        max_concurrent: int,
+        write_cache: bool = True,
+        use_cache: bool = True,
+    ) -> Any:
+        """Run DeepEval over the test cases with quiet, non-interactive settings.
 
-            # Merge per-query results
-            combined_per_query: list[dict[str, Any]] = []
-            for g_res, r_res in zip(gen_summary.per_query_results, ret_summary.per_query_results):
-                merged = {**g_res}
-                merged["retrieval_metrics"] = r_res.get("metrics", {})
-                merged["retrieved_chunk_ids"] = r_res.get("retrieved_chunk_ids", [])
-                combined_per_query.append(merged)
+        The cache round-trip lets a stopped or crashed run resume: already scored
+        test cases are reused by content key, and only the rest are re-judged.
+        """
+        if not test_cases:
+            raise ValueError("No test cases to evaluate.")
+        return deepeval_evaluate(
+            test_cases=test_cases,
+            metrics=self.build_metrics(),
+            _skip_reset=True,
+            display_config=DisplayConfig(
+                show_indicator=True,
+                print_results=True,
+                inspect_after_run=True,
+            ),
+            cache_config=CacheConfig(write_cache=write_cache, use_cache=use_cache),
+            async_config=AsyncConfig(run_async=True, max_concurrent=max_concurrent),
+            error_config=ErrorConfig(ignore_errors=False, skip_on_missing_params=False),
+        )
 
-            return EvaluationSummary(
-                task="rag",
-                num_queries=len(matched_queries),
-                overall_metrics=combined_overall,
-                metric_aggregates=combined_aggregates,
-                by_query_type=combined_by_type,
-                by_difficulty=combined_by_diff,
-                by_complexity=combined_by_comp,
-                by_answerability=combined_by_ans,
-                per_query_results=combined_per_query,
+    # ------------------------------------------------------------------
+    # Summary construction
+    # ------------------------------------------------------------------
+
+    def build_summary(
+        self,
+        goldens: list[GoldenRecord],
+        eval_result: Any,
+        case_infos: Sequence[_CaseInfo],
+    ) -> EvaluationSummary:
+        """Fold DeepEval's per-query metric data into an EvaluationSummary.
+
+        Appends a deterministic refusal-correctness indicator for goldens that
+        carry an ANSWERABILITY label, then aggregates per-metric statistics and
+        breakdowns by stratification axis.
+        """
+        if len(goldens) != len(case_infos):
+            raise ValueError("Goldens and case infos must line up one-to-one.")
+        # Async execution can complete cases out of order; re-sort by the
+        # input index each TestResult carries so goldens stay aligned with
+        # their metric data.
+        test_results = sorted(
+            eval_result.test_results,
+            key=lambda result: (result.index is None, result.index),
+        )
+        by_case: list[list[Any]] = [list(m.metrics_data or []) for m in test_results]
+        if len(by_case) != len(goldens):
+            raise ValueError(
+                f"DeepEval returned {len(by_case)} results for {len(goldens)} goldens."
             )
 
-        return gen_summary
+        metric_names = self._metric_names()
+        per_query: list[QueryEvalResult] = []
+        for record, metrics_data, info in zip(goldens, by_case, case_infos):
+            scores: dict[str, float] = {}
+            details: dict[str, dict[str, Any]] = {}
+            for metric in metrics_data:
+                details[metric.name] = {
+                    "score": metric.score,
+                    "success": metric.success,
+                    "reason": metric.reason,
+                    "error": metric.error,
+                }
+                if metric.score is not None:
+                    scores[metric.name] = float(metric.score)
+
+            if record.answerability:
+                expected_unanswerable = record.answerability.upper() == "UNANSWERABLE"
+                refusal_correctness = 1.0 if (info.is_refusal == expected_unanswerable) else 0.0
+                scores[REFUSAL_CORRECTNESS] = refusal_correctness
+                details[REFUSAL_CORRECTNESS] = {
+                    "score": refusal_correctness,
+                    "success": refusal_correctness >= self.threshold,
+                    "reason": (
+                        "refusal matches UNANSWERABLE ground truth"
+                        if refusal_correctness == 1.0
+                        else "refusal flag disagrees with ANSWERABILITY"
+                    ),
+                    "error": None,
+                }
+
+            per_query.append(
+                QueryEvalResult(
+                    query_id=record.query_id,
+                    query=record.query,
+                    actual_output=info.actual_output,
+                    expected_output=record.expected_output,
+                    retrieval_context=info.retrieval_context,
+                    is_refusal=info.is_refusal,
+                    answerability=record.answerability,
+                    metric_scores=scores,
+                    metric_results=details,
+                    metadata={
+                        "answerability": record.answerability,
+                        "complexity": record.complexity,
+                        "query_style": record.query_style,
+                        "difficulty": record.difficulty,
+                        "query_type": record.query_type,
+                    },
+                )
+            )
+
+        aggregates = _aggregate_stats(per_query, metric_names)
+        summary = EvaluationSummary(
+            task="rag",
+            num_queries=len(per_query),
+            metric_names=metric_names,
+            overall_metrics={name: agg.mean for name, agg in aggregates.items()},
+            metric_aggregates=aggregates,
+            per_query_results=[q.to_dict() for q in per_query],
+            metadata={"threshold": self.threshold},
+        )
+        summary.by_answerability = _group_breakdown(per_query, "answerability", metric_names)
+        summary.by_complexity = _group_breakdown(per_query, "complexity", metric_names)
+        summary.by_query_style = _group_breakdown(per_query, "query_style", metric_names)
+        summary.by_difficulty = _group_breakdown(per_query, "difficulty", metric_names)
+        return summary
+
+    # ------------------------------------------------------------------
+    # Exporters
+    # ------------------------------------------------------------------
 
     @staticmethod
     def save_json(summary: EvaluationSummary, path: str | Path) -> None:
-        """Save evaluation summary as JSON."""
+        """Save the evaluation summary as JSON."""
         target_path = Path(path)
         target_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(target_path, "w", encoding="utf-8") as f:
-            json.dump(summary.to_dict(), f, ensure_ascii=False, indent=2)
+        with open(target_path, "w", encoding="utf-8") as handle:
+            json.dump(summary.to_dict(), handle, ensure_ascii=False, indent=2)
         logger.info("Saved evaluation JSON to %s", target_path)
 
     @staticmethod
     def save_markdown(summary: EvaluationSummary, path: str | Path) -> None:
-        """Save evaluation summary as Markdown."""
+        """Save the evaluation summary as Markdown."""
         target_path = Path(path)
         target_path.parent.mkdir(parents=True, exist_ok=True)
         target_path.write_text(summary.render_markdown(), encoding="utf-8")
         logger.info("Saved evaluation Markdown to %s", target_path)
 
-    @staticmethod
-    def save_parquet(summary: EvaluationSummary, path: str | Path) -> None:
-        """Export per-query evaluation results as a Parquet file using PyArrow."""
-        target_path = Path(path)
-        target_path.parent.mkdir(parents=True, exist_ok=True)
 
-        rows: list[dict[str, Any]] = []
-        for item in summary.per_query_results:
-            row: dict[str, Any] = {
-                "query_id": str(item.get("query_id", "")),
-                "query": str(item.get("query", "")),
-                "task": summary.task,
-            }
-            # Add metadata columns
-            meta = item.get("metadata", {})
-            for mk, mv in meta.items():
-                row[f"meta_{mk}"] = str(mv)
+# ----------------------------------------------------------------------
+# Module-level aggregation helpers
+# ----------------------------------------------------------------------
 
-            # Flatten metrics
-            metrics = item.get("metrics", {})
-            for mk, mv in metrics.items():
-                row[f"metric_{mk}"] = float(mv) if mv is not None else 0.0
 
-            if "retrieval_metrics" in item:
-                for rk, rv in item["retrieval_metrics"].items():
-                    row[f"retrieval_{rk}"] = float(rv) if rv is not None else 0.0
+def _aggregate_stats(
+    per_query: list[QueryEvalResult],
+    metric_names: list[str],
+) -> dict[str, MetricAggregate]:
+    """Compute mean/min/max/count and pass rate for every named metric."""
+    aggregates: dict[str, MetricAggregate] = {}
+    for name in metric_names:
+        values: list[float] = []
+        passed = 0
+        for item in per_query:
+            if name in item.metric_scores:
+                values.append(item.metric_scores[name])
+            result = item.metric_results.get(name, {})
+            if result.get("success"):
+                passed += 1
+        if not values:
+            continue
+        aggregates[name] = MetricAggregate(
+            mean=sum(values) / len(values),
+            min=min(values),
+            max=max(values),
+            count=len(values),
+            pass_rate=passed / len(per_query) if per_query else 0.0,
+        )
+    return aggregates
 
-            rows.append(row)
 
-        if not rows:
-            logger.warning("No per-query rows to write to parquet.")
-            return
+def _group_breakdown(
+    per_query: list[QueryEvalResult],
+    dimension: str,
+    metric_names: list[str],
+) -> dict[str, dict[str, float]]:
+    """Mean metric score per value of a stratification axis.
 
-        # Build PyArrow Table natively
-        table = pa.Table.from_pylist(rows)
-        pq.write_table(table, target_path)
-        logger.info("Saved %d evaluation rows to Parquet %s", len(rows), target_path)
+    Rows with a blank axis value are grouped under "UNSPECIFIED" so breakdowns
+    stay readable for mixed datasets.
+    """
+    # metric name -> axis value -> accumulated scores
+    groups: dict[str, dict[str, list[float]]] = {name: {} for name in metric_names}
+    counts: dict[str, int] = {}
+    for item in per_query:
+        key = str(item.metadata.get(dimension) or "UNSPECIFIED")
+        counts[key] = counts.get(key, 0) + 1
+        for name in metric_names:
+            if name in item.metric_scores:
+                groups[name].setdefault(key, []).append(item.metric_scores[name])
+
+    breakdown: dict[str, dict[str, float]] = {}
+    for key, count in counts.items():
+        row: dict[str, float] = {"count": float(count)}
+        for name in metric_names:
+            values = groups[name].get(key)
+            if values:
+                row[name] = sum(values) / len(values)
+        breakdown[key] = row
+    return breakdown
