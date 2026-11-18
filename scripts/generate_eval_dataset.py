@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import argparse
-from collections import defaultdict
+from collections import defaultdict, deque
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
@@ -669,6 +669,113 @@ def _sample_groups(
     return selected, (cursor + count) % len(pool)
 
 
+def _resolve_context_group(
+    golden_context: list[str] | None,
+    idx: int,
+    batch_groups: list[ContextGroup],
+    groups_by_context: dict[tuple[str, ...], deque[ContextGroup]],
+    fallback_by_context: dict[tuple[str, ...], ContextGroup],
+) -> ContextGroup:
+    """Match a synthesized Golden back to its originating ContextGroup by context text."""
+    if golden_context:
+        ctx_key = tuple(golden_context)
+        queue = groups_by_context.get(ctx_key)
+        if queue:
+            return queue.popleft()
+        if ctx_key in fallback_by_context:
+            return fallback_by_context[ctx_key]
+        raise ValueError(
+            f"Synthesized golden context at index {idx} did not match any ContextGroup in batch."
+        )
+    return batch_groups[idx % len(batch_groups)]
+
+
+def repair_dataset_metadata(
+    *,
+    dataset_path: Path,
+    chunks_path: Path,
+    output_path: Path | None = None,
+) -> dict[str, int]:
+    """Repair source_chunk_ids, doc_ids, and doc_titles offline using chunks.parquet."""
+    if not dataset_path.is_file():
+        raise FileNotFoundError(f"Dataset file not found: {dataset_path}")
+
+    records = load_chunks_from_parquet(chunks_path)
+    by_formatted: dict[str, list[ChunkRecord]] = defaultdict(list)
+    for record in records:
+        by_formatted[record.format_context()].append(record)
+
+    payload = json.loads(dataset_path.read_text(encoding="utf-8"))
+    goldens = payload.get("goldens")
+    if not isinstance(goldens, list):
+        raise ValueError(f"Invalid dataset format in {dataset_path}: missing 'goldens' list")
+
+    updated = 0
+    unchanged = 0
+    for golden in goldens:
+        meta = golden.get("additional_metadata")
+        if not isinstance(meta, dict):
+            raise ValueError("Golden entry is missing 'additional_metadata'")
+        query_id = meta.get("query_id", "<unknown>")
+        contexts = golden.get("context") or []
+        if not contexts:
+            raise ValueError(f"Golden {query_id} has empty 'context'")
+
+        matched_chunks: list[ChunkRecord] = []
+        for ctx_text in contexts:
+            hits = by_formatted.get(ctx_text, [])
+            if not hits:
+                raise ValueError(
+                    f"Golden {query_id} has unmatched context text: {ctx_text[:80]!r}"
+                )
+            if len(hits) > 1:
+                hit_ids = [h.chunk_id for h in hits]
+                raise ValueError(
+                    f"Golden {query_id} has ambiguous context matching chunks {hit_ids}"
+                )
+            matched_chunks.append(hits[0])
+
+        new_chunk_ids = [c.chunk_id for c in matched_chunks]
+        new_doc_ids = list(dict.fromkeys(c.doc_id for c in matched_chunks))
+        new_doc_titles = list(dict.fromkeys(c.doc_title for c in matched_chunks))
+
+        complexity = meta.get("complexity")
+        multi_hop_type = meta.get("multi_hop_type")
+        if complexity == "MULTI_HOP":
+            if multi_hop_type == "same_doc" and len(new_doc_ids) != 1:
+                raise ValueError(
+                    f"Golden {query_id} marked same_doc but matched doc_ids={new_doc_ids}"
+                )
+            if multi_hop_type == "cross_vaccine" and len(new_doc_ids) < 2:
+                raise ValueError(
+                    f"Golden {query_id} marked cross_vaccine but matched doc_ids={new_doc_ids}"
+                )
+        elif complexity == "TABLE_REASONING" and not any(c.has_table for c in matched_chunks):
+            raise ValueError(
+                f"Golden {query_id} marked TABLE_REASONING but matched chunks lack tables"
+            )
+
+        if (
+            meta.get("source_chunk_ids") == new_chunk_ids
+            and meta.get("doc_ids") == new_doc_ids
+            and meta.get("doc_titles") == new_doc_titles
+        ):
+            unchanged += 1
+        else:
+            meta["source_chunk_ids"] = new_chunk_ids
+            meta["doc_ids"] = new_doc_ids
+            meta["doc_titles"] = new_doc_titles
+            updated += 1
+
+    target_path = output_path or dataset_path
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    target_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return {"total": len(goldens), "updated": updated, "unchanged": unchanged}
+
+
 def generate_dataset(
     *,
     chunks_path: Path,
@@ -730,6 +837,15 @@ def generate_dataset(
                 cost_tracking=False,
             )
             contexts = [g.texts for g in batch_groups]
+            groups_by_context: dict[tuple[str, ...], deque[ContextGroup]] = defaultdict(
+                deque
+            )
+            fallback_by_context: dict[tuple[str, ...], ContextGroup] = {}
+            for group in batch_groups:
+                ctx_key = tuple(group.texts)
+                groups_by_context[ctx_key].append(group)
+                fallback_by_context.setdefault(ctx_key, group)
+
             generated = synthesizer.generate_goldens_from_contexts(
                 contexts=contexts,
                 include_expected_output=True,
@@ -737,7 +853,13 @@ def generate_dataset(
                 _send_data=False,
             )
             for idx, golden in enumerate(generated[: len(batch_groups)]):
-                group = batch_groups[idx % len(batch_groups)]
+                group = _resolve_context_group(
+                    golden.context,
+                    idx,
+                    batch_groups,
+                    groups_by_context,
+                    fallback_by_context,
+                )
                 goldens_out.append(
                     {
                         "input": golden.input,
@@ -814,8 +936,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=Path,
-        default=DEFAULT_OUTPUT_PATH,
-        help=f"Output JSON path (default: {DEFAULT_OUTPUT_PATH}).",
+        default=None,
+        help=f"Output JSON path (default: {DEFAULT_OUTPUT_PATH}, or in-place when --repair is set).",
+    )
+    parser.add_argument(
+        "--repair",
+        type=Path,
+        default=None,
+        help="Repair source_chunk_ids/doc_ids/doc_titles of an existing dataset JSON offline (no LLM calls).",
     )
     parser.add_argument(
         "--seed",
@@ -835,9 +963,23 @@ def main(argv: list[str] | None = None) -> int:
     """CLI entrypoint."""
     load_dotenv(dotenv_path=PROJECT_ROOT / ".env", override=False)
     args = parse_args(argv)
+    if args.repair is not None:
+        stats = repair_dataset_metadata(
+            dataset_path=args.repair,
+            chunks_path=args.chunks_path,
+            output_path=args.output,
+        )
+        target = args.output or args.repair
+        print(
+            f"Repaired {stats['updated']}/{stats['total']} goldens "
+            f"({stats['unchanged']} unchanged) -> {target}"
+        )
+        return 0
+
+    output_path = args.output if args.output is not None else DEFAULT_OUTPUT_PATH
     result = generate_dataset(
         chunks_path=args.chunks_path,
-        output_path=args.output,
+        output_path=output_path,
         limit=args.limit,
         seed=args.seed,
         dry_run=args.dry_run,
@@ -846,7 +988,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(result["metadata"], ensure_ascii=False, indent=2))
     else:
         print(
-            f"Generated {result['metadata']['total_generated']} goldens -> {args.output}"
+            f"Generated {result['metadata']['total_generated']} goldens -> {output_path}"
         )
     return 0
 
