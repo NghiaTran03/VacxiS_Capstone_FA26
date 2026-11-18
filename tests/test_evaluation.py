@@ -465,3 +465,219 @@ def test_apply_judge_timeout_noop_when_unset(monkeypatch):
     args = argparse.Namespace(judge_timeout=None)
     eval_cli._apply_judge_timeout(args)
     assert "DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE" not in os.environ
+
+
+# ---------------------------------------------------------------------------
+# Deterministic IR Metrics
+# ---------------------------------------------------------------------------
+
+
+def test_ir_metrics_empty_inputs():
+    from vacxis_capstone_fa26.evaluation.ir_metrics import (
+        hit_at_k,
+        map_at_k,
+        mrr_at_k,
+        ndcg_at_k,
+        precision_at_k,
+        recall_at_k,
+    )
+
+    assert hit_at_k([], ["c1"], 5) == 0.0
+    assert hit_at_k(["c1"], [], 5) == 0.0
+    assert hit_at_k(["c1"], ["c1"], 0) == 0.0
+    assert recall_at_k([], ["c1"], 5) == 0.0
+    assert recall_at_k(["c1"], [], 5) == 0.0
+    assert precision_at_k([], ["c1"], 5) == 0.0
+    assert mrr_at_k([], ["c1"], 5) == 0.0
+    assert ndcg_at_k([], ["c1"], 5) == 0.0
+    assert map_at_k([], ["c1"], 5) == 0.0
+
+
+def test_ir_metrics_perfect_ranking():
+    from vacxis_capstone_fa26.evaluation.ir_metrics import (
+        hit_at_k,
+        map_at_k,
+        mrr_at_k,
+        ndcg_at_k,
+        precision_at_k,
+        recall_at_k,
+    )
+
+    retrieved = ["c1", "c2", "c3"]
+    relevant = ["c1", "c2"]
+
+    assert hit_at_k(retrieved, relevant, 1) == 1.0
+    assert recall_at_k(retrieved, relevant, 1) == 0.5
+    assert precision_at_k(retrieved, relevant, 1) == 1.0
+    assert mrr_at_k(retrieved, relevant, 1) == 1.0
+    assert map_at_k(retrieved, relevant, 1) == 0.5
+    assert ndcg_at_k(retrieved, relevant, 1) == 1.0
+
+    assert hit_at_k(retrieved, relevant, 2) == 1.0
+    assert recall_at_k(retrieved, relevant, 2) == 1.0
+    assert precision_at_k(retrieved, relevant, 2) == 1.0
+    assert mrr_at_k(retrieved, relevant, 2) == 1.0
+    assert map_at_k(retrieved, relevant, 2) == 1.0
+    assert ndcg_at_k(retrieved, relevant, 2) == 1.0
+
+
+def test_ir_metrics_partial_ranking():
+    from vacxis_capstone_fa26.evaluation.ir_metrics import (
+        hit_at_k,
+        map_at_k,
+        mrr_at_k,
+        ndcg_at_k,
+        precision_at_k,
+        recall_at_k,
+    )
+
+    # c1 is distractor, c2 is relevant
+    retrieved = ["distractor", "c2", "other"]
+    relevant = ["c2"]
+
+    assert hit_at_k(retrieved, relevant, 1) == 0.0
+    assert recall_at_k(retrieved, relevant, 1) == 0.0
+    assert mrr_at_k(retrieved, relevant, 1) == 0.0
+
+    assert hit_at_k(retrieved, relevant, 3) == 1.0
+    assert recall_at_k(retrieved, relevant, 3) == 1.0
+    assert pytest.approx(precision_at_k(retrieved, relevant, 3)) == 1.0 / 3.0
+    assert pytest.approx(mrr_at_k(retrieved, relevant, 3)) == 0.5
+    assert pytest.approx(map_at_k(retrieved, relevant, 3)) == 0.5
+    assert 0.0 < ndcg_at_k(retrieved, relevant, 3) < 1.0
+
+
+def test_ir_metrics_deduplication():
+    from vacxis_capstone_fa26.evaluation.ir_metrics import hit_at_k, recall_at_k
+
+    # Duplicates in retrieved must not artificially inflate recall or hit count
+    retrieved = ["c1", "c1", "c2"]
+    relevant = ["c1"]
+    assert recall_at_k(retrieved, relevant, 2) == 1.0
+    assert hit_at_k(retrieved, relevant, 1) == 1.0
+
+
+def test_compute_query_ir_metrics_and_aggregate():
+    from vacxis_capstone_fa26.evaluation.ir_metrics import (
+        aggregate_ir_metrics,
+        compute_query_ir_metrics,
+    )
+
+    scores1 = compute_query_ir_metrics(["c1", "c2"], ["c1"], k_values=(1, 3))
+    assert scores1["Hit@1"] == 1.0
+    assert scores1["Recall@1"] == 1.0
+    assert scores1["MRR@1"] == 1.0
+    assert "Hit@3" in scores1
+
+    scores2 = compute_query_ir_metrics(["c_wrong"], ["c1"], k_values=(1, 3))
+    assert scores2["Hit@1"] == 0.0
+    assert scores2["Recall@1"] == 0.0
+
+    agg = aggregate_ir_metrics([scores1, scores2], threshold=0.5)
+    assert agg["Hit@1"].count == 2
+    assert agg["Hit@1"].mean == 0.5
+    assert agg["Hit@1"].pass_rate == 0.5
+
+
+def test_load_goldens_extracts_relevant_chunk_ids():
+    records = load_goldens(MAIN_DATASET)
+    assert len(records) == 300
+    first = records[0]
+    assert first.relevant_chunk_ids == ["proquad_001310197825_c_0000"]
+
+    flat_records = load_goldens(FLAT_DATASET)
+    assert len(flat_records) == 460
+    has_rel = any(len(r.relevant_chunk_ids) > 0 for r in flat_records)
+    assert has_rel
+
+
+def test_evaluate_retrieval_standalone(tmp_path: Path):
+    evaluator = _make_evaluator()
+    dataset = [
+        {
+            "QUERY_ID": "Q1",
+            "QUERY": "q1",
+            "ANSWERABILITY": "ANSWERABLE",
+            "additional_metadata": {"source_chunk_ids": ["c1", "c2"]},
+        },
+        {
+            "QUERY_ID": "Q2",
+            "QUERY": "q2",
+            "ANSWERABILITY": "ANSWERABLE",
+            "additional_metadata": {"source_chunk_ids": ["c3"]},
+        },
+    ]
+    results = [
+        {
+            "QUERY_ID": "Q1",
+            "GENERATED_ANSWER": {
+                "answer": "ans1",
+                "retrieved_chunk_ids": ["c1", "distractor"],
+            },
+        },
+        {
+            "QUERY_ID": "Q2",
+            "GENERATED_ANSWER": {
+                "answer": "ans2",
+                "retrieved_chunk_ids": ["other", "c3"],
+            },
+        },
+    ]
+    summary = evaluator.evaluate_retrieval(dataset, results, k_values=(1, 3))
+    assert summary.task == "retrieval"
+    assert summary.num_queries == 2
+    assert "Hit@1" in summary.metric_names
+    assert "Hit@3" in summary.metric_names
+    assert summary.overall_metrics["Hit@1"] == 0.5
+    assert summary.overall_metrics["Hit@3"] == 1.0
+    assert summary.overall_metrics["MRR@1"] == 0.5
+    assert summary.overall_metrics["MRR@3"] == 0.75
+
+    # Check Markdown report formatting
+    md_path = tmp_path / "retrieval_report.md"
+    VacxisRAGEvaluator.save_markdown(summary, md_path)
+    md_content = md_path.read_text(encoding="utf-8")
+    assert "# VacxiS DeepEval Report: RETRIEVAL" in md_content
+    assert "Hit@1" in md_content
+
+
+def test_evaluate_results_includes_ir_metrics(monkeypatch):
+    evaluator = _make_evaluator(enable_geval=False)
+    dataset = [
+        {
+            "QUERY_ID": "Q1",
+            "QUERY": "q1",
+            "ANSWERABILITY": "ANSWERABLE",
+            "additional_metadata": {"source_chunk_ids": ["c1"]},
+        }
+    ]
+    results = [
+        {
+            "QUERY_ID": "Q1",
+            "GENERATED_ANSWER": {
+                "answer": "ans1",
+                "is_refusal": False,
+                "retrieved_chunk_ids": ["c1"],
+            },
+        }
+    ]
+    metric_names = [m.__name__ for m in evaluator.build_metrics()]
+    evaluator._run_deepeval = lambda cases, **kw: _fake_result(1, metric_names)
+    summary = evaluator.evaluate_results(dataset, results, chunk_texts={})
+    assert "Hit@1" in summary.metric_names
+    assert summary.overall_metrics["Hit@1"] == 1.0
+    assert summary.overall_metrics["MRR@1"] == 1.0
+
+
+def test_cli_retrieval_only_flag():
+    from vacxis_capstone_fa26.evaluation.cli import parse_args
+    import sys
+
+    old_argv = sys.argv
+    try:
+        sys.argv = ["vacxis-eval", "--retrieval-only", "--results", "results.json"]
+        args = parse_args()
+        assert args.retrieval_only is True
+        assert args.skip_ir is False
+    finally:
+        sys.argv = old_argv

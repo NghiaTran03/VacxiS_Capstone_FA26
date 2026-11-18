@@ -19,6 +19,17 @@ from vacxis_capstone_fa26.evaluation.evaluator import (
     align_results,
     validate_query_ids,
 )
+from vacxis_capstone_fa26.evaluation.ir_metrics import (
+    DEFAULT_K_VALUES,
+    aggregate_ir_metrics,
+    compute_query_ir_metrics,
+    hit_at_k,
+    map_at_k,
+    mrr_at_k,
+    ndcg_at_k,
+    precision_at_k,
+    recall_at_k,
+)
 from vacxis_capstone_fa26.evaluation.judge import (
     OpenRouterJudgeLLM,
     require_judge_credentials,
@@ -45,4 +56,13 @@ __all__ = [
     "EvaluationSummary",
     "MetricAggregate",
     "QueryEvalResult",
+    "DEFAULT_K_VALUES",
+    "hit_at_k",
+    "recall_at_k",
+    "precision_at_k",
+    "mrr_at_k",
+    "ndcg_at_k",
+    "map_at_k",
+    "compute_query_ir_metrics",
+    "aggregate_ir_metrics",
 ]

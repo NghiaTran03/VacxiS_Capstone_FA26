@@ -80,6 +80,16 @@ def parse_args() -> argparse.Namespace:
         help="Skip the separate unanswerable-set evaluation pass",
     )
     parser.add_argument(
+        "--retrieval-only",
+        action="store_true",
+        help="Run only deterministic IR metrics without invoking LLM judge models",
+    )
+    parser.add_argument(
+        "--skip-ir",
+        action="store_true",
+        help="Skip deterministic IR metrics during full evaluation",
+    )
+    parser.add_argument(
         "--chunks",
         type=Path,
         default=_DEFAULT_CHUNKS,
@@ -261,6 +271,44 @@ def _evaluate_live(
         return evaluator.evaluate_live(dataset_items, answer_fn, chunk_texts=chunk_texts)
 
 
+def _evaluate_live_retrieval(
+    evaluator: VacxisRAGEvaluator,
+    dataset_items: list[dict[str, Any]],
+    args: argparse.Namespace,
+) -> EvaluationSummary:
+    """Run live retrieval over goldens and evaluate deterministic IR metrics."""
+    from argparse import Namespace as _NS
+    from vacxis_capstone_fa26.cli import retrieval_config
+    from vacxis_capstone_fa26.retrieval.retriever import VacxisRetriever
+
+    ns = _NS(
+        collection_name=args.collection_name,
+        qdrant_host=args.qdrant_host,
+        qdrant_port=args.qdrant_port,
+        model_path=args.model_path,
+        reranker_path=args.reranker_path,
+        top_k=args.top_k,
+        skip_rerank=args.skip_rerank,
+    )
+    ret_config = retrieval_config(ns)
+    retriever = VacxisRetriever(config=ret_config)
+    results: list[dict[str, Any]] = []
+    for item in dataset_items:
+        record = datasets.to_record(item)
+        chunks = retriever.retrieve(query=record.query, top_k=ns.top_k, skip_rerank=ns.skip_rerank)
+        results.append(
+            {
+                "QUERY_ID": record.query_id,
+                "GENERATED_ANSWER": {
+                    "retrieved_chunk_ids": [c.chunk_id for c in chunks],
+                    "answer": "",
+                    "is_refusal": False,
+                },
+            }
+        )
+    return evaluator.evaluate_retrieval(dataset_items, results)
+
+
 def _apply_judge_timeout(args: argparse.Namespace) -> None:
     """Raise DeepEval's per-task judge timeout when --judge-timeout is set.
 
@@ -284,10 +332,47 @@ def main() -> None:
     By default the RAG pipeline runs live over the main golden dataset and the
     unanswerable set, then DeepEval scores each answer. Passing ``--results``
     switches to a fast path that scores precomputed outputs without touching the
-    pipeline.
+    pipeline. Passing ``--retrieval-only`` scores only deterministic IR metrics
+    without requiring judge credentials.
     """
     args = parse_args()
     _apply_judge_timeout(args)
+
+    if args.retrieval_only:
+        evaluator = VacxisRAGEvaluator(
+            threshold=args.threshold,
+            enable_geval=False,
+            enable_ir_metrics=True,
+        )
+        if args.results is not None:
+            results = json.loads(args.results.read_text(encoding="utf-8"))
+            if not isinstance(results, list):
+                logger.error("Results file %s must be a JSON list.", args.results)
+                sys.exit(1)
+            dataset = _load_dataset_items(args.dataset) if args.dataset is not None else results
+            summary = evaluator.evaluate_retrieval(dataset, results)
+            _print_summary(summary, args.breakdown)
+            _maybe_export(summary, args)
+
+            unanswerable = _load_flat_dataset(args.unanswerable)
+            if unanswerable and args.unanswerable != args.results and not args.skip_unanswerable:
+                stubs = _unanswerable_stubs(unanswerable)
+                unsummary = evaluator.evaluate_retrieval(unanswerable, stubs)
+                print("\n--- Unanswerable evaluation ---")
+                _print_summary(unsummary, args.breakdown)
+                _maybe_export(unsummary, args, suffix="_unanswerable")
+            return
+
+        main_dataset = (
+            _load_dataset_items(args.dataset)
+            if args.dataset is not None
+            else _load_dataset_items(_MAIN_DATASET)
+        )
+        logger.info("Running live retrieval evaluation over %d main goldens", len(main_dataset))
+        summary = _evaluate_live_retrieval(evaluator, main_dataset, args)
+        _print_summary(summary, args.breakdown)
+        _maybe_export(summary, args)
+        return
 
     # Fail fast when the OpenRouter key is missing (the judge needs it to run).
     try:
@@ -308,6 +393,7 @@ def main() -> None:
         judge_model=judge_model,
         threshold=args.threshold,
         enable_geval=not args.skip_geval,
+        enable_ir_metrics=not args.skip_ir,
     )
 
     if args.results is not None:

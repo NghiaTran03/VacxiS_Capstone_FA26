@@ -12,13 +12,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "proquad_001310197825_c_0000"
+        "abrysvo_540310322125_c_0006"
       ],
       "doc_ids": [
-        "proquad_001310197825"
+        "abrysvo_540310322125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine ProQuad"
+        "Hướng dẫn sử dụng Vaccine Abrysvo"
       ]
     },
     "GENERATED_ANSWER": {
@@ -62,13 +62,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_13_540310111524_c_0003"
+        "proquad_001310197825_c_0000"
       ],
       "doc_ids": [
-        "prevenar_13_540310111524"
+        "proquad_001310197825"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 13"
+        "Hướng dẫn sử dụng Vaccine ProQuad"
       ]
     },
     "GENERATED_ANSWER": {
@@ -110,13 +110,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "gardasil_9_001310178700_c_0005"
+        "nimenrix_540310196925_c_0000"
       ],
       "doc_ids": [
-        "gardasil_9_001310178700"
+        "nimenrix_540310196925"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Gardasil 9"
+        "Hướng dẫn sử dụng Vaccine Nimenrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -164,13 +164,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "jeev_890310108424_c_0009"
+        "boostrix_300310036923_c_0003"
       ],
       "doc_ids": [
-        "jeev_890310108424"
+        "boostrix_300310036923"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine JEEV"
+        "Hướng dẫn sử dụng Vaccine Boostrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -214,13 +214,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "heberbiovac_hb_850310304424_c_0005"
+        "combe_five_890310108224_c_0002"
       ],
       "doc_ids": [
-        "heberbiovac_hb_850310304424"
+        "combe_five_890310108224"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Heberbiovac HB"
+        "Hướng dẫn sử dụng Vaccine ComBE Five"
       ]
     },
     "GENERATED_ANSWER": {
@@ -262,13 +262,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "menquadfi_001310047625_c_0055"
+        "prevenar_20_539310047525_c_0014"
       ],
       "doc_ids": [
-        "menquadfi_001310047625"
+        "prevenar_20_539310047525"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Menquadfi"
+        "Hướng dẫn sử dụng Vaccine Prevenar 20"
       ]
     },
     "GENERATED_ANSWER": {
@@ -314,13 +314,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "flumist_001310440525_c_0009"
+        "prevenar_13_540310111524_c_0009"
       ],
       "doc_ids": [
-        "flumist_001310440525"
+        "prevenar_13_540310111524"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Flumist"
+        "Hướng dẫn sử dụng Vaccine Prevenar 13"
       ]
     },
     "GENERATED_ANSWER": {
@@ -362,13 +362,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "hexaxim_300310038123_c_0018"
+        "pentavac_890310178100_c_0007"
       ],
       "doc_ids": [
-        "hexaxim_300310038123"
+        "pentavac_890310178100"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Hexaxim"
+        "Hướng dẫn sử dụng Vaccine PENTAVAC"
       ]
     },
     "GENERATED_ANSWER": {
@@ -412,13 +412,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "influvac_tetra_870310304024_c_0017"
+        "nimenrix_540310196925_c_0013"
       ],
       "doc_ids": [
-        "influvac_tetra_870310304024"
+        "nimenrix_540310196925"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Influvac Tetra"
+        "Hướng dẫn sử dụng Vaccine Nimenrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -460,13 +460,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxigrip_0_5ml_qlvx_0646_13_c_0004"
+        "skyvaricella_inj_880310033426_c_0006"
       ],
       "doc_ids": [
-        "vaxigrip_0_5ml_qlvx_0646_13"
+        "skyvaricella_inj_880310033426"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,5ml)"
+        "Hướng dẫn sử dụng Vaccine SKYVaricella Inj."
       ]
     },
     "GENERATED_ANSWER": {
@@ -504,13 +504,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_20_539310047525_c_0014"
+        "prevenar_13_qlvx_h03_1142_19_c_0080"
       ],
       "doc_ids": [
-        "prevenar_20_539310047525"
+        "prevenar_13_qlvx_h03_1142_19"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 20"
+        "Hướng dẫn sử dụng Vaccine Prevenar 13"
       ]
     },
     "GENERATED_ANSWER": {
@@ -556,13 +556,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "rotarix_540310037023_c_0004"
+        "prevenar_13_540310111524_c_0031"
       ],
       "doc_ids": [
-        "rotarix_540310037023"
+        "prevenar_13_540310111524"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Rotarix"
+        "Hướng dẫn sử dụng Vaccine Prevenar 13"
       ]
     },
     "GENERATED_ANSWER": {
@@ -604,7 +604,7 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_13_540310111524_c_0031"
+        "prevenar_13_540310111524_c_0003"
       ],
       "doc_ids": [
         "prevenar_13_540310111524"
@@ -652,13 +652,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "varilrix_001310177800_c_0012"
+        "vaxigrip_300310033526_c_0006"
       ],
       "doc_ids": [
-        "varilrix_001310177800"
+        "vaxigrip_300310033526"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Varilrix"
+        "Hướng dẫn sử dụng Vaccine Vaxigrip"
       ]
     },
     "GENERATED_ANSWER": {
@@ -702,13 +702,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "boostrix_300310036923_c_0003"
+        "bcg_vaccine_893310251023_c_0008"
       ],
       "doc_ids": [
-        "boostrix_300310036923"
+        "bcg_vaccine_893310251023"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Boostrix"
+        "Hướng dẫn sử dụng Vaccine BCG Vaccine"
       ]
     },
     "GENERATED_ANSWER": {
@@ -750,13 +750,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "nimenrix_540310196925_c_0000"
+        "rotarix_540310037023_c_0004"
       ],
       "doc_ids": [
-        "nimenrix_540310196925"
+        "rotarix_540310037023"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Nimenrix"
+        "Hướng dẫn sử dụng Vaccine Rotarix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -798,13 +798,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxigrip_300310033526_c_0003"
+        "hexaxim_300310038123_c_0018"
       ],
       "doc_ids": [
-        "vaxigrip_300310033526"
+        "hexaxim_300310038123"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxigrip"
+        "Hướng dẫn sử dụng Vaccine Hexaxim"
       ]
     },
     "GENERATED_ANSWER": {
@@ -850,13 +850,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "adacel_754310306124_c_0001"
+        "prevenar_13_540310111524_c_0062"
       ],
       "doc_ids": [
-        "adacel_754310306124"
+        "prevenar_13_540310111524"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Adacel"
+        "Hướng dẫn sử dụng Vaccine Prevenar 13"
       ]
     },
     "GENERATED_ANSWER": {
@@ -905,13 +905,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_13_540310111524_c_0020"
+        "influvac_tetra_870310304024_c_0017"
       ],
       "doc_ids": [
-        "prevenar_13_540310111524"
+        "influvac_tetra_870310304024"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 13"
+        "Hướng dẫn sử dụng Vaccine Influvac Tetra"
       ]
     },
     "GENERATED_ANSWER": {
@@ -953,13 +953,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "ivacflu_s_qlvx_h03_1137_19_c_0005"
+        "imojev_md_qlvx_h03_1141_19_c_0001"
       ],
       "doc_ids": [
-        "ivacflu_s_qlvx_h03_1137_19"
+        "imojev_md_qlvx_h03_1141_19"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine IVACFLU-S"
+        "Hướng dẫn sử dụng Vaccine Imojev MD"
       ]
     },
     "GENERATED_ANSWER": {
@@ -1003,13 +1003,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "polysaccharide_meningococcal_a_c_qlvx_992_17_c_0004"
+        "bopv_qlvx_h02_1051_17_c_0003"
       ],
       "doc_ids": [
-        "polysaccharide_meningococcal_a_c_qlvx_992_17"
+        "bopv_qlvx_h02_1051_17"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Polysaccharide Meningococcal A+C"
+        "Hướng dẫn sử dụng Vaccine bOPV"
       ]
     },
     "GENERATED_ANSWER": {
@@ -1051,13 +1051,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "infanrix_ipv_hib_qlvx_1138_19_c_0017"
+        "qdenga_400310303924_c_0003"
       ],
       "doc_ids": [
-        "infanrix_ipv_hib_qlvx_1138_19"
+        "qdenga_400310303924"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Infanrix IPV-Hib"
+        "Hướng dẫn sử dụng Vaccine Qdenga"
       ]
     },
     "GENERATED_ANSWER": {
@@ -1101,13 +1101,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "nimenrix_540310196925_c_0013"
+        "prevenar_13_qlvx_h03_1142_19_c_0005"
       ],
       "doc_ids": [
-        "nimenrix_540310196925"
+        "prevenar_13_qlvx_h03_1142_19"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Nimenrix"
+        "Hướng dẫn sử dụng Vaccine Prevenar 13"
       ]
     },
     "GENERATED_ANSWER": {
@@ -1151,13 +1151,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_13_qlvx_h03_1142_19_c_0080"
+        "hexaxim_300310038123_c_0012"
       ],
       "doc_ids": [
-        "prevenar_13_qlvx_h03_1142_19"
+        "hexaxim_300310038123"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 13"
+        "Hướng dẫn sử dụng Vaccine Hexaxim"
       ]
     },
     "GENERATED_ANSWER": {
@@ -1199,13 +1199,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "euvax_b_qlvx_934_16_c_0009"
+        "gardasil_9_001310178700_c_0005"
       ],
       "doc_ids": [
-        "euvax_b_qlvx_934_16"
+        "gardasil_9_001310178700"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Euvax B"
+        "Hướng dẫn sử dụng Vaccine Gardasil 9"
       ]
     },
     "GENERATED_ANSWER": {
@@ -1249,13 +1249,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_13_qlvx_h03_1142_19_c_0005"
+        "menactra_qlvx_h03_1111_18_c_0043"
       ],
       "doc_ids": [
-        "prevenar_13_qlvx_h03_1142_19"
+        "menactra_qlvx_h03_1111_18"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 13"
+        "Hướng dẫn sử dụng Vaccine Menactra"
       ]
     },
     "GENERATED_ANSWER": {
@@ -1293,13 +1293,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "menactra_qlvx_h03_1111_18_c_0043"
+        "jeev_890310108424_c_0009"
       ],
       "doc_ids": [
-        "menactra_qlvx_h03_1111_18"
+        "jeev_890310108424"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Menactra"
+        "Hướng dẫn sử dụng Vaccine JEEV"
       ]
     },
     "GENERATED_ANSWER": {
@@ -1343,13 +1343,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "infanrix_ipv_hib_qlvx_1138_19_c_0019"
+        "rabipur_qlvx_1048_17_c_0007"
       ],
       "doc_ids": [
-        "infanrix_ipv_hib_qlvx_1138_19"
+        "rabipur_qlvx_1048_17"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Infanrix IPV-Hib"
+        "Hướng dẫn sử dụng Vaccine Rabipur"
       ]
     },
     "GENERATED_ANSWER": {
@@ -1393,13 +1393,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "menquadfi_001310047625_c_0007"
+        "infanrix_ipv_hib_qlvx_1138_19_c_0019"
       ],
       "doc_ids": [
-        "menquadfi_001310047625"
+        "infanrix_ipv_hib_qlvx_1138_19"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Menquadfi"
+        "Hướng dẫn sử dụng Vaccine Infanrix IPV-Hib"
       ]
     },
     "GENERATED_ANSWER": {
@@ -1443,13 +1443,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "bcg_vaccine_893310251023_c_0008"
+        "menquadfi_001310047625_c_0060"
       ],
       "doc_ids": [
-        "bcg_vaccine_893310251023"
+        "menquadfi_001310047625"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine BCG Vaccine"
+        "Hướng dẫn sử dụng Vaccine Menquadfi"
       ]
     },
     "GENERATED_ANSWER": {
@@ -1495,13 +1495,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxigrip_300310033526_c_0006"
+        "nimenrix_540310196925_c_0104"
       ],
       "doc_ids": [
-        "vaxigrip_300310033526"
+        "nimenrix_540310196925"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxigrip"
+        "Hướng dẫn sử dụng Vaccine Nimenrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -1543,13 +1543,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "hiberix_qlvx_988_17_c_0009"
+        "vaxigrip_300310033526_c_0003"
       ],
       "doc_ids": [
-        "hiberix_qlvx_988_17"
+        "vaxigrip_300310033526"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine HIBERIX"
+        "Hướng dẫn sử dụng Vaccine Vaxigrip"
       ]
     },
     "GENERATED_ANSWER": {
@@ -1593,13 +1593,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxneuvance_539310049125_c_0043"
+        "flumist_001310440525_c_0009"
       ],
       "doc_ids": [
-        "vaxneuvance_539310049125"
+        "flumist_001310440525"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
+        "Hướng dẫn sử dụng Vaccine Flumist"
       ]
     },
     "GENERATED_ANSWER": {
@@ -1645,13 +1645,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "qdenga_400310303924_c_0003"
+        "polysaccharide_meningococcal_a_c_qlvx_992_17_c_0004"
       ],
       "doc_ids": [
-        "qdenga_400310303924"
+        "polysaccharide_meningococcal_a_c_qlvx_992_17"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Qdenga"
+        "Hướng dẫn sử dụng Vaccine Polysaccharide Meningococcal A+C"
       ]
     },
     "GENERATED_ANSWER": {
@@ -1689,13 +1689,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "abrysvo_540310322125_c_0009"
+        "heberbiovac_hb_850310304424_c_0005"
       ],
       "doc_ids": [
-        "abrysvo_540310322125"
+        "heberbiovac_hb_850310304424"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Abrysvo"
+        "Hướng dẫn sử dụng Vaccine Heberbiovac HB"
       ]
     },
     "GENERATED_ANSWER": {
@@ -1737,13 +1737,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_13_540310111524_c_0062"
+        "ivacflu_s_qlvx_h03_1137_19_c_0005"
       ],
       "doc_ids": [
-        "prevenar_13_540310111524"
+        "ivacflu_s_qlvx_h03_1137_19"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 13"
+        "Hướng dẫn sử dụng Vaccine IVACFLU-S"
       ]
     },
     "GENERATED_ANSWER": {
@@ -1789,13 +1789,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_13_540310111524_c_0074"
+        "euvax_b_qlvx_934_16_c_0009"
       ],
       "doc_ids": [
-        "prevenar_13_540310111524"
+        "euvax_b_qlvx_934_16"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 13"
+        "Hướng dẫn sử dụng Vaccine Euvax B"
       ]
     },
     "GENERATED_ANSWER": {
@@ -1833,13 +1833,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_13_540310111524_c_0082"
+        "imojev_md_qlvx_h03_1141_19_c_0004"
       ],
       "doc_ids": [
-        "prevenar_13_540310111524"
+        "imojev_md_qlvx_h03_1141_19"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 13"
+        "Hướng dẫn sử dụng Vaccine Imojev MD"
       ]
     },
     "GENERATED_ANSWER": {
@@ -1883,13 +1883,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "combe_five_890310108224_c_0002"
+        "infanrix_ipv_hib_qlvx_1138_19_c_0006"
       ],
       "doc_ids": [
-        "combe_five_890310108224"
+        "infanrix_ipv_hib_qlvx_1138_19"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine ComBE Five"
+        "Hướng dẫn sử dụng Vaccine Infanrix IPV-Hib"
       ]
     },
     "GENERATED_ANSWER": {
@@ -1933,13 +1933,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "menquadfi_001310047625_c_0002"
+        "abrysvo_540310322125_c_0014"
       ],
       "doc_ids": [
-        "menquadfi_001310047625"
+        "abrysvo_540310322125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Menquadfi"
+        "Hướng dẫn sử dụng Vaccine Abrysvo"
       ]
     },
     "GENERATED_ANSWER": {
@@ -1983,13 +1983,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "skyvaricella_inj_880310033426_c_0006"
+        "abrysvo_540310322125_c_0009"
       ],
       "doc_ids": [
-        "skyvaricella_inj_880310033426"
+        "abrysvo_540310322125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine SKYVaricella Inj."
+        "Hướng dẫn sử dụng Vaccine Abrysvo"
       ]
     },
     "GENERATED_ANSWER": {
@@ -2031,13 +2031,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "pentavac_890310178100_c_0007"
+        "peg_grafeel_qlsp_0636_13_c_0025"
       ],
       "doc_ids": [
-        "pentavac_890310178100"
+        "peg_grafeel_qlsp_0636_13"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine PENTAVAC"
+        "Hướng dẫn sử dụng Vaccine Peg-Grafeel"
       ]
     },
     "GENERATED_ANSWER": {
@@ -2131,13 +2131,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "rabipur_qlvx_1048_17_c_0007"
+        "menquadfi_001310047625_c_0019"
       ],
       "doc_ids": [
-        "rabipur_qlvx_1048_17"
+        "menquadfi_001310047625"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Rabipur"
+        "Hướng dẫn sử dụng Vaccine Menquadfi"
       ]
     },
     "GENERATED_ANSWER": {
@@ -2183,13 +2183,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxneuvance_539310049125_c_0063"
+        "vaxigrip_0_5ml_qlvx_0646_13_c_0001"
       ],
       "doc_ids": [
-        "vaxneuvance_539310049125"
+        "vaxigrip_0_5ml_qlvx_0646_13"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
+        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,5ml)"
       ]
     },
     "GENERATED_ANSWER": {
@@ -2235,13 +2235,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "hexaxim_300310038123_c_0012"
+        "prevenar_13_qlvx_h03_1142_19_c_0037"
       ],
       "doc_ids": [
-        "hexaxim_300310038123"
+        "prevenar_13_qlvx_h03_1142_19"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Hexaxim"
+        "Hướng dẫn sử dụng Vaccine Prevenar 13"
       ]
     },
     "GENERATED_ANSWER": {
@@ -2285,13 +2285,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_13_540310111524_c_0056"
+        "menquadfi_001310047625_c_0007"
       ],
       "doc_ids": [
-        "prevenar_13_540310111524"
+        "menquadfi_001310047625"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 13"
+        "Hướng dẫn sử dụng Vaccine Menquadfi"
       ]
     },
     "GENERATED_ANSWER": {
@@ -2342,13 +2342,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "imojev_md_qlvx_h03_1141_19_c_0001"
+        "adacel_754310306124_c_0001"
       ],
       "doc_ids": [
-        "imojev_md_qlvx_h03_1141_19"
+        "adacel_754310306124"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Imojev MD"
+        "Hướng dẫn sử dụng Vaccine Adacel"
       ]
     },
     "GENERATED_ANSWER": {
@@ -2390,13 +2390,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxneuvance_539310049125_c_0025"
+        "varilrix_001310177800_c_0012"
       ],
       "doc_ids": [
-        "vaxneuvance_539310049125"
+        "varilrix_001310177800"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
+        "Hướng dẫn sử dụng Vaccine Varilrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -2438,13 +2438,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "abrysvo_540310322125_c_0006"
+        "euvax_b_qlvx_934_16_c_0005"
       ],
       "doc_ids": [
-        "abrysvo_540310322125"
+        "euvax_b_qlvx_934_16"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Abrysvo"
+        "Hướng dẫn sử dụng Vaccine Euvax B"
       ]
     },
     "GENERATED_ANSWER": {
@@ -2482,7 +2482,7 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "menquadfi_001310047625_c_0019"
+        "menquadfi_001310047625_c_0055"
       ],
       "doc_ids": [
         "menquadfi_001310047625"
@@ -2532,13 +2532,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "bopv_qlvx_h02_1051_17_c_0003"
+        "vaxigrip_0_5ml_qlvx_0646_13_c_0004"
       ],
       "doc_ids": [
-        "bopv_qlvx_h02_1051_17"
+        "vaxigrip_0_5ml_qlvx_0646_13"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine bOPV"
+        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,5ml)"
       ]
     },
     "GENERATED_ANSWER": {
@@ -2582,13 +2582,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "menquadfi_001310047625_c_0060"
+        "vaxneuvance_539310049125_c_0063"
       ],
       "doc_ids": [
-        "menquadfi_001310047625"
+        "vaxneuvance_539310049125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Menquadfi"
+        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
       ]
     },
     "GENERATED_ANSWER": {
@@ -2630,13 +2630,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_13_qlvx_h03_1142_19_c_0037"
+        "infanrix_ipv_hib_qlvx_1138_19_c_0017"
       ],
       "doc_ids": [
-        "prevenar_13_qlvx_h03_1142_19"
+        "infanrix_ipv_hib_qlvx_1138_19"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 13"
+        "Hướng dẫn sử dụng Vaccine Infanrix IPV-Hib"
       ]
     },
     "GENERATED_ANSWER": {
@@ -2678,13 +2678,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "euvax_b_qlvx_934_16_c_0005"
+        "prevenar_13_540310111524_c_0056"
       ],
       "doc_ids": [
-        "euvax_b_qlvx_934_16"
+        "prevenar_13_540310111524"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Euvax B"
+        "Hướng dẫn sử dụng Vaccine Prevenar 13"
       ]
     },
     "GENERATED_ANSWER": {
@@ -2728,13 +2728,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "infanrix_ipv_hib_qlvx_1138_19_c_0006"
+        "menquadfi_001310047625_c_0002"
       ],
       "doc_ids": [
-        "infanrix_ipv_hib_qlvx_1138_19"
+        "menquadfi_001310047625"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Infanrix IPV-Hib"
+        "Hướng dẫn sử dụng Vaccine Menquadfi"
       ]
     },
     "GENERATED_ANSWER": {
@@ -2776,13 +2776,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxigrip_0_5ml_qlvx_0646_13_c_0001"
+        "vaxneuvance_539310049125_c_0025"
       ],
       "doc_ids": [
-        "vaxigrip_0_5ml_qlvx_0646_13"
+        "vaxneuvance_539310049125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,5ml)"
+        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
       ]
     },
     "GENERATED_ANSWER": {
@@ -2828,13 +2828,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "imojev_md_qlvx_h03_1141_19_c_0004"
+        "prevenar_13_540310111524_c_0020"
       ],
       "doc_ids": [
-        "imojev_md_qlvx_h03_1141_19"
+        "prevenar_13_540310111524"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Imojev MD"
+        "Hướng dẫn sử dụng Vaccine Prevenar 13"
       ]
     },
     "GENERATED_ANSWER": {
@@ -2876,13 +2876,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxneuvance_539310049125_c_0058"
+        "prevenar_13_540310111524_c_0082"
       ],
       "doc_ids": [
-        "vaxneuvance_539310049125"
+        "prevenar_13_540310111524"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
+        "Hướng dẫn sử dụng Vaccine Prevenar 13"
       ]
     },
     "GENERATED_ANSWER": {
@@ -2920,13 +2920,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_13_540310111524_c_0009"
+        "hiberix_qlvx_988_17_c_0009"
       ],
       "doc_ids": [
-        "prevenar_13_540310111524"
+        "hiberix_qlvx_988_17"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 13"
+        "Hướng dẫn sử dụng Vaccine HIBERIX"
       ]
     },
     "GENERATED_ANSWER": {
@@ -2970,13 +2970,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "nimenrix_540310196925_c_0104"
+        "vaxneuvance_539310049125_c_0043"
       ],
       "doc_ids": [
-        "nimenrix_540310196925"
+        "vaxneuvance_539310049125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Nimenrix"
+        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
       ]
     },
     "GENERATED_ANSWER": {
@@ -3024,13 +3024,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "abrysvo_540310322125_c_0014"
+        "vaxneuvance_539310049125_c_0058"
       ],
       "doc_ids": [
-        "abrysvo_540310322125"
+        "vaxneuvance_539310049125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Abrysvo"
+        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
       ]
     },
     "GENERATED_ANSWER": {
@@ -3078,13 +3078,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "peg_grafeel_qlsp_0636_13_c_0025"
+        "prevenar_13_540310111524_c_0074"
       ],
       "doc_ids": [
-        "peg_grafeel_qlsp_0636_13"
+        "prevenar_13_540310111524"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Peg-Grafeel"
+        "Hướng dẫn sử dụng Vaccine Prevenar 13"
       ]
     },
     "GENERATED_ANSWER": {
@@ -3130,13 +3130,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "m_m_r_ii_qlvx_878_15_c_0011"
+        "adacel_754310306124_c_0017"
       ],
       "doc_ids": [
-        "m_m_r_ii_qlvx_878_15"
+        "adacel_754310306124"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine M-M-R® II"
+        "Hướng dẫn sử dụng Vaccine Adacel"
       ]
     },
     "GENERATED_ANSWER": {
@@ -3178,13 +3178,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "shanvac_b_qlvx_994_17_c_0013"
+        "euvax_b_qlvx_933_16_c_0005"
       ],
       "doc_ids": [
-        "shanvac_b_qlvx_994_17"
+        "euvax_b_qlvx_933_16"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Shanvac-B"
+        "Hướng dẫn sử dụng Vaccine Euvax B"
       ]
     },
     "GENERATED_ANSWER": {
@@ -3222,13 +3222,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "prevenar_13_540310111524_c_0013"
+        "m_m_r_ii_qlvx_878_15_c_0011"
       ],
       "doc_ids": [
-        "prevenar_13_540310111524"
+        "m_m_r_ii_qlvx_878_15"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 13"
+        "Hướng dẫn sử dụng Vaccine M-M-R® II"
       ]
     },
     "GENERATED_ANSWER": {
@@ -3322,13 +3322,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "boostrix_300310036923_c_0010"
+        "nimenrix_540310196925_c_0015"
       ],
       "doc_ids": [
-        "boostrix_300310036923"
+        "nimenrix_540310196925"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Boostrix"
+        "Hướng dẫn sử dụng Vaccine Nimenrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -3372,13 +3372,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "abrysvo_540310322125_c_0021"
+        "avaxim_80_u_pediatric_300310250723_c_0009"
       ],
       "doc_ids": [
-        "abrysvo_540310322125"
+        "avaxim_80_u_pediatric_300310250723"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Abrysvo"
+        "Hướng dẫn sử dụng Vaccine Avaxim 80 U Pediatric"
       ]
     },
     "GENERATED_ANSWER": {
@@ -3422,13 +3422,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "gardasil_qlvx_883_15_c_0015"
+        "euvax_b_qlvx_933_16_c_0001"
       ],
       "doc_ids": [
-        "gardasil_qlvx_883_15"
+        "euvax_b_qlvx_933_16"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Gardasil"
+        "Hướng dẫn sử dụng Vaccine Euvax B"
       ]
     },
     "GENERATED_ANSWER": {
@@ -3466,13 +3466,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "gardasil_qlvx_883_15_c_0036"
+        "prevenar_13_540310111524_c_0013"
       ],
       "doc_ids": [
-        "gardasil_qlvx_883_15"
+        "prevenar_13_540310111524"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Gardasil"
+        "Hướng dẫn sử dụng Vaccine Prevenar 13"
       ]
     },
     "GENERATED_ANSWER": {
@@ -3516,13 +3516,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "gardasil_9_001310178700_c_0011"
+        "menactra_qlvx_h03_1111_18_c_0044"
       ],
       "doc_ids": [
-        "gardasil_9_001310178700"
+        "menactra_qlvx_h03_1111_18"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Gardasil 9"
+        "Hướng dẫn sử dụng Vaccine Menactra"
       ]
     },
     "GENERATED_ANSWER": {
@@ -3564,13 +3564,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "proquad_001310197825_c_0025"
+        "infanrix_ipv_hib_qlvx_1138_19_c_0020"
       ],
       "doc_ids": [
-        "proquad_001310197825"
+        "infanrix_ipv_hib_qlvx_1138_19"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine ProQuad"
+        "Hướng dẫn sử dụng Vaccine Infanrix IPV-Hib"
       ]
     },
     "GENERATED_ANSWER": {
@@ -3614,13 +3614,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "imojev_md_qlvx_h03_1141_19_c_0020"
+        "tresivac_890310304524_c_0001"
       ],
       "doc_ids": [
-        "imojev_md_qlvx_h03_1141_19"
+        "tresivac_890310304524"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Imojev MD"
+        "Hướng dẫn sử dụng Vaccine TRESIVAC"
       ]
     },
     "GENERATED_ANSWER": {
@@ -3658,13 +3658,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "nimenrix_540310196925_c_0015"
+        "flumist_001310440525_c_0001"
       ],
       "doc_ids": [
-        "nimenrix_540310196925"
+        "flumist_001310440525"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Nimenrix"
+        "Hướng dẫn sử dụng Vaccine Flumist"
       ]
     },
     "GENERATED_ANSWER": {
@@ -3708,13 +3708,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "vaxneuvance_539310049125_c_0010"
+        "polysaccharide_meningococcal_a_c_qlvx_992_17_c_0002"
       ],
       "doc_ids": [
-        "vaxneuvance_539310049125"
+        "polysaccharide_meningococcal_a_c_qlvx_992_17"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
+        "Hướng dẫn sử dụng Vaccine Polysaccharide Meningococcal A+C"
       ]
     },
     "GENERATED_ANSWER": {
@@ -3758,13 +3758,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "rabipur_qlvx_1048_17_c_0005"
+        "abrysvo_540310322125_c_0021"
       ],
       "doc_ids": [
-        "rabipur_qlvx_1048_17"
+        "abrysvo_540310322125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Rabipur"
+        "Hướng dẫn sử dụng Vaccine Abrysvo"
       ]
     },
     "GENERATED_ANSWER": {
@@ -3806,13 +3806,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "nimenrix_540310196925_c_0099"
+        "havax_893310108024_c_0007"
       ],
       "doc_ids": [
-        "nimenrix_540310196925"
+        "havax_893310108024"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Nimenrix"
+        "Hướng dẫn sử dụng Vaccine HAVAX"
       ]
     },
     "GENERATED_ANSWER": {
@@ -3856,13 +3856,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "infanrix_ipv_hib_qlvx_1138_19_c_0020"
+        "vaxneuvance_539310049125_c_0010"
       ],
       "doc_ids": [
-        "infanrix_ipv_hib_qlvx_1138_19"
+        "vaxneuvance_539310049125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Infanrix IPV-Hib"
+        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
       ]
     },
     "GENERATED_ANSWER": {
@@ -3910,13 +3910,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "hepavax_gene_tf_inj_qlvx_0774_14_c_0000"
+        "shanvac_b_qlvx_994_17_c_0013"
       ],
       "doc_ids": [
-        "hepavax_gene_tf_inj_qlvx_0774_14"
+        "shanvac_b_qlvx_994_17"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine HEPAVAX-GENE TF inj."
+        "Hướng dẫn sử dụng Vaccine Shanvac-B"
       ]
     },
     "GENERATED_ANSWER": {
@@ -3958,13 +3958,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "polysaccharide_meningococcal_a_c_qlvx_992_17_c_0002"
+        "proquad_001310197825_c_0025"
       ],
       "doc_ids": [
-        "polysaccharide_meningococcal_a_c_qlvx_992_17"
+        "proquad_001310197825"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Polysaccharide Meningococcal A+C"
+        "Hướng dẫn sử dụng Vaccine ProQuad"
       ]
     },
     "GENERATED_ANSWER": {
@@ -4008,13 +4008,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "tresivac_890310304524_c_0001"
+        "nimenrix_540310196925_c_0099"
       ],
       "doc_ids": [
-        "tresivac_890310304524"
+        "nimenrix_540310196925"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine TRESIVAC"
+        "Hướng dẫn sử dụng Vaccine Nimenrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -4060,13 +4060,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "euvax_b_qlvx_933_16_c_0005"
+        "imojev_md_qlvx_h03_1141_19_c_0020"
       ],
       "doc_ids": [
-        "euvax_b_qlvx_933_16"
+        "imojev_md_qlvx_h03_1141_19"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Euvax B"
+        "Hướng dẫn sử dụng Vaccine Imojev MD"
       ]
     },
     "GENERATED_ANSWER": {
@@ -4110,13 +4110,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "cervarixtm_qlvx_0490_12_c_0000"
+        "m_m_r_ii_qlvx_878_15_c_0002"
       ],
       "doc_ids": [
-        "cervarixtm_qlvx_0490_12"
+        "m_m_r_ii_qlvx_878_15"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine CervarixTM"
+        "Hướng dẫn sử dụng Vaccine M-M-R® II"
       ]
     },
     "GENERATED_ANSWER": {
@@ -4162,13 +4162,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "adacel_754310306124_c_0017"
+        "boostrix_300310036923_c_0010"
       ],
       "doc_ids": [
-        "adacel_754310306124"
+        "boostrix_300310036923"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Adacel"
+        "Hướng dẫn sử dụng Vaccine Boostrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -4214,13 +4214,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "avaxim_80_u_pediatric_300310250723_c_0010"
+        "td_vaccine_qlvx_943_16_c_0003"
       ],
       "doc_ids": [
-        "avaxim_80_u_pediatric_300310250723"
+        "td_vaccine_qlvx_943_16"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Avaxim 80 U Pediatric"
+        "Hướng dẫn sử dụng Vaccine Td Vaccine"
       ]
     },
     "GENERATED_ANSWER": {
@@ -4262,13 +4262,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "shanvac_b_qlvx_994_17_c_0012"
+        "vaxigrip_0_5ml_qlvx_0646_13_c_0005"
       ],
       "doc_ids": [
-        "shanvac_b_qlvx_994_17"
+        "vaxigrip_0_5ml_qlvx_0646_13"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Shanvac-B"
+        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,5ml)"
       ]
     },
     "GENERATED_ANSWER": {
@@ -4318,13 +4318,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "varivax_001310037823_c_0005"
+        "tetavax_qlvx_993_17_c_0010"
       ],
       "doc_ids": [
-        "varivax_001310037823"
+        "tetavax_qlvx_993_17"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Varivax"
+        "Hướng dẫn sử dụng Vaccine Tetavax"
       ]
     },
     "GENERATED_ANSWER": {
@@ -4366,13 +4366,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "tetavax_qlvx_993_17_c_0010"
+        "cervarixtm_qlvx_0490_12_c_0000"
       ],
       "doc_ids": [
-        "tetavax_qlvx_993_17"
+        "cervarixtm_qlvx_0490_12"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Tetavax"
+        "Hướng dẫn sử dụng Vaccine CervarixTM"
       ]
     },
     "GENERATED_ANSWER": {
@@ -4410,13 +4410,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "vaxneuvance_539310049125_c_0001"
+        "gardasil_9_001310178700_c_0008"
       ],
       "doc_ids": [
-        "vaxneuvance_539310049125"
+        "gardasil_9_001310178700"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
+        "Hướng dẫn sử dụng Vaccine Gardasil 9"
       ]
     },
     "GENERATED_ANSWER": {
@@ -4458,13 +4458,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "havax_893310108024_c_0007"
+        "shanvac_b_qlvx_994_17_c_0012"
       ],
       "doc_ids": [
-        "havax_893310108024"
+        "shanvac_b_qlvx_994_17"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine HAVAX"
+        "Hướng dẫn sử dụng Vaccine Shanvac-B"
       ]
     },
     "GENERATED_ANSWER": {
@@ -4512,13 +4512,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "flumist_001310440525_c_0001"
+        "hepavax_gene_tf_inj_qlvx_0774_14_c_0000"
       ],
       "doc_ids": [
-        "flumist_001310440525"
+        "hepavax_gene_tf_inj_qlvx_0774_14"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Flumist"
+        "Hướng dẫn sử dụng Vaccine HEPAVAX-GENE TF inj."
       ]
     },
     "GENERATED_ANSWER": {
@@ -4562,13 +4562,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "qdenga_400310303924_c_0025"
+        "gardasil_9_001310178700_c_0011"
       ],
       "doc_ids": [
-        "qdenga_400310303924"
+        "gardasil_9_001310178700"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Qdenga"
+        "Hướng dẫn sử dụng Vaccine Gardasil 9"
       ]
     },
     "GENERATED_ANSWER": {
@@ -4610,13 +4610,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "gardasil_9_001310178700_c_0008"
+        "nimenrix_540310196925_c_0007"
       ],
       "doc_ids": [
-        "gardasil_9_001310178700"
+        "nimenrix_540310196925"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Gardasil 9"
+        "Hướng dẫn sử dụng Vaccine Nimenrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -4714,13 +4714,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "euvax_b_qlvx_933_16_c_0001"
+        "gardasil_qlvx_883_15_c_0036"
       ],
       "doc_ids": [
-        "euvax_b_qlvx_933_16"
+        "gardasil_qlvx_883_15"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Euvax B"
+        "Hướng dẫn sử dụng Vaccine Gardasil"
       ]
     },
     "GENERATED_ANSWER": {
@@ -4766,13 +4766,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "td_vaccine_qlvx_943_16_c_0003"
+        "rabipur_qlvx_1048_17_c_0005"
       ],
       "doc_ids": [
-        "td_vaccine_qlvx_943_16"
+        "rabipur_qlvx_1048_17"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Td Vaccine"
+        "Hướng dẫn sử dụng Vaccine Rabipur"
       ]
     },
     "GENERATED_ANSWER": {
@@ -4870,13 +4870,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "avaxim_80_u_pediatric_300310250723_c_0009"
+        "vaxneuvance_539310049125_c_0072"
       ],
       "doc_ids": [
-        "avaxim_80_u_pediatric_300310250723"
+        "vaxneuvance_539310049125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Avaxim 80 U Pediatric"
+        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
       ]
     },
     "GENERATED_ANSWER": {
@@ -4914,13 +4914,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "skyvaricella_inj_880310033426_c_0003"
+        "vaxneuvance_539310049125_c_0001"
       ],
       "doc_ids": [
-        "skyvaricella_inj_880310033426"
+        "vaxneuvance_539310049125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine SKYVaricella Inj."
+        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
       ]
     },
     "GENERATED_ANSWER": {
@@ -4966,13 +4966,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "m_m_r_ii_qlvx_878_15_c_0002"
+        "avaxim_80_u_pediatric_300310250723_c_0010"
       ],
       "doc_ids": [
-        "m_m_r_ii_qlvx_878_15"
+        "avaxim_80_u_pediatric_300310250723"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine M-M-R® II"
+        "Hướng dẫn sử dụng Vaccine Avaxim 80 U Pediatric"
       ]
     },
     "GENERATED_ANSWER": {
@@ -5020,13 +5020,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "nimenrix_540310196925_c_0007"
+        "gardasil_qlvx_883_15_c_0015"
       ],
       "doc_ids": [
-        "nimenrix_540310196925"
+        "gardasil_qlvx_883_15"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Nimenrix"
+        "Hướng dẫn sử dụng Vaccine Gardasil"
       ]
     },
     "GENERATED_ANSWER": {
@@ -5074,13 +5074,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "vaxigrip_0_5ml_qlvx_0646_13_c_0005"
+        "varivax_001310037823_c_0005"
       ],
       "doc_ids": [
-        "vaxigrip_0_5ml_qlvx_0646_13"
+        "varivax_001310037823"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,5ml)"
+        "Hướng dẫn sử dụng Vaccine Varivax"
       ]
     },
     "GENERATED_ANSWER": {
@@ -5124,13 +5124,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "vaxneuvance_539310049125_c_0072"
+        "qdenga_400310303924_c_0025"
       ],
       "doc_ids": [
-        "vaxneuvance_539310049125"
+        "qdenga_400310303924"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
+        "Hướng dẫn sử dụng Vaccine Qdenga"
       ]
     },
     "GENERATED_ANSWER": {
@@ -5172,13 +5172,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "menactra_qlvx_h03_1111_18_c_0044"
+        "skyvaricella_inj_880310033426_c_0003"
       ],
       "doc_ids": [
-        "menactra_qlvx_h03_1111_18"
+        "skyvaricella_inj_880310033426"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Menactra"
+        "Hướng dẫn sử dụng Vaccine SKYVaricella Inj."
       ]
     },
     "GENERATED_ANSWER": {
@@ -5221,14 +5221,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxneuvance_539310049125_c_0009",
-        "vaxneuvance_539310049125_c_0012"
+        "combe_five_890310108224_c_0001",
+        "combe_five_890310108224_c_0003"
       ],
       "doc_ids": [
-        "vaxneuvance_539310049125"
+        "combe_five_890310108224"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
+        "Hướng dẫn sử dụng Vaccine ComBE Five"
       ]
     },
     "GENERATED_ANSWER": {
@@ -5271,14 +5271,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "bexsero_800310090123_c_0001",
-        "bexsero_800310090123_c_0004"
+        "prevenar_20_539310047525_c_0001",
+        "prevenar_20_539310047525_c_0003"
       ],
       "doc_ids": [
-        "bexsero_800310090123"
+        "prevenar_20_539310047525"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Bexsero"
+        "Hướng dẫn sử dụng Vaccine Prevenar 20"
       ]
     },
     "GENERATED_ANSWER": {
@@ -5321,14 +5321,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "cervarixtm_qlvx_0490_12_c_0002",
-        "cervarixtm_qlvx_0490_12_c_0004"
+        "indirab_890310249723_c_0002",
+        "indirab_890310249723_c_0009"
       ],
       "doc_ids": [
-        "cervarixtm_qlvx_0490_12"
+        "indirab_890310249723"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine CervarixTM"
+        "Hướng dẫn sử dụng Vaccine Indirab"
       ]
     },
     "GENERATED_ANSWER": {
@@ -5371,14 +5371,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxigrip_0_5ml_qlvx_0646_13_c_0006",
-        "vaxigrip_0_5ml_qlvx_0646_13_c_0007"
+        "peg_grafeel_qlsp_0636_13_c_0001",
+        "peg_grafeel_qlsp_0636_13_c_0018"
       ],
       "doc_ids": [
-        "vaxigrip_0_5ml_qlvx_0646_13"
+        "peg_grafeel_qlsp_0636_13"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,5ml)"
+        "Hướng dẫn sử dụng Vaccine Peg-Grafeel"
       ]
     },
     "GENERATED_ANSWER": {
@@ -5425,8 +5425,8 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "menactra_qlvx_h03_1111_18_c_0002",
-        "menactra_qlvx_h03_1111_18_c_0005"
+        "menactra_qlvx_h03_1111_18_c_0003",
+        "menactra_qlvx_h03_1111_18_c_0028"
       ],
       "doc_ids": [
         "menactra_qlvx_h03_1111_18"
@@ -5479,14 +5479,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "indirab_890310249723_c_0002",
-        "indirab_890310249723_c_0009"
+        "hepavax_gene_tf_inj_qlvx_0774_14_c_0002",
+        "hepavax_gene_tf_inj_qlvx_0774_14_c_0007"
       ],
       "doc_ids": [
-        "indirab_890310249723"
+        "hepavax_gene_tf_inj_qlvx_0774_14"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Indirab"
+        "Hướng dẫn sử dụng Vaccine HEPAVAX-GENE TF inj."
       ]
     },
     "GENERATED_ANSWER": {
@@ -5531,14 +5531,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "m_m_r_ii_001310197925_c_0022",
-        "m_m_r_ii_001310197925_c_0000"
+        "infanrix_ipv_hib_qlvx_1138_19_c_0003",
+        "infanrix_ipv_hib_qlvx_1138_19_c_0006"
       ],
       "doc_ids": [
-        "m_m_r_ii_001310197925"
+        "infanrix_ipv_hib_qlvx_1138_19"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine M-M-R II"
+        "Hướng dẫn sử dụng Vaccine Infanrix IPV-Hib"
       ]
     },
     "GENERATED_ANSWER": {
@@ -5585,14 +5585,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "menactra_qlvx_h03_1111_18_c_0003",
-        "menactra_qlvx_h03_1111_18_c_0028"
+        "m_m_r_ii_qlvx_878_15_c_0008",
+        "m_m_r_ii_qlvx_878_15_c_0009"
       ],
       "doc_ids": [
-        "menactra_qlvx_h03_1111_18"
+        "m_m_r_ii_qlvx_878_15"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Menactra"
+        "Hướng dẫn sử dụng Vaccine M-M-R® II"
       ]
     },
     "GENERATED_ANSWER": {
@@ -5641,14 +5641,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "nimenrix_540310196925_c_0002",
-        "nimenrix_540310196925_c_0005"
+        "bopv_qlvx_h02_1051_17_c_0001",
+        "bopv_qlvx_h02_1051_17_c_0003"
       ],
       "doc_ids": [
-        "nimenrix_540310196925"
+        "bopv_qlvx_h02_1051_17"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Nimenrix"
+        "Hướng dẫn sử dụng Vaccine bOPV"
       ]
     },
     "GENERATED_ANSWER": {
@@ -5687,14 +5687,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "hepavax_gene_tf_inj_qlvx_0774_14_c_0002",
-        "hepavax_gene_tf_inj_qlvx_0774_14_c_0007"
+        "bexsero_800310090123_c_0001",
+        "bexsero_800310090123_c_0004"
       ],
       "doc_ids": [
-        "hepavax_gene_tf_inj_qlvx_0774_14"
+        "bexsero_800310090123"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine HEPAVAX-GENE TF inj."
+        "Hướng dẫn sử dụng Vaccine Bexsero"
       ]
     },
     "GENERATED_ANSWER": {
@@ -5742,14 +5742,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "imojev_md_qlvx_h03_1141_19_c_0002",
-        "imojev_md_qlvx_h03_1141_19_c_0006"
+        "vaxneuvance_539310049125_c_0009",
+        "vaxneuvance_539310049125_c_0012"
       ],
       "doc_ids": [
-        "imojev_md_qlvx_h03_1141_19"
+        "vaxneuvance_539310049125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Imojev MD"
+        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
       ]
     },
     "GENERATED_ANSWER": {
@@ -5794,14 +5794,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "shanvac_b_qlvx_994_17_c_0003",
-        "shanvac_b_qlvx_994_17_c_0016"
+        "adacel_754310306124_c_0005",
+        "adacel_754310306124_c_0008"
       ],
       "doc_ids": [
-        "shanvac_b_qlvx_994_17"
+        "adacel_754310306124"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Shanvac-B"
+        "Hướng dẫn sử dụng Vaccine Adacel"
       ]
     },
     "GENERATED_ANSWER": {
@@ -5850,14 +5850,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "bopv_qlvx_h02_1051_17_c_0001",
-        "bopv_qlvx_h02_1051_17_c_0003"
+        "imojev_md_qlvx_h03_1141_19_c_0002",
+        "imojev_md_qlvx_h03_1141_19_c_0006"
       ],
       "doc_ids": [
-        "bopv_qlvx_h02_1051_17"
+        "imojev_md_qlvx_h03_1141_19"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine bOPV"
+        "Hướng dẫn sử dụng Vaccine Imojev MD"
       ]
     },
     "GENERATED_ANSWER": {
@@ -5906,14 +5906,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "adacel_754310306124_c_0005",
-        "adacel_754310306124_c_0008"
+        "menactra_qlvx_h03_1111_18_c_0002",
+        "menactra_qlvx_h03_1111_18_c_0005"
       ],
       "doc_ids": [
-        "adacel_754310306124"
+        "menactra_qlvx_h03_1111_18"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Adacel"
+        "Hướng dẫn sử dụng Vaccine Menactra"
       ]
     },
     "GENERATED_ANSWER": {
@@ -5960,14 +5960,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "peg_grafeel_qlsp_0636_13_c_0001",
-        "peg_grafeel_qlsp_0636_13_c_0018"
+        "cervarixtm_qlvx_0490_12_c_0002",
+        "cervarixtm_qlvx_0490_12_c_0004"
       ],
       "doc_ids": [
-        "peg_grafeel_qlsp_0636_13"
+        "cervarixtm_qlvx_0490_12"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Peg-Grafeel"
+        "Hướng dẫn sử dụng Vaccine CervarixTM"
       ]
     },
     "GENERATED_ANSWER": {
@@ -6016,14 +6016,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_20_539310047525_c_0001",
-        "prevenar_20_539310047525_c_0003"
+        "m_m_r_ii_001310197925_c_0022",
+        "m_m_r_ii_001310197925_c_0000"
       ],
       "doc_ids": [
-        "prevenar_20_539310047525"
+        "m_m_r_ii_001310197925"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 20"
+        "Hướng dẫn sử dụng Vaccine M-M-R II"
       ]
     },
     "GENERATED_ANSWER": {
@@ -6073,14 +6073,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "combe_five_890310108224_c_0001",
-        "combe_five_890310108224_c_0003"
+        "vaxigrip_0_5ml_qlvx_0646_13_c_0006",
+        "vaxigrip_0_5ml_qlvx_0646_13_c_0007"
       ],
       "doc_ids": [
-        "combe_five_890310108224"
+        "vaxigrip_0_5ml_qlvx_0646_13"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine ComBE Five"
+        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,5ml)"
       ]
     },
     "GENERATED_ANSWER": {
@@ -6125,14 +6125,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "infanrix_ipv_hib_qlvx_1138_19_c_0003",
-        "infanrix_ipv_hib_qlvx_1138_19_c_0006"
+        "shanvac_b_qlvx_994_17_c_0003",
+        "shanvac_b_qlvx_994_17_c_0016"
       ],
       "doc_ids": [
-        "infanrix_ipv_hib_qlvx_1138_19"
+        "shanvac_b_qlvx_994_17"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Infanrix IPV-Hib"
+        "Hướng dẫn sử dụng Vaccine Shanvac-B"
       ]
     },
     "GENERATED_ANSWER": {
@@ -6177,14 +6177,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "m_m_r_ii_qlvx_878_15_c_0008",
-        "m_m_r_ii_qlvx_878_15_c_0009"
+        "nimenrix_540310196925_c_0002",
+        "nimenrix_540310196925_c_0005"
       ],
       "doc_ids": [
-        "m_m_r_ii_qlvx_878_15"
+        "nimenrix_540310196925"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine M-M-R® II"
+        "Hướng dẫn sử dụng Vaccine Nimenrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -6231,16 +6231,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxigrip_tetra_300310305924_c_0006",
-        "vaxigrip_0_25ml_qlvx_0652_13_c_0009"
+        "peg_grafeel_qlsp_0636_13_c_0006",
+        "boostrix_300310036923_c_0014"
       ],
       "doc_ids": [
-        "vaxigrip_tetra_300310305924",
-        "vaxigrip_0_25ml_qlvx_0652_13"
+        "peg_grafeel_qlsp_0636_13",
+        "boostrix_300310036923"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxigrip Tetra",
-        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,25ml)"
+        "Hướng dẫn sử dụng Vaccine Peg-Grafeel",
+        "Hướng dẫn sử dụng Vaccine Boostrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -6285,16 +6285,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "qdenga_400310303924_c_0008",
-        "bopv_qlvx_h02_1051_17_c_0003"
+        "imojev_885310306024_c_0004",
+        "rabipur_qlvx_1048_17_c_0019"
       ],
       "doc_ids": [
-        "qdenga_400310303924",
-        "bopv_qlvx_h02_1051_17"
+        "imojev_885310306024",
+        "rabipur_qlvx_1048_17"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Qdenga",
-        "Hướng dẫn sử dụng Vaccine bOPV"
+        "Hướng dẫn sử dụng Vaccine Imojev",
+        "Hướng dẫn sử dụng Vaccine Rabipur"
       ]
     },
     "GENERATED_ANSWER": {
@@ -6395,16 +6395,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "pentaxim_300310250623_c_0013",
-        "proquad_001310197825_c_0020"
+        "vaxigrip_tetra_300310305924_c_0006",
+        "vaxigrip_0_25ml_qlvx_0652_13_c_0009"
       ],
       "doc_ids": [
-        "pentaxim_300310250623",
-        "proquad_001310197825"
+        "vaxigrip_tetra_300310305924",
+        "vaxigrip_0_25ml_qlvx_0652_13"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Pentaxim",
-        "Hướng dẫn sử dụng Vaccine ProQuad"
+        "Hướng dẫn sử dụng Vaccine Vaxigrip Tetra",
+        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,25ml)"
       ]
     },
     "GENERATED_ANSWER": {
@@ -6451,16 +6451,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxneuvance_539310049125_c_0016",
-        "varicella_vaccine_gcc_inj_qlvx_1046_17_c_0007"
+        "proquad_001310197825_c_0007",
+        "abrysvo_540310322125_c_0005"
       ],
       "doc_ids": [
-        "vaxneuvance_539310049125",
-        "varicella_vaccine_gcc_inj_qlvx_1046_17"
+        "proquad_001310197825",
+        "abrysvo_540310322125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxneuvance",
-        "Hướng dẫn sử dụng Vaccine Varicella Vaccine-GCC Inj"
+        "Hướng dẫn sử dụng Vaccine ProQuad",
+        "Hướng dẫn sử dụng Vaccine Abrysvo"
       ]
     },
     "GENERATED_ANSWER": {
@@ -6505,16 +6505,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "avaxim_80_u_pediatric_300310250723_c_0006",
-        "m_m_r_ii_qlvx_878_15_c_0007"
+        "menactra_qlvx_h03_1111_18_c_0022",
+        "polysaccharide_893310109024_c_0005"
       ],
       "doc_ids": [
-        "avaxim_80_u_pediatric_300310250723",
-        "m_m_r_ii_qlvx_878_15"
+        "menactra_qlvx_h03_1111_18",
+        "polysaccharide_893310109024"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Avaxim 80 U Pediatric",
-        "Hướng dẫn sử dụng Vaccine M-M-R® II"
+        "Hướng dẫn sử dụng Vaccine Menactra",
+        "Hướng dẫn sử dụng Vaccine polysaccharide"
       ]
     },
     "GENERATED_ANSWER": {
@@ -6561,16 +6561,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "peg_grafeel_qlsp_0636_13_c_0006",
-        "boostrix_300310036923_c_0014"
+        "twinrix_400310177900_c_0008",
+        "hexaxim_300310038123_c_0020"
       ],
       "doc_ids": [
-        "peg_grafeel_qlsp_0636_13",
-        "boostrix_300310036923"
+        "twinrix_400310177900",
+        "hexaxim_300310038123"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Peg-Grafeel",
-        "Hướng dẫn sử dụng Vaccine Boostrix"
+        "Hướng dẫn sử dụng Vaccine Twinrix",
+        "Hướng dẫn sử dụng Vaccine Hexaxim"
       ]
     },
     "GENERATED_ANSWER": {
@@ -6617,16 +6617,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxneuvance_539310049125_c_0012",
-        "euvax_b_qlvx_933_16_c_0010"
+        "euvax_b_qlvx_934_16_c_0008",
+        "jeev_890310108424_c_0004"
       ],
       "doc_ids": [
-        "vaxneuvance_539310049125",
-        "euvax_b_qlvx_933_16"
+        "euvax_b_qlvx_934_16",
+        "jeev_890310108424"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxneuvance",
-        "Hướng dẫn sử dụng Vaccine Euvax B"
+        "Hướng dẫn sử dụng Vaccine Euvax B",
+        "Hướng dẫn sử dụng Vaccine JEEV"
       ]
     },
     "GENERATED_ANSWER": {
@@ -6671,16 +6671,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "varivax_001310037823_c_0004",
-        "tetavax_qlvx_993_17_c_0007"
+        "prevenar_13_qlvx_h03_1142_19_c_0010",
+        "abrysvo_540310322125_c_0013"
       ],
       "doc_ids": [
-        "varivax_001310037823",
-        "tetavax_qlvx_993_17"
+        "prevenar_13_qlvx_h03_1142_19",
+        "abrysvo_540310322125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Varivax",
-        "Hướng dẫn sử dụng Vaccine Tetavax"
+        "Hướng dẫn sử dụng Vaccine Prevenar 13",
+        "Hướng dẫn sử dụng Vaccine Abrysvo"
       ]
     },
     "GENERATED_ANSWER": {
@@ -6725,16 +6725,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxneuvance_539310049125_c_0022",
-        "peg_grafeel_qlsp_0636_13_c_0018"
+        "avaxim_80_u_pediatric_300310250723_c_0006",
+        "m_m_r_ii_qlvx_878_15_c_0007"
       ],
       "doc_ids": [
-        "vaxneuvance_539310049125",
-        "peg_grafeel_qlsp_0636_13"
+        "avaxim_80_u_pediatric_300310250723",
+        "m_m_r_ii_qlvx_878_15"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxneuvance",
-        "Hướng dẫn sử dụng Vaccine Peg-Grafeel"
+        "Hướng dẫn sử dụng Vaccine Avaxim 80 U Pediatric",
+        "Hướng dẫn sử dụng Vaccine M-M-R® II"
       ]
     },
     "GENERATED_ANSWER": {
@@ -6781,16 +6781,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "twinrix_400310177900_c_0008",
-        "hexaxim_300310038123_c_0020"
+        "varivax_001310037823_c_0004",
+        "tetavax_qlvx_993_17_c_0007"
       ],
       "doc_ids": [
-        "twinrix_400310177900",
-        "hexaxim_300310038123"
+        "varivax_001310037823",
+        "tetavax_qlvx_993_17"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Twinrix",
-        "Hướng dẫn sử dụng Vaccine Hexaxim"
+        "Hướng dẫn sử dụng Vaccine Varivax",
+        "Hướng dẫn sử dụng Vaccine Tetavax"
       ]
     },
     "GENERATED_ANSWER": {
@@ -6833,16 +6833,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "imojev_885310306024_c_0004",
-        "rabipur_qlvx_1048_17_c_0019"
+        "vaxneuvance_539310049125_c_0012",
+        "euvax_b_qlvx_933_16_c_0010"
       ],
       "doc_ids": [
-        "imojev_885310306024",
-        "rabipur_qlvx_1048_17"
+        "vaxneuvance_539310049125",
+        "euvax_b_qlvx_933_16"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Imojev",
-        "Hướng dẫn sử dụng Vaccine Rabipur"
+        "Hướng dẫn sử dụng Vaccine Vaxneuvance",
+        "Hướng dẫn sử dụng Vaccine Euvax B"
       ]
     },
     "GENERATED_ANSWER": {
@@ -6889,16 +6889,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "euvax_b_qlvx_934_16_c_0008",
-        "jeev_890310108424_c_0004"
+        "pentaxim_300310250623_c_0011",
+        "rotarix_540310037023_c_0002"
       ],
       "doc_ids": [
-        "euvax_b_qlvx_934_16",
-        "jeev_890310108424"
+        "pentaxim_300310250623",
+        "rotarix_540310037023"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Euvax B",
-        "Hướng dẫn sử dụng Vaccine JEEV"
+        "Hướng dẫn sử dụng Vaccine Pentaxim",
+        "Hướng dẫn sử dụng Vaccine Rotarix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -6945,16 +6945,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "pentaxim_300310250623_c_0011",
-        "rotarix_540310037023_c_0002"
+        "vaxneuvance_539310049125_c_0016",
+        "varicella_vaccine_gcc_inj_qlvx_1046_17_c_0007"
       ],
       "doc_ids": [
-        "pentaxim_300310250623",
-        "rotarix_540310037023"
+        "vaxneuvance_539310049125",
+        "varicella_vaccine_gcc_inj_qlvx_1046_17"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Pentaxim",
-        "Hướng dẫn sử dụng Vaccine Rotarix"
+        "Hướng dẫn sử dụng Vaccine Vaxneuvance",
+        "Hướng dẫn sử dụng Vaccine Varicella Vaccine-GCC Inj"
       ]
     },
     "GENERATED_ANSWER": {
@@ -7053,16 +7053,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "menactra_qlvx_h03_1111_18_c_0022",
-        "polysaccharide_893310109024_c_0005"
+        "vaxneuvance_539310049125_c_0072",
+        "pentaxim_300310250623_c_0015"
       ],
       "doc_ids": [
-        "menactra_qlvx_h03_1111_18",
-        "polysaccharide_893310109024"
+        "vaxneuvance_539310049125",
+        "pentaxim_300310250623"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Menactra",
-        "Hướng dẫn sử dụng Vaccine polysaccharide"
+        "Hướng dẫn sử dụng Vaccine Vaxneuvance",
+        "Hướng dẫn sử dụng Vaccine Pentaxim"
       ]
     },
     "GENERATED_ANSWER": {
@@ -7109,16 +7109,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_13_qlvx_h03_1142_19_c_0010",
-        "abrysvo_540310322125_c_0013"
+        "vaxneuvance_539310049125_c_0022",
+        "peg_grafeel_qlsp_0636_13_c_0018"
       ],
       "doc_ids": [
-        "prevenar_13_qlvx_h03_1142_19",
-        "abrysvo_540310322125"
+        "vaxneuvance_539310049125",
+        "peg_grafeel_qlsp_0636_13"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 13",
-        "Hướng dẫn sử dụng Vaccine Abrysvo"
+        "Hướng dẫn sử dụng Vaccine Vaxneuvance",
+        "Hướng dẫn sử dụng Vaccine Peg-Grafeel"
       ]
     },
     "GENERATED_ANSWER": {
@@ -7167,16 +7167,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "proquad_001310197825_c_0007",
-        "abrysvo_540310322125_c_0005"
+        "qdenga_400310303924_c_0008",
+        "bopv_qlvx_h02_1051_17_c_0003"
       ],
       "doc_ids": [
-        "proquad_001310197825",
-        "abrysvo_540310322125"
+        "qdenga_400310303924",
+        "bopv_qlvx_h02_1051_17"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine ProQuad",
-        "Hướng dẫn sử dụng Vaccine Abrysvo"
+        "Hướng dẫn sử dụng Vaccine Qdenga",
+        "Hướng dẫn sử dụng Vaccine bOPV"
       ]
     },
     "GENERATED_ANSWER": {
@@ -7223,16 +7223,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxneuvance_539310049125_c_0072",
-        "pentaxim_300310250623_c_0015"
+        "pentaxim_300310250623_c_0013",
+        "proquad_001310197825_c_0020"
       ],
       "doc_ids": [
-        "vaxneuvance_539310049125",
-        "pentaxim_300310250623"
+        "pentaxim_300310250623",
+        "proquad_001310197825"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxneuvance",
-        "Hướng dẫn sử dụng Vaccine Pentaxim"
+        "Hướng dẫn sử dụng Vaccine Pentaxim",
+        "Hướng dẫn sử dụng Vaccine ProQuad"
       ]
     },
     "GENERATED_ANSWER": {
@@ -7279,14 +7279,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "m_m_r_ii_qlvx_878_15_c_0005",
-        "m_m_r_ii_qlvx_878_15_c_0007"
+        "envacgen_471310033726_c_0001",
+        "envacgen_471310033726_c_0004"
       ],
       "doc_ids": [
-        "m_m_r_ii_qlvx_878_15"
+        "envacgen_471310033726"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine M-M-R® II"
+        "Hướng dẫn sử dụng Vaccine Envacgen"
       ]
     },
     "GENERATED_ANSWER": {
@@ -7325,14 +7325,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "vaxigrip_0_5ml_qlvx_0646_13_c_0003",
-        "vaxigrip_0_5ml_qlvx_0646_13_c_0005"
+        "varivax_001310037823_c_0000",
+        "varivax_001310037823_c_0002"
       ],
       "doc_ids": [
-        "vaxigrip_0_5ml_qlvx_0646_13"
+        "varivax_001310037823"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,5ml)"
+        "Hướng dẫn sử dụng Vaccine Varivax"
       ]
     },
     "GENERATED_ANSWER": {
@@ -7377,14 +7377,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "envacgen_471310033726_c_0001",
-        "envacgen_471310033726_c_0004"
+        "vaxigrip_0_5ml_qlvx_0646_13_c_0003",
+        "vaxigrip_0_5ml_qlvx_0646_13_c_0005"
       ],
       "doc_ids": [
-        "envacgen_471310033726"
+        "vaxigrip_0_5ml_qlvx_0646_13"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Envacgen"
+        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,5ml)"
       ]
     },
     "GENERATED_ANSWER": {
@@ -7423,14 +7423,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "prevenar_20_539310047525_c_0006",
-        "prevenar_20_539310047525_c_0004"
+        "peg_grafeel_qlsp_0636_13_c_0009",
+        "peg_grafeel_qlsp_0636_13_c_0012"
       ],
       "doc_ids": [
-        "prevenar_20_539310047525"
+        "peg_grafeel_qlsp_0636_13"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 20"
+        "Hướng dẫn sử dụng Vaccine Peg-Grafeel"
       ]
     },
     "GENERATED_ANSWER": {
@@ -7479,14 +7479,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "polysaccharide_meningococcal_a_c_qlvx_992_17_c_0004",
-        "polysaccharide_meningococcal_a_c_qlvx_992_17_c_0009"
+        "imojev_md_qlvx_h03_1141_19_c_0003",
+        "imojev_md_qlvx_h03_1141_19_c_0007"
       ],
       "doc_ids": [
-        "polysaccharide_meningococcal_a_c_qlvx_992_17"
+        "imojev_md_qlvx_h03_1141_19"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Polysaccharide Meningococcal A+C"
+        "Hướng dẫn sử dụng Vaccine Imojev MD"
       ]
     },
     "GENERATED_ANSWER": {
@@ -7525,14 +7525,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "varivax_001310037823_c_0000",
-        "varivax_001310037823_c_0002"
+        "avaxim_80_u_pediatric_300310250723_c_0004",
+        "avaxim_80_u_pediatric_300310250723_c_0007"
       ],
       "doc_ids": [
-        "varivax_001310037823"
+        "avaxim_80_u_pediatric_300310250723"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Varivax"
+        "Hướng dẫn sử dụng Vaccine Avaxim 80 U Pediatric"
       ]
     },
     "GENERATED_ANSWER": {
@@ -7575,14 +7575,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "qdenga_400310303924_c_0001",
-        "qdenga_400310303924_c_0032"
+        "prevenar_20_539310047525_c_0006",
+        "prevenar_20_539310047525_c_0004"
       ],
       "doc_ids": [
-        "qdenga_400310303924"
+        "prevenar_20_539310047525"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Qdenga"
+        "Hướng dẫn sử dụng Vaccine Prevenar 20"
       ]
     },
     "GENERATED_ANSWER": {
@@ -7631,14 +7631,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "vaxigrip_300310033526_c_0004",
-        "vaxigrip_300310033526_c_0019"
+        "polysaccharide_meningococcal_a_c_qlvx_992_17_c_0004",
+        "polysaccharide_meningococcal_a_c_qlvx_992_17_c_0009"
       ],
       "doc_ids": [
-        "vaxigrip_300310033526"
+        "polysaccharide_meningococcal_a_c_qlvx_992_17"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxigrip"
+        "Hướng dẫn sử dụng Vaccine Polysaccharide Meningococcal A+C"
       ]
     },
     "GENERATED_ANSWER": {
@@ -7677,14 +7677,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "peg_grafeel_qlsp_0636_13_c_0009",
-        "peg_grafeel_qlsp_0636_13_c_0012"
+        "qdenga_400310303924_c_0001",
+        "qdenga_400310303924_c_0032"
       ],
       "doc_ids": [
-        "peg_grafeel_qlsp_0636_13"
+        "qdenga_400310303924"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Peg-Grafeel"
+        "Hướng dẫn sử dụng Vaccine Qdenga"
       ]
     },
     "GENERATED_ANSWER": {
@@ -7731,14 +7731,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "indirab_890310249723_c_0001",
-        "indirab_890310249723_c_0006"
+        "vaxigrip_300310033526_c_0004",
+        "vaxigrip_300310033526_c_0019"
       ],
       "doc_ids": [
-        "indirab_890310249723"
+        "vaxigrip_300310033526"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Indirab"
+        "Hướng dẫn sử dụng Vaccine Vaxigrip"
       ]
     },
     "GENERATED_ANSWER": {
@@ -7781,14 +7781,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "vaxigrip_300310033526_c_0002",
-        "vaxigrip_300310033526_c_0003"
+        "indirab_890310249723_c_0001",
+        "indirab_890310249723_c_0006"
       ],
       "doc_ids": [
-        "vaxigrip_300310033526"
+        "indirab_890310249723"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxigrip"
+        "Hướng dẫn sử dụng Vaccine Indirab"
       ]
     },
     "GENERATED_ANSWER": {
@@ -7827,14 +7827,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "imojev_md_qlvx_h03_1141_19_c_0003",
-        "imojev_md_qlvx_h03_1141_19_c_0007"
+        "m_m_r_ii_qlvx_878_15_c_0005",
+        "m_m_r_ii_qlvx_878_15_c_0007"
       ],
       "doc_ids": [
-        "imojev_md_qlvx_h03_1141_19"
+        "m_m_r_ii_qlvx_878_15"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Imojev MD"
+        "Hướng dẫn sử dụng Vaccine M-M-R® II"
       ]
     },
     "GENERATED_ANSWER": {
@@ -7886,14 +7886,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "avaxim_80_u_pediatric_300310250723_c_0004",
-        "avaxim_80_u_pediatric_300310250723_c_0007"
+        "vaxigrip_300310033526_c_0002",
+        "vaxigrip_300310033526_c_0003"
       ],
       "doc_ids": [
-        "avaxim_80_u_pediatric_300310250723"
+        "vaxigrip_300310033526"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Avaxim 80 U Pediatric"
+        "Hướng dẫn sử dụng Vaccine Vaxigrip"
       ]
     },
     "GENERATED_ANSWER": {
@@ -7935,16 +7935,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "proquad_001310197825_c_0033",
-        "gardasil_qlvx_883_15_c_0036"
+        "bexsero_800310090123_c_0009",
+        "proquad_001310197825_c_0013"
       ],
       "doc_ids": [
-        "proquad_001310197825",
-        "gardasil_qlvx_883_15"
+        "bexsero_800310090123",
+        "proquad_001310197825"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine ProQuad",
-        "Hướng dẫn sử dụng Vaccine Gardasil"
+        "Hướng dẫn sử dụng Vaccine Bexsero",
+        "Hướng dẫn sử dụng Vaccine ProQuad"
       ]
     },
     "GENERATED_ANSWER": {
@@ -7983,16 +7983,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "influvac_tetra_870310304024_c_0009",
-        "menactra_qlvx_h03_1111_18_c_0032"
+        "havax_893310108024_c_0005",
+        "vaxigrip_0_25ml_qlvx_0652_13_c_0007"
       ],
       "doc_ids": [
-        "influvac_tetra_870310304024",
-        "menactra_qlvx_h03_1111_18"
+        "havax_893310108024",
+        "vaxigrip_0_25ml_qlvx_0652_13"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Influvac Tetra",
-        "Hướng dẫn sử dụng Vaccine Menactra"
+        "Hướng dẫn sử dụng Vaccine HAVAX",
+        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,25ml)"
       ]
     },
     "GENERATED_ANSWER": {
@@ -8031,16 +8031,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "twinrix_400310177900_c_0003",
-        "peg_grafeel_qlsp_0636_13_c_0001"
+        "influvac_tetra_870310304024_c_0009",
+        "menactra_qlvx_h03_1111_18_c_0032"
       ],
       "doc_ids": [
-        "twinrix_400310177900",
-        "peg_grafeel_qlsp_0636_13"
+        "influvac_tetra_870310304024",
+        "menactra_qlvx_h03_1111_18"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Twinrix",
-        "Hướng dẫn sử dụng Vaccine Peg-Grafeel"
+        "Hướng dẫn sử dụng Vaccine Influvac Tetra",
+        "Hướng dẫn sử dụng Vaccine Menactra"
       ]
     },
     "GENERATED_ANSWER": {
@@ -8145,16 +8145,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "menactra_qlvx_h03_1111_18_c_0020",
-        "flumist_001310440525_c_0007"
+        "cervarixtm_qlvx_0490_12_c_0004",
+        "arexvy_540310322425_c_0002"
       ],
       "doc_ids": [
-        "menactra_qlvx_h03_1111_18",
-        "flumist_001310440525"
+        "cervarixtm_qlvx_0490_12",
+        "arexvy_540310322425"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Menactra",
-        "Hướng dẫn sử dụng Vaccine Flumist"
+        "Hướng dẫn sử dụng Vaccine CervarixTM",
+        "Hướng dẫn sử dụng Vaccine Arexvy"
       ]
     },
     "GENERATED_ANSWER": {
@@ -8203,16 +8203,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "menactra_qlvx_h03_1111_18_c_0013",
-        "abrysvo_540310322125_c_0012"
+        "vaxigrip_0_5ml_qlvx_0646_13_c_0007",
+        "bexsero_800310090123_c_0007"
       ],
       "doc_ids": [
-        "menactra_qlvx_h03_1111_18",
-        "abrysvo_540310322125"
+        "vaxigrip_0_5ml_qlvx_0646_13",
+        "bexsero_800310090123"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Menactra",
-        "Hướng dẫn sử dụng Vaccine Abrysvo"
+        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,5ml)",
+        "Hướng dẫn sử dụng Vaccine Bexsero"
       ]
     },
     "GENERATED_ANSWER": {
@@ -8261,16 +8261,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "cervarixtm_qlvx_0490_12_c_0004",
-        "arexvy_540310322425_c_0002"
+        "twinrix_400310177900_c_0003",
+        "peg_grafeel_qlsp_0636_13_c_0001"
       ],
       "doc_ids": [
-        "cervarixtm_qlvx_0490_12",
-        "arexvy_540310322425"
+        "twinrix_400310177900",
+        "peg_grafeel_qlsp_0636_13"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine CervarixTM",
-        "Hướng dẫn sử dụng Vaccine Arexvy"
+        "Hướng dẫn sử dụng Vaccine Twinrix",
+        "Hướng dẫn sử dụng Vaccine Peg-Grafeel"
       ]
     },
     "GENERATED_ANSWER": {
@@ -8317,16 +8317,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "combe_five_890310108224_c_0002",
-        "speeda_qlvx_1041_17_c_0005"
+        "varivax_001310037823_c_0001",
+        "bexsero_800310090123_c_0002"
       ],
       "doc_ids": [
-        "combe_five_890310108224",
-        "speeda_qlvx_1041_17"
+        "varivax_001310037823",
+        "bexsero_800310090123"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine ComBE Five",
-        "Hướng dẫn sử dụng Vaccine SPEEDA"
+        "Hướng dẫn sử dụng Vaccine Varivax",
+        "Hướng dẫn sử dụng Vaccine Bexsero"
       ]
     },
     "GENERATED_ANSWER": {
@@ -8365,16 +8365,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "varivax_001310037823_c_0001",
-        "bexsero_800310090123_c_0002"
+        "combe_five_890310108224_c_0002",
+        "speeda_qlvx_1041_17_c_0005"
       ],
       "doc_ids": [
-        "varivax_001310037823",
-        "bexsero_800310090123"
+        "combe_five_890310108224",
+        "speeda_qlvx_1041_17"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Varivax",
-        "Hướng dẫn sử dụng Vaccine Bexsero"
+        "Hướng dẫn sử dụng Vaccine ComBE Five",
+        "Hướng dẫn sử dụng Vaccine SPEEDA"
       ]
     },
     "GENERATED_ANSWER": {
@@ -8421,16 +8421,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "vaxigrip_0_5ml_qlvx_0646_13_c_0007",
-        "bexsero_800310090123_c_0007"
+        "proquad_001310197825_c_0033",
+        "gardasil_qlvx_883_15_c_0036"
       ],
       "doc_ids": [
-        "vaxigrip_0_5ml_qlvx_0646_13",
-        "bexsero_800310090123"
+        "proquad_001310197825",
+        "gardasil_qlvx_883_15"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,5ml)",
-        "Hướng dẫn sử dụng Vaccine Bexsero"
+        "Hướng dẫn sử dụng Vaccine ProQuad",
+        "Hướng dẫn sử dụng Vaccine Gardasil"
       ]
     },
     "GENERATED_ANSWER": {
@@ -8475,16 +8475,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "havax_893310108024_c_0005",
-        "vaxigrip_0_25ml_qlvx_0652_13_c_0007"
+        "menactra_qlvx_h03_1111_18_c_0013",
+        "abrysvo_540310322125_c_0012"
       ],
       "doc_ids": [
-        "havax_893310108024",
-        "vaxigrip_0_25ml_qlvx_0652_13"
+        "menactra_qlvx_h03_1111_18",
+        "abrysvo_540310322125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine HAVAX",
-        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,25ml)"
+        "Hướng dẫn sử dụng Vaccine Menactra",
+        "Hướng dẫn sử dụng Vaccine Abrysvo"
       ]
     },
     "GENERATED_ANSWER": {
@@ -8529,16 +8529,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "bexsero_800310090123_c_0009",
-        "proquad_001310197825_c_0013"
+        "menactra_qlvx_h03_1111_18_c_0020",
+        "flumist_001310440525_c_0007"
       ],
       "doc_ids": [
-        "bexsero_800310090123",
-        "proquad_001310197825"
+        "menactra_qlvx_h03_1111_18",
+        "flumist_001310440525"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Bexsero",
-        "Hướng dẫn sử dụng Vaccine ProQuad"
+        "Hướng dẫn sử dụng Vaccine Menactra",
+        "Hướng dẫn sử dụng Vaccine Flumist"
       ]
     },
     "GENERATED_ANSWER": {
@@ -8586,13 +8586,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "bexsero_800310090123_c_0024"
+        "vaxigrip_0_5ml_qlvx_0646_13_c_0015"
       ],
       "doc_ids": [
-        "bexsero_800310090123"
+        "vaxigrip_0_5ml_qlvx_0646_13"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Bexsero"
+        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,5ml)"
       ]
     },
     "GENERATED_ANSWER": {
@@ -8636,13 +8636,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "twinrix_400310177900_c_0001"
+        "vaxneuvance_539310049125_c_0054"
       ],
       "doc_ids": [
-        "twinrix_400310177900"
+        "vaxneuvance_539310049125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Twinrix"
+        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
       ]
     },
     "GENERATED_ANSWER": {
@@ -8684,13 +8684,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "bexsero_800310090123_c_0027"
+        "rotarix_540310037023_c_0019"
       ],
       "doc_ids": [
-        "bexsero_800310090123"
+        "rotarix_540310037023"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Bexsero"
+        "Hướng dẫn sử dụng Vaccine Rotarix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -8732,13 +8732,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "hexaxim_300310038123_c_0019"
+        "bexsero_800310090123_c_0026"
       ],
       "doc_ids": [
-        "hexaxim_300310038123"
+        "bexsero_800310090123"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Hexaxim"
+        "Hướng dẫn sử dụng Vaccine Bexsero"
       ]
     },
     "GENERATED_ANSWER": {
@@ -8776,13 +8776,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "menquadfi_001310047625_c_0027"
+        "twinrix_400310177900_c_0001"
       ],
       "doc_ids": [
-        "menquadfi_001310047625"
+        "twinrix_400310177900"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Menquadfi"
+        "Hướng dẫn sử dụng Vaccine Twinrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -8824,13 +8824,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "influvac_tetra_870310304024_c_0002"
+        "prevenar_13_540310111524_c_0065"
       ],
       "doc_ids": [
-        "influvac_tetra_870310304024"
+        "prevenar_13_540310111524"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Influvac Tetra"
+        "Hướng dẫn sử dụng Vaccine Prevenar 13"
       ]
     },
     "GENERATED_ANSWER": {
@@ -8878,13 +8878,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_13_540310111524_c_0080"
+        "bexsero_800310090123_c_0024"
       ],
       "doc_ids": [
-        "prevenar_13_540310111524"
+        "bexsero_800310090123"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 13"
+        "Hướng dẫn sử dụng Vaccine Bexsero"
       ]
     },
     "GENERATED_ANSWER": {
@@ -8926,7 +8926,7 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "nimenrix_540310196925_c_0021"
+        "nimenrix_540310196925_c_0060"
       ],
       "doc_ids": [
         "nimenrix_540310196925"
@@ -8974,13 +8974,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "barycela_inj_880310322325_c_0001"
+        "rotarix_540310037023_c_0017"
       ],
       "doc_ids": [
-        "barycela_inj_880310322325"
+        "rotarix_540310037023"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Barycela inj."
+        "Hướng dẫn sử dụng Vaccine Rotarix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -9025,13 +9025,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_13_qlvx_h03_1142_19_c_0074"
+        "bexsero_800310090123_c_0027"
       ],
       "doc_ids": [
-        "prevenar_13_qlvx_h03_1142_19"
+        "bexsero_800310090123"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 13"
+        "Hướng dẫn sử dụng Vaccine Bexsero"
       ]
     },
     "GENERATED_ANSWER": {
@@ -9069,13 +9069,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_20_539310047525_c_0027"
+        "hexaxim_300310038123_c_0019"
       ],
       "doc_ids": [
-        "prevenar_20_539310047525"
+        "hexaxim_300310038123"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 20"
+        "Hướng dẫn sử dụng Vaccine Hexaxim"
       ]
     },
     "GENERATED_ANSWER": {
@@ -9163,13 +9163,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxigrip_300310033526_c_0035"
+        "menquadfi_001310047625_c_0027"
       ],
       "doc_ids": [
-        "vaxigrip_300310033526"
+        "menquadfi_001310047625"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxigrip"
+        "Hướng dẫn sử dụng Vaccine Menquadfi"
       ]
     },
     "GENERATED_ANSWER": {
@@ -9211,13 +9211,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "rotarix_540310037023_c_0017"
+        "prevenar_20_539310047525_c_0027"
       ],
       "doc_ids": [
-        "rotarix_540310037023"
+        "prevenar_20_539310047525"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Rotarix"
+        "Hướng dẫn sử dụng Vaccine Prevenar 20"
       ]
     },
     "GENERATED_ANSWER": {
@@ -9259,13 +9259,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxneuvance_539310049125_c_0054"
+        "barycela_inj_880310322325_c_0001"
       ],
       "doc_ids": [
-        "vaxneuvance_539310049125"
+        "barycela_inj_880310322325"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
+        "Hướng dẫn sử dụng Vaccine Barycela inj."
       ]
     },
     "GENERATED_ANSWER": {
@@ -9303,13 +9303,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_13_qlvx_h03_1142_19_c_0078"
+        "nimenrix_540310196925_c_0021"
       ],
       "doc_ids": [
-        "prevenar_13_qlvx_h03_1142_19"
+        "nimenrix_540310196925"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 13"
+        "Hướng dẫn sử dụng Vaccine Nimenrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -9353,10 +9353,10 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_13_540310111524_c_0065"
+        "prevenar_13_qlvx_h03_1142_19_c_0078"
       ],
       "doc_ids": [
-        "prevenar_13_540310111524"
+        "prevenar_13_qlvx_h03_1142_19"
       ],
       "doc_titles": [
         "Hướng dẫn sử dụng Vaccine Prevenar 13"
@@ -9401,13 +9401,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_20_539310047525_c_0038"
+        "influvac_tetra_870310304024_c_0002"
       ],
       "doc_ids": [
-        "prevenar_20_539310047525"
+        "influvac_tetra_870310304024"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 20"
+        "Hướng dẫn sử dụng Vaccine Influvac Tetra"
       ]
     },
     "GENERATED_ANSWER": {
@@ -9449,13 +9449,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "menquadfi_001310047625_c_0023"
+        "vaxigrip_300310033526_c_0035"
       ],
       "doc_ids": [
-        "menquadfi_001310047625"
+        "vaxigrip_300310033526"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Menquadfi"
+        "Hướng dẫn sử dụng Vaccine Vaxigrip"
       ]
     },
     "GENERATED_ANSWER": {
@@ -9503,7 +9503,7 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "nimenrix_540310196925_c_0060"
+        "nimenrix_540310196925_c_0075"
       ],
       "doc_ids": [
         "nimenrix_540310196925"
@@ -9557,13 +9557,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxigrip_0_5ml_qlvx_0646_13_c_0015"
+        "prevenar_13_540310111524_c_0080"
       ],
       "doc_ids": [
-        "vaxigrip_0_5ml_qlvx_0646_13"
+        "prevenar_13_540310111524"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,5ml)"
+        "Hướng dẫn sử dụng Vaccine Prevenar 13"
       ]
     },
     "GENERATED_ANSWER": {
@@ -9607,13 +9607,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "rotarix_540310037023_c_0019"
+        "prevenar_20_539310047525_c_0038"
       ],
       "doc_ids": [
-        "rotarix_540310037023"
+        "prevenar_20_539310047525"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Rotarix"
+        "Hướng dẫn sử dụng Vaccine Prevenar 20"
       ]
     },
     "GENERATED_ANSWER": {
@@ -9655,13 +9655,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "nimenrix_540310196925_c_0075"
+        "prevenar_13_qlvx_h03_1142_19_c_0074"
       ],
       "doc_ids": [
-        "nimenrix_540310196925"
+        "prevenar_13_qlvx_h03_1142_19"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Nimenrix"
+        "Hướng dẫn sử dụng Vaccine Prevenar 13"
       ]
     },
     "GENERATED_ANSWER": {
@@ -9705,13 +9705,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "bexsero_800310090123_c_0026"
+        "menquadfi_001310047625_c_0023"
       ],
       "doc_ids": [
-        "bexsero_800310090123"
+        "menquadfi_001310047625"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Bexsero"
+        "Hướng dẫn sử dụng Vaccine Menquadfi"
       ]
     },
     "GENERATED_ANSWER": {
@@ -9801,13 +9801,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "prevenar_20_539310047525_c_0029"
+        "influvac_tetra_870310304024_c_0005"
       ],
       "doc_ids": [
-        "prevenar_20_539310047525"
+        "influvac_tetra_870310304024"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 20"
+        "Hướng dẫn sử dụng Vaccine Influvac Tetra"
       ]
     },
     "GENERATED_ANSWER": {
@@ -9849,13 +9849,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "menactra_qlvx_h03_1111_18_c_0026"
+        "gardasil_9_001310178700_c_0009"
       ],
       "doc_ids": [
-        "menactra_qlvx_h03_1111_18"
+        "gardasil_9_001310178700"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Menactra"
+        "Hướng dẫn sử dụng Vaccine Gardasil 9"
       ]
     },
     "GENERATED_ANSWER": {
@@ -9899,13 +9899,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "nimenrix_540310196925_c_0096"
+        "menactra_qlvx_h03_1111_18_c_0026"
       ],
       "doc_ids": [
-        "nimenrix_540310196925"
+        "menactra_qlvx_h03_1111_18"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Nimenrix"
+        "Hướng dẫn sử dụng Vaccine Menactra"
       ]
     },
     "GENERATED_ANSWER": {
@@ -9995,13 +9995,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "hexaxim_300310038123_c_0008"
+        "prevenar_20_539310047525_c_0039"
       ],
       "doc_ids": [
-        "hexaxim_300310038123"
+        "prevenar_20_539310047525"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Hexaxim"
+        "Hướng dẫn sử dụng Vaccine Prevenar 20"
       ]
     },
     "GENERATED_ANSWER": {
@@ -10137,13 +10137,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "bexsero_800310090123_c_0021"
+        "nimenrix_540310196925_c_0035"
       ],
       "doc_ids": [
-        "bexsero_800310090123"
+        "nimenrix_540310196925"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Bexsero"
+        "Hướng dẫn sử dụng Vaccine Nimenrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -10181,7 +10181,7 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "prevenar_20_539310047525_c_0039"
+        "prevenar_20_539310047525_c_0016"
       ],
       "doc_ids": [
         "prevenar_20_539310047525"
@@ -10231,13 +10231,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "prevenar_20_539310047525_c_0016"
+        "bexsero_800310090123_c_0021"
       ],
       "doc_ids": [
-        "prevenar_20_539310047525"
+        "bexsero_800310090123"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 20"
+        "Hướng dẫn sử dụng Vaccine Bexsero"
       ]
     },
     "GENERATED_ANSWER": {
@@ -10275,7 +10275,7 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "nimenrix_540310196925_c_0035"
+        "nimenrix_540310196925_c_0096"
       ],
       "doc_ids": [
         "nimenrix_540310196925"
@@ -10325,13 +10325,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "gardasil_9_001310178700_c_0009"
+        "qdenga_400310303924_c_0019"
       ],
       "doc_ids": [
-        "gardasil_9_001310178700"
+        "qdenga_400310303924"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Gardasil 9"
+        "Hướng dẫn sử dụng Vaccine Qdenga"
       ]
     },
     "GENERATED_ANSWER": {
@@ -10373,13 +10373,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "prevenar_13_540310111524_c_0072"
+        "vaxigrip_300310033526_c_0031"
       ],
       "doc_ids": [
-        "prevenar_13_540310111524"
+        "vaxigrip_300310033526"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 13"
+        "Hướng dẫn sử dụng Vaccine Vaxigrip"
       ]
     },
     "GENERATED_ANSWER": {
@@ -10425,13 +10425,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "vaxigrip_tetra_300310305924_c_0020"
+        "prevenar_20_539310047525_c_0029"
       ],
       "doc_ids": [
-        "vaxigrip_tetra_300310305924"
+        "prevenar_20_539310047525"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxigrip Tetra"
+        "Hướng dẫn sử dụng Vaccine Prevenar 20"
       ]
     },
     "GENERATED_ANSWER": {
@@ -10473,13 +10473,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "influvac_tetra_870310304024_c_0005"
+        "vaxigrip_tetra_300310305924_c_0020"
       ],
       "doc_ids": [
-        "influvac_tetra_870310304024"
+        "vaxigrip_tetra_300310305924"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Influvac Tetra"
+        "Hướng dẫn sử dụng Vaccine Vaxigrip Tetra"
       ]
     },
     "GENERATED_ANSWER": {
@@ -10517,13 +10517,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "qdenga_400310303924_c_0019"
+        "hexaxim_300310038123_c_0008"
       ],
       "doc_ids": [
-        "qdenga_400310303924"
+        "hexaxim_300310038123"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Qdenga"
+        "Hướng dẫn sử dụng Vaccine Hexaxim"
       ]
     },
     "GENERATED_ANSWER": {
@@ -10565,13 +10565,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "vaxigrip_300310033526_c_0031"
+        "prevenar_13_540310111524_c_0072"
       ],
       "doc_ids": [
-        "vaxigrip_300310033526"
+        "prevenar_13_540310111524"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxigrip"
+        "Hướng dẫn sử dụng Vaccine Prevenar 13"
       ]
     },
     "GENERATED_ANSWER": {
@@ -10609,13 +10609,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "peg_grafeel_qlsp_0636_13_c_0020"
+        "arexvy_540310322425_c_0000"
       ],
       "doc_ids": [
-        "peg_grafeel_qlsp_0636_13"
+        "arexvy_540310322425"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Peg-Grafeel"
+        "Hướng dẫn sử dụng Vaccine Arexvy"
       ]
     },
     "GENERATED_ANSWER": {
@@ -10659,13 +10659,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "gardasil_qlvx_883_15_c_0022"
+        "gc_flu_pre_filled_syringe_inj_880310249823_c_0003"
       ],
       "doc_ids": [
-        "gardasil_qlvx_883_15"
+        "gc_flu_pre_filled_syringe_inj_880310249823"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Gardasil"
+        "Hướng dẫn sử dụng Vaccine GC FLU pre-filled syringe inj"
       ]
     },
     "GENERATED_ANSWER": {
@@ -10765,13 +10765,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "rotarix_540310037023_c_0022"
+        "vaxigrip_300310033526_c_0004"
       ],
       "doc_ids": [
-        "rotarix_540310037023"
+        "vaxigrip_300310033526"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Rotarix"
+        "Hướng dẫn sử dụng Vaccine Vaxigrip"
       ]
     },
     "GENERATED_ANSWER": {
@@ -10817,13 +10817,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "qdenga_400310303924_c_0008"
+        "rotarix_540310037023_c_0022"
       ],
       "doc_ids": [
-        "qdenga_400310303924"
+        "rotarix_540310037023"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Qdenga"
+        "Hướng dẫn sử dụng Vaccine Rotarix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -10869,13 +10869,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "m_m_r_ii_qlvx_878_15_c_0013"
+        "proquad_001310197825_c_0002"
       ],
       "doc_ids": [
-        "m_m_r_ii_qlvx_878_15"
+        "proquad_001310197825"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine M-M-R® II"
+        "Hướng dẫn sử dụng Vaccine ProQuad"
       ]
     },
     "GENERATED_ANSWER": {
@@ -10921,13 +10921,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "pentaxim_300310250623_c_0005"
+        "gardasil_qlvx_883_15_c_0022"
       ],
       "doc_ids": [
-        "pentaxim_300310250623"
+        "gardasil_qlvx_883_15"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Pentaxim"
+        "Hướng dẫn sử dụng Vaccine Gardasil"
       ]
     },
     "GENERATED_ANSWER": {
@@ -10971,13 +10971,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "imojev_md_qlvx_h03_1141_19_c_0003"
+        "peg_grafeel_qlsp_0636_13_c_0020"
       ],
       "doc_ids": [
-        "imojev_md_qlvx_h03_1141_19"
+        "peg_grafeel_qlsp_0636_13"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Imojev MD"
+        "Hướng dẫn sử dụng Vaccine Peg-Grafeel"
       ]
     },
     "GENERATED_ANSWER": {
@@ -11023,13 +11023,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "influvac_tetra_870310304024_c_0004"
+        "jeev_890310108424_c_0000"
       ],
       "doc_ids": [
-        "influvac_tetra_870310304024"
+        "jeev_890310108424"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Influvac Tetra"
+        "Hướng dẫn sử dụng Vaccine JEEV"
       ]
     },
     "GENERATED_ANSWER": {
@@ -11075,13 +11075,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxneuvance_539310049125_c_0005"
+        "qdenga_400310303924_c_0008"
       ],
       "doc_ids": [
-        "vaxneuvance_539310049125"
+        "qdenga_400310303924"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
+        "Hướng dẫn sử dụng Vaccine Qdenga"
       ]
     },
     "GENERATED_ANSWER": {
@@ -11125,13 +11125,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_20_539310047525_c_0013"
+        "rotarix_540310037023_c_0016"
       ],
       "doc_ids": [
-        "prevenar_20_539310047525"
+        "rotarix_540310037023"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 20"
+        "Hướng dẫn sử dụng Vaccine Rotarix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -11173,13 +11173,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "jeev_890310108424_c_0000"
+        "cervarixtm_qlvx_0490_12_c_0031"
       ],
       "doc_ids": [
-        "jeev_890310108424"
+        "cervarixtm_qlvx_0490_12"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine JEEV"
+        "Hướng dẫn sử dụng Vaccine CervarixTM"
       ]
     },
     "GENERATED_ANSWER": {
@@ -11223,13 +11223,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxigrip_300310033526_c_0004"
+        "tt_vaccine_893310323125_c_0011"
       ],
       "doc_ids": [
-        "vaxigrip_300310033526"
+        "tt_vaccine_893310323125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxigrip"
+        "Hướng dẫn sử dụng Vaccine TT Vaccine"
       ]
     },
     "GENERATED_ANSWER": {
@@ -11273,13 +11273,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxigrip_300310033526_c_0019"
+        "influvac_tetra_870310304024_c_0004"
       ],
       "doc_ids": [
-        "vaxigrip_300310033526"
+        "influvac_tetra_870310304024"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxigrip"
+        "Hướng dẫn sử dụng Vaccine Influvac Tetra"
       ]
     },
     "GENERATED_ANSWER": {
@@ -11323,13 +11323,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "qdenga_400310303924_c_0028"
+        "imojev_md_qlvx_h03_1141_19_c_0003"
       ],
       "doc_ids": [
-        "qdenga_400310303924"
+        "imojev_md_qlvx_h03_1141_19"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Qdenga"
+        "Hướng dẫn sử dụng Vaccine Imojev MD"
       ]
     },
     "GENERATED_ANSWER": {
@@ -11423,13 +11423,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "tt_vaccine_893310323125_c_0011"
+        "vaxigrip_300310033526_c_0019"
       ],
       "doc_ids": [
-        "tt_vaccine_893310323125"
+        "vaxigrip_300310033526"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine TT Vaccine"
+        "Hướng dẫn sử dụng Vaccine Vaxigrip"
       ]
     },
     "GENERATED_ANSWER": {
@@ -11471,13 +11471,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "arexvy_540310322425_c_0000"
+        "vaxneuvance_539310049125_c_0005"
       ],
       "doc_ids": [
-        "arexvy_540310322425"
+        "vaxneuvance_539310049125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Arexvy"
+        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
       ]
     },
     "GENERATED_ANSWER": {
@@ -11521,13 +11521,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "nimenrix_540310196925_c_0025"
+        "m_m_r_ii_qlvx_878_15_c_0013"
       ],
       "doc_ids": [
-        "nimenrix_540310196925"
+        "m_m_r_ii_qlvx_878_15"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Nimenrix"
+        "Hướng dẫn sử dụng Vaccine M-M-R® II"
       ]
     },
     "GENERATED_ANSWER": {
@@ -11575,13 +11575,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "cervarixtm_qlvx_0490_12_c_0031"
+        "nimenrix_540310196925_c_0010"
       ],
       "doc_ids": [
-        "cervarixtm_qlvx_0490_12"
+        "nimenrix_540310196925"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine CervarixTM"
+        "Hướng dẫn sử dụng Vaccine Nimenrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -11679,13 +11679,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "nimenrix_540310196925_c_0010"
+        "qdenga_400310303924_c_0028"
       ],
       "doc_ids": [
-        "nimenrix_540310196925"
+        "qdenga_400310303924"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Nimenrix"
+        "Hướng dẫn sử dụng Vaccine Qdenga"
       ]
     },
     "GENERATED_ANSWER": {
@@ -11731,13 +11731,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "rotarix_540310037023_c_0016"
+        "pentaxim_300310250623_c_0005"
       ],
       "doc_ids": [
-        "rotarix_540310037023"
+        "pentaxim_300310250623"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Rotarix"
+        "Hướng dẫn sử dụng Vaccine Pentaxim"
       ]
     },
     "GENERATED_ANSWER": {
@@ -11781,13 +11781,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "gc_flu_pre_filled_syringe_inj_880310249823_c_0003"
+        "nimenrix_540310196925_c_0025"
       ],
       "doc_ids": [
-        "gc_flu_pre_filled_syringe_inj_880310249823"
+        "nimenrix_540310196925"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine GC FLU pre-filled syringe inj"
+        "Hướng dẫn sử dụng Vaccine Nimenrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -11831,13 +11831,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "shingrix_540310303224_c_0004"
+        "quimi_hib_850310304324_c_0002"
       ],
       "doc_ids": [
-        "shingrix_540310303224"
+        "quimi_hib_850310304324"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Shingrix"
+        "Hướng dẫn sử dụng Vaccine Quimi-Hib"
       ]
     },
     "GENERATED_ANSWER": {
@@ -11879,13 +11879,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "proquad_001310197825_c_0002"
+        "prevenar_20_539310047525_c_0013"
       ],
       "doc_ids": [
-        "proquad_001310197825"
+        "prevenar_20_539310047525"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine ProQuad"
+        "Hướng dẫn sử dụng Vaccine Prevenar 20"
       ]
     },
     "GENERATED_ANSWER": {
@@ -11931,13 +11931,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "quimi_hib_850310304324_c_0002"
+        "shingrix_540310303224_c_0004"
       ],
       "doc_ids": [
-        "quimi_hib_850310304324"
+        "shingrix_540310303224"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Quimi-Hib"
+        "Hướng dẫn sử dụng Vaccine Shingrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -11981,13 +11981,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "peg_grafeel_qlsp_0636_13_c_0014"
+        "shingrix_540310303224_c_0007"
       ],
       "doc_ids": [
-        "peg_grafeel_qlsp_0636_13"
+        "shingrix_540310303224"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Peg-Grafeel"
+        "Hướng dẫn sử dụng Vaccine Shingrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -12033,13 +12033,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "gardasil_qlvx_883_15_c_0003"
+        "bcg_vaccine_893310251023_c_0013"
       ],
       "doc_ids": [
-        "gardasil_qlvx_883_15"
+        "bcg_vaccine_893310251023"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Gardasil"
+        "Hướng dẫn sử dụng Vaccine BCG Vaccine"
       ]
     },
     "GENERATED_ANSWER": {
@@ -12135,13 +12135,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "rotavac_890310196625_c_0002"
+        "menactra_qlvx_h03_1111_18_c_0036"
       ],
       "doc_ids": [
-        "rotavac_890310196625"
+        "menactra_qlvx_h03_1111_18"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Rotavac"
+        "Hướng dẫn sử dụng Vaccine Menactra"
       ]
     },
     "GENERATED_ANSWER": {
@@ -12185,13 +12185,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "shingrix_540310303224_c_0007"
+        "quimi_hib_850310304324_c_0005"
       ],
       "doc_ids": [
-        "shingrix_540310303224"
+        "quimi_hib_850310304324"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Shingrix"
+        "Hướng dẫn sử dụng Vaccine Quimi-Hib"
       ]
     },
     "GENERATED_ANSWER": {
@@ -12235,13 +12235,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "dpt_vaccine_893310250923_c_0013"
+        "gardasil_qlvx_883_15_c_0012"
       ],
       "doc_ids": [
-        "dpt_vaccine_893310250923"
+        "gardasil_qlvx_883_15"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine DPT Vaccine"
+        "Hướng dẫn sử dụng Vaccine Gardasil"
       ]
     },
     "GENERATED_ANSWER": {
@@ -12289,13 +12289,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "bcg_vaccine_893310251023_c_0004"
+        "gardasil_qlvx_883_15_c_0003"
       ],
       "doc_ids": [
-        "bcg_vaccine_893310251023"
+        "gardasil_qlvx_883_15"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine BCG Vaccine"
+        "Hướng dẫn sử dụng Vaccine Gardasil"
       ]
     },
     "GENERATED_ANSWER": {
@@ -12333,13 +12333,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "skyvaricella_inj_880310033426_c_0010"
+        "vaxneuvance_539310049125_c_0053"
       ],
       "doc_ids": [
-        "skyvaricella_inj_880310033426"
+        "vaxneuvance_539310049125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine SKYVaricella Inj."
+        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
       ]
     },
     "GENERATED_ANSWER": {
@@ -12383,13 +12383,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "quimi_hib_850310304324_c_0005"
+        "rotavac_890310196625_c_0002"
       ],
       "doc_ids": [
-        "quimi_hib_850310304324"
+        "rotavac_890310196625"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Quimi-Hib"
+        "Hướng dẫn sử dụng Vaccine Rotavac"
       ]
     },
     "GENERATED_ANSWER": {
@@ -12487,13 +12487,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "gardasil_qlvx_883_15_c_0012"
+        "vaxigrip_300310033526_c_0020"
       ],
       "doc_ids": [
-        "gardasil_qlvx_883_15"
+        "vaxigrip_300310033526"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Gardasil"
+        "Hướng dẫn sử dụng Vaccine Vaxigrip"
       ]
     },
     "GENERATED_ANSWER": {
@@ -12531,13 +12531,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "vaxigrip_0_25ml_qlvx_0652_13_c_0006"
+        "skyvaricella_inj_880310033426_c_0010"
       ],
       "doc_ids": [
-        "vaxigrip_0_25ml_qlvx_0652_13"
+        "skyvaricella_inj_880310033426"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,25ml)"
+        "Hướng dẫn sử dụng Vaccine SKYVaricella Inj."
       ]
     },
     "GENERATED_ANSWER": {
@@ -12579,13 +12579,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "bcg_vaccine_893310251023_c_0013"
+        "vaxigrip_0_25ml_qlvx_0652_13_c_0006"
       ],
       "doc_ids": [
-        "bcg_vaccine_893310251023"
+        "vaxigrip_0_25ml_qlvx_0652_13"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine BCG Vaccine"
+        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,25ml)"
       ]
     },
     "GENERATED_ANSWER": {
@@ -12631,13 +12631,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "indirab_890310249723_c_0009"
+        "hexaxim_300310038123_c_0016"
       ],
       "doc_ids": [
-        "indirab_890310249723"
+        "hexaxim_300310038123"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Indirab"
+        "Hướng dẫn sử dụng Vaccine Hexaxim"
       ]
     },
     "GENERATED_ANSWER": {
@@ -12683,13 +12683,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "hexaxim_300310038123_c_0016"
+        "peg_grafeel_qlsp_0636_13_c_0014"
       ],
       "doc_ids": [
-        "hexaxim_300310038123"
+        "peg_grafeel_qlsp_0636_13"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Hexaxim"
+        "Hướng dẫn sử dụng Vaccine Peg-Grafeel"
       ]
     },
     "GENERATED_ANSWER": {
@@ -12737,13 +12737,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "vaxigrip_300310033526_c_0020"
+        "indirab_890310249723_c_0009"
       ],
       "doc_ids": [
-        "vaxigrip_300310033526"
+        "indirab_890310249723"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxigrip"
+        "Hướng dẫn sử dụng Vaccine Indirab"
       ]
     },
     "GENERATED_ANSWER": {
@@ -12781,13 +12781,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "menactra_qlvx_h03_1111_18_c_0036"
+        "bcg_vaccine_893310251023_c_0004"
       ],
       "doc_ids": [
-        "menactra_qlvx_h03_1111_18"
+        "bcg_vaccine_893310251023"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Menactra"
+        "Hướng dẫn sử dụng Vaccine BCG Vaccine"
       ]
     },
     "GENERATED_ANSWER": {
@@ -12831,13 +12831,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "vaxneuvance_539310049125_c_0053"
+        "dpt_vaccine_893310250923_c_0013"
       ],
       "doc_ids": [
-        "vaxneuvance_539310049125"
+        "dpt_vaccine_893310250923"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
+        "Hướng dẫn sử dụng Vaccine DPT Vaccine"
       ]
     },
     "GENERATED_ANSWER": {
@@ -12882,16 +12882,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "boostrix_300310036923_c_0006",
-        "rotavin_893310109424_c_0005"
+        "cervarixtm_qlvx_0490_12_c_0002",
+        "verorab_300310305824_c_0007"
       ],
       "doc_ids": [
-        "boostrix_300310036923",
-        "rotavin_893310109424"
+        "cervarixtm_qlvx_0490_12",
+        "verorab_300310305824"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Boostrix",
-        "Hướng dẫn sử dụng Vaccine Rotavin"
+        "Hướng dẫn sử dụng Vaccine CervarixTM",
+        "Hướng dẫn sử dụng Vaccine Verorab"
       ]
     },
     "GENERATED_ANSWER": {
@@ -12936,16 +12936,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "menactra_qlvx_h03_1111_18_c_0024",
-        "vaxneuvance_539310049125_c_0024"
+        "quimi_hib_850310304324_c_0005",
+        "pentavac_890310178100_c_0014"
       ],
       "doc_ids": [
-        "menactra_qlvx_h03_1111_18",
-        "vaxneuvance_539310049125"
+        "quimi_hib_850310304324",
+        "pentavac_890310178100"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Menactra",
-        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
+        "Hướng dẫn sử dụng Vaccine Quimi-Hib",
+        "Hướng dẫn sử dụng Vaccine PENTAVAC"
       ]
     },
     "GENERATED_ANSWER": {
@@ -12990,16 +12990,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "flumist_001310440525_c_0018",
-        "tetavax_qlvx_993_17_c_0009"
+        "m_m_r_ii_001310197925_c_0018",
+        "prevenar_13_qlvx_h03_1142_19_c_0012"
       ],
       "doc_ids": [
-        "flumist_001310440525",
-        "tetavax_qlvx_993_17"
+        "m_m_r_ii_001310197925",
+        "prevenar_13_qlvx_h03_1142_19"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Flumist",
-        "Hướng dẫn sử dụng Vaccine Tetavax"
+        "Hướng dẫn sử dụng Vaccine M-M-R II",
+        "Hướng dẫn sử dụng Vaccine Prevenar 13"
       ]
     },
     "GENERATED_ANSWER": {
@@ -13048,16 +13048,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "cervarixtm_qlvx_0490_12_c_0002",
-        "verorab_300310305824_c_0007"
+        "flumist_001310440525_c_0018",
+        "tetavax_qlvx_993_17_c_0009"
       ],
       "doc_ids": [
-        "cervarixtm_qlvx_0490_12",
-        "verorab_300310305824"
+        "flumist_001310440525",
+        "tetavax_qlvx_993_17"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine CervarixTM",
-        "Hướng dẫn sử dụng Vaccine Verorab"
+        "Hướng dẫn sử dụng Vaccine Flumist",
+        "Hướng dẫn sử dụng Vaccine Tetavax"
       ]
     },
     "GENERATED_ANSWER": {
@@ -13104,16 +13104,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "quimi_hib_850310304324_c_0005",
-        "pentavac_890310178100_c_0014"
+        "menactra_qlvx_h03_1111_18_c_0024",
+        "vaxneuvance_539310049125_c_0024"
       ],
       "doc_ids": [
-        "quimi_hib_850310304324",
-        "pentavac_890310178100"
+        "menactra_qlvx_h03_1111_18",
+        "vaxneuvance_539310049125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Quimi-Hib",
-        "Hướng dẫn sử dụng Vaccine PENTAVAC"
+        "Hướng dẫn sử dụng Vaccine Menactra",
+        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
       ]
     },
     "GENERATED_ANSWER": {
@@ -13158,16 +13158,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "adacel_754310306124_c_0007",
-        "dpt_vaccine_893310250923_c_0004"
+        "boostrix_300310036923_c_0006",
+        "rotavin_893310109424_c_0005"
       ],
       "doc_ids": [
-        "adacel_754310306124",
-        "dpt_vaccine_893310250923"
+        "boostrix_300310036923",
+        "rotavin_893310109424"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Adacel",
-        "Hướng dẫn sử dụng Vaccine DPT Vaccine"
+        "Hướng dẫn sử dụng Vaccine Boostrix",
+        "Hướng dẫn sử dụng Vaccine Rotavin"
       ]
     },
     "GENERATED_ANSWER": {
@@ -13214,16 +13214,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "m_m_r_ii_001310197925_c_0018",
-        "prevenar_13_qlvx_h03_1142_19_c_0012"
+        "menactra_qlvx_h03_1111_18_c_0007",
+        "prevenar_20_539310047525_c_0006"
       ],
       "doc_ids": [
-        "m_m_r_ii_001310197925",
-        "prevenar_13_qlvx_h03_1142_19"
+        "menactra_qlvx_h03_1111_18",
+        "prevenar_20_539310047525"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine M-M-R II",
-        "Hướng dẫn sử dụng Vaccine Prevenar 13"
+        "Hướng dẫn sử dụng Vaccine Menactra",
+        "Hướng dẫn sử dụng Vaccine Prevenar 20"
       ]
     },
     "GENERATED_ANSWER": {
@@ -13268,16 +13268,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "menactra_qlvx_h03_1111_18_c_0007",
-        "prevenar_20_539310047525_c_0006"
+        "adacel_754310306124_c_0007",
+        "dpt_vaccine_893310250923_c_0004"
       ],
       "doc_ids": [
-        "menactra_qlvx_h03_1111_18",
-        "prevenar_20_539310047525"
+        "adacel_754310306124",
+        "dpt_vaccine_893310250923"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Menactra",
-        "Hướng dẫn sử dụng Vaccine Prevenar 20"
+        "Hướng dẫn sử dụng Vaccine Adacel",
+        "Hướng dẫn sử dụng Vaccine DPT Vaccine"
       ]
     },
     "GENERATED_ANSWER": {
@@ -13322,14 +13322,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "m_m_r_ii_qlvx_878_15_c_0019",
-        "m_m_r_ii_qlvx_878_15_c_0000"
+        "prevenar_13_540310111524_c_0002",
+        "prevenar_13_540310111524_c_0005"
       ],
       "doc_ids": [
-        "m_m_r_ii_qlvx_878_15"
+        "prevenar_13_540310111524"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine M-M-R® II"
+        "Hướng dẫn sử dụng Vaccine Prevenar 13"
       ]
     },
     "GENERATED_ANSWER": {
@@ -13425,14 +13425,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "gardasil_9_001310178700_c_0001",
-        "gardasil_9_001310178700_c_0003"
+        "shingrix_540310303224_c_0030",
+        "shingrix_540310303224_c_0031"
       ],
       "doc_ids": [
-        "gardasil_9_001310178700"
+        "shingrix_540310303224"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Gardasil 9"
+        "Hướng dẫn sử dụng Vaccine Shingrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -13479,14 +13479,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_13_540310111524_c_0002",
-        "prevenar_13_540310111524_c_0005"
+        "vaxigrip_300310033526_c_0050",
+        "vaxigrip_300310033526_c_0005"
       ],
       "doc_ids": [
-        "prevenar_13_540310111524"
+        "vaxigrip_300310033526"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 13"
+        "Hướng dẫn sử dụng Vaccine Vaxigrip"
       ]
     },
     "GENERATED_ANSWER": {
@@ -13525,14 +13525,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "pentavac_890310178100_c_0004",
-        "pentavac_890310178100_c_0007"
+        "infanrix_ipv_hib_qlvx_1138_19_c_0002",
+        "infanrix_ipv_hib_qlvx_1138_19_c_0004"
       ],
       "doc_ids": [
-        "pentavac_890310178100"
+        "infanrix_ipv_hib_qlvx_1138_19"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine PENTAVAC"
+        "Hướng dẫn sử dụng Vaccine Infanrix IPV-Hib"
       ]
     },
     "GENERATED_ANSWER": {
@@ -13581,14 +13581,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "infanrix_ipv_hib_qlvx_1138_19_c_0002",
-        "infanrix_ipv_hib_qlvx_1138_19_c_0004"
+        "gardasil_9_001310178700_c_0001",
+        "gardasil_9_001310178700_c_0003"
       ],
       "doc_ids": [
-        "infanrix_ipv_hib_qlvx_1138_19"
+        "gardasil_9_001310178700"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Infanrix IPV-Hib"
+        "Hướng dẫn sử dụng Vaccine Gardasil 9"
       ]
     },
     "GENERATED_ANSWER": {
@@ -13635,14 +13635,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "shingrix_540310303224_c_0030",
-        "shingrix_540310303224_c_0031"
+        "pentavac_890310178100_c_0004",
+        "pentavac_890310178100_c_0007"
       ],
       "doc_ids": [
-        "shingrix_540310303224"
+        "pentavac_890310178100"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Shingrix"
+        "Hướng dẫn sử dụng Vaccine PENTAVAC"
       ]
     },
     "GENERATED_ANSWER": {
@@ -13689,14 +13689,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxigrip_300310033526_c_0050",
-        "vaxigrip_300310033526_c_0005"
+        "m_m_r_ii_qlvx_878_15_c_0019",
+        "m_m_r_ii_qlvx_878_15_c_0000"
       ],
       "doc_ids": [
-        "vaxigrip_300310033526"
+        "m_m_r_ii_qlvx_878_15"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxigrip"
+        "Hướng dẫn sử dụng Vaccine M-M-R® II"
       ]
     },
     "GENERATED_ANSWER": {
@@ -13741,16 +13741,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "havax_893310108024_c_0004",
-        "m_m_r_ii_001310197925_c_0009"
+        "indirab_890310249723_c_0001",
+        "adacel_754310306124_c_0004"
       ],
       "doc_ids": [
-        "havax_893310108024",
-        "m_m_r_ii_001310197925"
+        "indirab_890310249723",
+        "adacel_754310306124"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine HAVAX",
-        "Hướng dẫn sử dụng Vaccine M-M-R II"
+        "Hướng dẫn sử dụng Vaccine Indirab",
+        "Hướng dẫn sử dụng Vaccine Adacel"
       ]
     },
     "GENERATED_ANSWER": {
@@ -13795,16 +13795,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "envacgen_471310033726_c_0002",
-        "m_m_r_ii_qlvx_878_15_c_0006"
+        "boostrix_300310036923_c_0002",
+        "vaxigrip_0_25ml_qlvx_0652_13_c_0004"
       ],
       "doc_ids": [
-        "envacgen_471310033726",
-        "m_m_r_ii_qlvx_878_15"
+        "boostrix_300310036923",
+        "vaxigrip_0_25ml_qlvx_0652_13"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Envacgen",
-        "Hướng dẫn sử dụng Vaccine M-M-R® II"
+        "Hướng dẫn sử dụng Vaccine Boostrix",
+        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,25ml)"
       ]
     },
     "GENERATED_ANSWER": {
@@ -13849,16 +13849,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "euvax_b_qlvx_933_16_c_0014",
-        "jeev_890310108424_c_0010"
+        "rabipur_qlvx_1048_17_c_0014",
+        "pentaxim_300310250623_c_0007"
       ],
       "doc_ids": [
-        "euvax_b_qlvx_933_16",
-        "jeev_890310108424"
+        "rabipur_qlvx_1048_17",
+        "pentaxim_300310250623"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Euvax B",
-        "Hướng dẫn sử dụng Vaccine JEEV"
+        "Hướng dẫn sử dụng Vaccine Rabipur",
+        "Hướng dẫn sử dụng Vaccine Pentaxim"
       ]
     },
     "GENERATED_ANSWER": {
@@ -13905,16 +13905,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "boostrix_300310036923_c_0002",
-        "vaxigrip_0_25ml_qlvx_0652_13_c_0004"
+        "euvax_b_qlvx_933_16_c_0014",
+        "jeev_890310108424_c_0010"
       ],
       "doc_ids": [
-        "boostrix_300310036923",
-        "vaxigrip_0_25ml_qlvx_0652_13"
+        "euvax_b_qlvx_933_16",
+        "jeev_890310108424"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Boostrix",
-        "Hướng dẫn sử dụng Vaccine VAXIGRIP (0,25ml)"
+        "Hướng dẫn sử dụng Vaccine Euvax B",
+        "Hướng dẫn sử dụng Vaccine JEEV"
       ]
     },
     "GENERATED_ANSWER": {
@@ -13959,16 +13959,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "rabipur_qlvx_1048_17_c_0014",
-        "pentaxim_300310250623_c_0007"
+        "havax_893310108024_c_0004",
+        "m_m_r_ii_001310197925_c_0009"
       ],
       "doc_ids": [
-        "rabipur_qlvx_1048_17",
-        "pentaxim_300310250623"
+        "havax_893310108024",
+        "m_m_r_ii_001310197925"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Rabipur",
-        "Hướng dẫn sử dụng Vaccine Pentaxim"
+        "Hướng dẫn sử dụng Vaccine HAVAX",
+        "Hướng dẫn sử dụng Vaccine M-M-R II"
       ]
     },
     "GENERATED_ANSWER": {
@@ -14013,16 +14013,16 @@
       "multi_hop_type": "cross_vaccine",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "indirab_890310249723_c_0001",
-        "adacel_754310306124_c_0004"
+        "envacgen_471310033726_c_0002",
+        "m_m_r_ii_qlvx_878_15_c_0006"
       ],
       "doc_ids": [
-        "indirab_890310249723",
-        "adacel_754310306124"
+        "envacgen_471310033726",
+        "m_m_r_ii_qlvx_878_15"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Indirab",
-        "Hướng dẫn sử dụng Vaccine Adacel"
+        "Hướng dẫn sử dụng Vaccine Envacgen",
+        "Hướng dẫn sử dụng Vaccine M-M-R® II"
       ]
     },
     "GENERATED_ANSWER": {
@@ -14119,14 +14119,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "bcg_vaccine_893310251023_c_0004",
-        "bcg_vaccine_893310251023_c_0006"
+        "cervarixtm_qlvx_0490_12_c_0005",
+        "cervarixtm_qlvx_0490_12_c_0006"
       ],
       "doc_ids": [
-        "bcg_vaccine_893310251023"
+        "cervarixtm_qlvx_0490_12"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine BCG Vaccine"
+        "Hướng dẫn sử dụng Vaccine CervarixTM"
       ]
     },
     "GENERATED_ANSWER": {
@@ -14165,14 +14165,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "cervarixtm_qlvx_0490_12_c_0005",
-        "cervarixtm_qlvx_0490_12_c_0006"
+        "polysaccharide_meningococcal_a_c_qlvx_992_17_c_0003",
+        "polysaccharide_meningococcal_a_c_qlvx_992_17_c_0005"
       ],
       "doc_ids": [
-        "cervarixtm_qlvx_0490_12"
+        "polysaccharide_meningococcal_a_c_qlvx_992_17"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine CervarixTM"
+        "Hướng dẫn sử dụng Vaccine Polysaccharide Meningococcal A+C"
       ]
     },
     "GENERATED_ANSWER": {
@@ -14219,14 +14219,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "polysaccharide_meningococcal_a_c_qlvx_992_17_c_0003",
-        "polysaccharide_meningococcal_a_c_qlvx_992_17_c_0005"
+        "shingrix_540310303224_c_0002",
+        "shingrix_540310303224_c_0004"
       ],
       "doc_ids": [
-        "polysaccharide_meningococcal_a_c_qlvx_992_17"
+        "shingrix_540310303224"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Polysaccharide Meningococcal A+C"
+        "Hướng dẫn sử dụng Vaccine Shingrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -14273,14 +14273,14 @@
       "multi_hop_type": "same_doc",
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "shingrix_540310303224_c_0002",
-        "shingrix_540310303224_c_0004"
+        "bcg_vaccine_893310251023_c_0004",
+        "bcg_vaccine_893310251023_c_0006"
       ],
       "doc_ids": [
-        "shingrix_540310303224"
+        "bcg_vaccine_893310251023"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Shingrix"
+        "Hướng dẫn sử dụng Vaccine BCG Vaccine"
       ]
     },
     "GENERATED_ANSWER": {
@@ -14326,13 +14326,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "nimenrix_540310196925_c_0037"
+        "hexaxim_300310038123_c_0002"
       ],
       "doc_ids": [
-        "nimenrix_540310196925"
+        "hexaxim_300310038123"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Nimenrix"
+        "Hướng dẫn sử dụng Vaccine Hexaxim"
       ]
     },
     "GENERATED_ANSWER": {
@@ -14376,13 +14376,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "envacgen_471310033726_c_0016"
+        "vaxneuvance_539310049125_c_0019"
       ],
       "doc_ids": [
-        "envacgen_471310033726"
+        "vaxneuvance_539310049125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Envacgen"
+        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
       ]
     },
     "GENERATED_ANSWER": {
@@ -14426,13 +14426,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxneuvance_539310049125_c_0019"
+        "nimenrix_540310196925_c_0056"
       ],
       "doc_ids": [
-        "vaxneuvance_539310049125"
+        "nimenrix_540310196925"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
+        "Hướng dẫn sử dụng Vaccine Nimenrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -14474,13 +14474,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "verorab_300310305824_c_0005"
+        "vaxneuvance_539310049125_c_0035"
       ],
       "doc_ids": [
-        "verorab_300310305824"
+        "vaxneuvance_539310049125"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Verorab"
+        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
       ]
     },
     "GENERATED_ANSWER": {
@@ -14526,13 +14526,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "menquadfi_001310047625_c_0015"
+        "pneumovax_23_001310303524_c_0011"
       ],
       "doc_ids": [
-        "menquadfi_001310047625"
+        "pneumovax_23_001310303524"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Menquadfi"
+        "Hướng dẫn sử dụng Vaccine Pneumovax 23"
       ]
     },
     "GENERATED_ANSWER": {
@@ -14570,13 +14570,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "vaxneuvance_539310049125_c_0035"
+        "envacgen_471310033726_c_0016"
       ],
       "doc_ids": [
-        "vaxneuvance_539310049125"
+        "envacgen_471310033726"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxneuvance"
+        "Hướng dẫn sử dụng Vaccine Envacgen"
       ]
     },
     "GENERATED_ANSWER": {
@@ -14620,13 +14620,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "hexaxim_300310038123_c_0002"
+        "prevenar_13_qlvx_h03_1142_19_c_0091"
       ],
       "doc_ids": [
-        "hexaxim_300310038123"
+        "prevenar_13_qlvx_h03_1142_19"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Hexaxim"
+        "Hướng dẫn sử dụng Vaccine Prevenar 13"
       ]
     },
     "GENERATED_ANSWER": {
@@ -14670,13 +14670,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "pneumovax_23_001310303524_c_0011"
+        "verorab_300310305824_c_0005"
       ],
       "doc_ids": [
-        "pneumovax_23_001310303524"
+        "verorab_300310305824"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Pneumovax 23"
+        "Hướng dẫn sử dụng Vaccine Verorab"
       ]
     },
     "GENERATED_ANSWER": {
@@ -14722,13 +14722,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "nimenrix_540310196925_c_0056"
+        "menquadfi_001310047625_c_0015"
       ],
       "doc_ids": [
-        "nimenrix_540310196925"
+        "menquadfi_001310047625"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Nimenrix"
+        "Hướng dẫn sử dụng Vaccine Menquadfi"
       ]
     },
     "GENERATED_ANSWER": {
@@ -14816,13 +14816,13 @@
       "multi_hop_type": null,
       "query_style": "PATIENT_STYLE",
       "source_chunk_ids": [
-        "prevenar_13_qlvx_h03_1142_19_c_0091"
+        "nimenrix_540310196925_c_0037"
       ],
       "doc_ids": [
-        "prevenar_13_qlvx_h03_1142_19"
+        "nimenrix_540310196925"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 13"
+        "Hướng dẫn sử dụng Vaccine Nimenrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -14868,13 +14868,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "nimenrix_540310196925_c_0085"
+        "prevenar_13_qlvx_h03_1142_19_c_0060"
       ],
       "doc_ids": [
-        "nimenrix_540310196925"
+        "prevenar_13_qlvx_h03_1142_19"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Nimenrix"
+        "Hướng dẫn sử dụng Vaccine Prevenar 13"
       ]
     },
     "GENERATED_ANSWER": {
@@ -14920,13 +14920,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "prevenar_13_qlvx_h03_1142_19_c_0060"
+        "bexsero_800310090123_c_0031"
       ],
       "doc_ids": [
-        "prevenar_13_qlvx_h03_1142_19"
+        "bexsero_800310090123"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Prevenar 13"
+        "Hướng dẫn sử dụng Vaccine Bexsero"
       ]
     },
     "GENERATED_ANSWER": {
@@ -14973,13 +14973,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "vaxigrip_300310033526_c_0046"
+        "gardasil_9_001310178700_c_0026"
       ],
       "doc_ids": [
-        "vaxigrip_300310033526"
+        "gardasil_9_001310178700"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Vaxigrip"
+        "Hướng dẫn sử dụng Vaccine Gardasil 9"
       ]
     },
     "GENERATED_ANSWER": {
@@ -15025,13 +15025,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "varicella_vaccine_gcc_inj_qlvx_1046_17_c_0001"
+        "nimenrix_540310196925_c_0085"
       ],
       "doc_ids": [
-        "varicella_vaccine_gcc_inj_qlvx_1046_17"
+        "nimenrix_540310196925"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Varicella Vaccine-GCC Inj"
+        "Hướng dẫn sử dụng Vaccine Nimenrix"
       ]
     },
     "GENERATED_ANSWER": {
@@ -15079,13 +15079,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "bexsero_800310090123_c_0031"
+        "varicella_vaccine_gcc_inj_qlvx_1046_17_c_0001"
       ],
       "doc_ids": [
-        "bexsero_800310090123"
+        "varicella_vaccine_gcc_inj_qlvx_1046_17"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Bexsero"
+        "Hướng dẫn sử dụng Vaccine Varicella Vaccine-GCC Inj"
       ]
     },
     "GENERATED_ANSWER": {
@@ -15123,13 +15123,13 @@
       "multi_hop_type": null,
       "query_style": "CLINICAL_STYLE",
       "source_chunk_ids": [
-        "gardasil_9_001310178700_c_0026"
+        "vaxigrip_300310033526_c_0046"
       ],
       "doc_ids": [
-        "gardasil_9_001310178700"
+        "vaxigrip_300310033526"
       ],
       "doc_titles": [
-        "Hướng dẫn sử dụng Vaccine Gardasil 9"
+        "Hướng dẫn sử dụng Vaccine Vaxigrip"
       ]
     },
     "GENERATED_ANSWER": {

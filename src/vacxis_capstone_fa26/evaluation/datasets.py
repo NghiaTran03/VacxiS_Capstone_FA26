@@ -38,6 +38,7 @@ class GoldenRecord:
     query: str
     expected_output: str = ""
     context: list[str] = field(default_factory=list)
+    relevant_chunk_ids: list[str] = field(default_factory=list)
     answerability: str = ""
     complexity: str = ""
     query_style: str = ""
@@ -51,6 +52,7 @@ class GoldenRecord:
             "query": self.query,
             "expected_output": self.expected_output,
             "context": self.context,
+            "relevant_chunk_ids": self.relevant_chunk_ids,
             "answerability": self.answerability,
             "complexity": self.complexity,
             "query_style": self.query_style,
@@ -65,6 +67,40 @@ def _pick(d: dict[str, Any], keys: tuple[str, ...], default: str = "") -> str:
         if key in d and d[key] is not None:
             return str(d[key])
     return default
+
+
+def _extract_relevant_chunk_ids(item: dict[str, Any]) -> list[str]:
+    """Extract ground-truth relevant chunk IDs from both deep and flat dataset formats."""
+    extra = item.get("additional_metadata")
+    if isinstance(extra, dict):
+        ids = extra.get("source_chunk_ids") or extra.get("relevant_chunk_ids")
+        if isinstance(ids, list) and ids:
+            return [str(cid).strip() for cid in ids if str(cid).strip()]
+
+    for key in ("source_chunk_ids", "relevant_chunk_ids", "gold_chunk_ids"):
+        ids = item.get(key)
+        if isinstance(ids, list) and ids:
+            return [str(cid).strip() for cid in ids if str(cid).strip()]
+
+    raw_chunks = item.get("RELEVANT_CHUNKS") or item.get("relevant_chunks")
+    if isinstance(raw_chunks, list):
+        ids_from_chunks: list[str] = []
+        for c in raw_chunks:
+            if isinstance(c, dict):
+                cid = c.get("CHUNK_ID", c.get("chunk_id"))
+                score = c.get("RELEVANCE_SCORE", c.get("score"))
+                try:
+                    is_rel = (score is None) or (float(score) > 0)
+                except (ValueError, TypeError):
+                    is_rel = True
+                if cid and is_rel:
+                    ids_from_chunks.append(str(cid).strip())
+            elif isinstance(c, str) and c.strip():
+                ids_from_chunks.append(c.strip())
+        if ids_from_chunks:
+            return ids_from_chunks
+
+    return []
 
 
 def _context_strings(chunks: Any) -> list[str]:
@@ -102,6 +138,7 @@ def to_record(item: dict[str, Any]) -> GoldenRecord:
         query=query,
         expected_output=expected,
         context=context,
+        relevant_chunk_ids=_extract_relevant_chunk_ids(item),
         answerability=_pick(merged, _ANSWERABILITY_KEYS),
         complexity=_pick(merged, _COMPLEXITY_KEYS),
         query_style=_pick(merged, _STYLE_KEYS),
