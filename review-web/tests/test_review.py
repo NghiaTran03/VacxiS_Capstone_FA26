@@ -1,5 +1,6 @@
 """Exercise the review workflow, access boundaries, and benchmark export."""
 
+from collections import Counter
 import json
 import os
 from pathlib import Path
@@ -12,6 +13,7 @@ from fastapi.testclient import TestClient
 
 from app import create_app
 from content import render_chunk
+from sampling import allocate_scientific_batches, compute_fleiss_kappa
 from store import ReviewError, connect, import_dataset, invite
 
 
@@ -442,6 +444,267 @@ class ReviewWorkflow(unittest.TestCase):
         with connect(self.location) as db:
             self.assertEqual(db.one("SELECT consent, full_name FROM reviewers WHERE id = ?", (active["id"],)),
                              {"consent": "withdrawn", "full_name": None})
+
+
+class ScientificReviewWorkflow(unittest.TestCase):
+    def _build_deepeval_dataset(self, count=12):
+        strata = [
+            ("ANSWERABLE", "SINGLE_HOP", "PATIENT_STYLE"),
+            ("ANSWERABLE", "SINGLE_HOP", "CLINICAL_STYLE"),
+            ("ANSWERABLE", "MULTI_HOP", "PATIENT_STYLE"),
+            ("ANSWERABLE", "TABLE_REASONING", "CLINICAL_STYLE"),
+            ("PARTIALLY_ANSWERABLE", "SINGLE_HOP", "PATIENT_STYLE"),
+            ("PARTIALLY_ANSWERABLE", "TABLE_REASONING", "CLINICAL_STYLE"),
+        ]
+        goldens = []
+        for idx in range(count):
+            ans, comp, style = strata[idx % len(strata)]
+            qid = f"eval_{idx + 1:04d}"
+            doc_id = f"doc_{idx + 1:04d}"
+            chunk_id = f"{doc_id}_c_0000"
+            title = f"Tài liệu {idx + 1}"
+            goldens.append({
+                "input": f"Câu hỏi khoa học {idx + 1}",
+                "expected_output": f"Đáp án chuẩn {idx + 1}",
+                "context": [f"[{title} | Mục chính]\n[CHỦ ĐỀ: {title}] > [MỤC: CHỐNG CHỈ ĐỊNH]\nNội dung tham khảo {idx + 1}."],
+                "additional_metadata": {
+                    "query_id": qid,
+                    "answerability": ans,
+                    "complexity": comp,
+                    "multi_hop_type": None,
+                    "query_style": style,
+                    "source_chunk_ids": [chunk_id],
+                    "doc_ids": [doc_id],
+                    "doc_titles": [title],
+                },
+            })
+        return {"metadata": {"total_generated": count, "model": "test-model"}, "goldens": goldens}
+
+    def _setup_app(self, count=12):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.location = str(Path(self.temp.name) / "scientific.sqlite3")
+        dataset_path = Path(self.temp.name) / "eval.json"
+        dataset_path.write_text(json.dumps(self._build_deepeval_dataset(count), ensure_ascii=False), encoding="utf-8")
+        import_dataset(self.location, dataset_path)
+        with patch.dict(os.environ, {"REVIEW_ADMIN_PASSWORD": PASSWORD}, clear=False):
+            self.app = create_app(self.location)
+        self.admin = TestClient(self.app, follow_redirects=False)
+        self.admin.post("/admin/login", data={"csrf": csrf(self.admin.get("/admin/login")), "password": PASSWORD})
+        self.admin_csrf = csrf(self.admin.get("/admin"))
+
+    def _join_experts(self, scope="live"):
+        dashboard = self.admin.get(f"/admin?scope={scope}")
+        setup_op = field(dashboard, "setup_operation")
+        res = self.admin.post("/admin/scientific-setup", data={
+            "csrf": self.admin_csrf, "scope": scope, "setup_operation": setup_op,
+        })
+        self.assertEqual(res.status_code, 200, res.text)
+        tokens = re.findall(r'id="invite-url-[123]" readonly value="[^#]+#([A-Za-z0-9_-]{43})"', res.text)
+        self.assertEqual(len(tokens), 3)
+        clients = {}
+        for slot, token in enumerate(tokens, start=1):
+            client = TestClient(self.app, follow_redirects=False)
+            opened = client.post("/join", data={"csrf": csrf(client.get("/join")), "token": token, "action": "enter"})
+            self.assertEqual(opened.status_code, 200)
+            done = client.post("/join", data={
+                "csrf": csrf(opened), "token": field(opened, "token"), "action": "share",
+                "permission_intent": field(opened, "permission_intent"),
+                "full_name": f"Chuyên gia {slot}", "profession": "doctor", "workplace": "Bệnh viện A",
+            })
+            self.assertEqual(done.status_code, 303)
+            clients[slot] = client
+        return clients
+
+    def test_stratified_300_allocation_and_audit_priority(self):
+        fixed_path = Path(__file__).resolve().parents[2] / "evaluation" / "eval_dataset_300_final_fixed.json"
+        payload = json.loads(fixed_path.read_text(encoding="utf-8"))
+        questions = [{"id": g["additional_metadata"]["query_id"], "original": g} for g in payload["goldens"]]
+        allocations = allocate_scientific_batches(questions, seed=42)
+
+        self.assertEqual(len(allocations), 300)
+        batch_counts = Counter(row["batch_type"] for row in allocations)
+        self.assertEqual(batch_counts, {"calibration": 15, "overlap": 30, "independent": 255})
+
+        indep = [row for row in allocations if row["batch_type"] == "independent"]
+        for slot in (1, 2, 3):
+            mine = [row for row in indep if row["primary_slot"] == slot]
+            self.assertEqual(len(mine), 85)
+            audited = [row for row in mine if row["requires_audit"]]
+            self.assertEqual(len(audited), 15)
+            expected_auditor = (slot % 3) + 1
+            self.assertTrue(all(row["auditor_slot"] == expected_auditor for row in audited))
+            self.assertTrue(all(
+                "PARTIALLY_ANSWERABLE" in row["stratum"] or "TABLE_REASONING" in row["stratum"]
+                for row in audited
+            ))
+
+        self.assertEqual(Counter(row["stratum"] for row in indep if row["primary_slot"] == 1),
+                         Counter(row["stratum"] for row in indep if row["primary_slot"] == 2))
+        self.assertEqual(Counter(row["stratum"] for row in indep if row["primary_slot"] == 1),
+                         Counter(row["stratum"] for row in indep if row["primary_slot"] == 3))
+
+        both_indep = [
+            row for row in indep
+            if row["stratum"].startswith("PARTIALLY_ANSWERABLE|TABLE_REASONING|")
+        ]
+        self.assertEqual(len(both_indep), 15)
+        self.assertTrue(all(row["requires_audit"] == 1 for row in both_indep))
+
+    def test_calibration_and_overlap_fleiss_kappa_and_adjudication(self):
+        self._setup_app(12)
+        experts = self._join_experts("live")
+
+        # Manual invite must be blocked once scientific mode is initialized
+        op = field(self.admin.get("/admin?scope=live"), "operation")
+        blocked = self.admin.post("/admin/invite", data={"csrf": self.admin_csrf, "scope": "live", "count": 1, "operation": op})
+        self.assertEqual(blocked.status_code, 422)
+
+        with connect(self.location) as db:
+            calib = [r["question_id"] for r in db.all("SELECT question_id FROM question_allocations WHERE batch_type = 'calibration'")]
+            overlap = [r["question_id"] for r in db.all("SELECT question_id FROM question_allocations WHERE batch_type = 'overlap'")]
+            self.assertEqual(len(calib), 1)
+            self.assertEqual(len(overlap), 2)
+
+        # Calibration: all 3 agree -> auto-verified
+        qid_c = calib[0]
+        for slot in (1, 2, 3):
+            page = experts[slot].get(f"/review/{qid_c}")
+            chunk_id = re.search(r'name="evidence_id" type="checkbox" value="([^"]+)"', page.text).group(1)
+            resp = experts[slot].post(f"/review/{qid_c}", data={
+                "csrf": csrf(page), "revision": field(page, "revision"), "action": "confirm",
+                "answer": "Thống nhất từ calibration", "answerability": "ANSWERABLE",
+                "evidence_id": chunk_id, "notes": "",
+            })
+            self.assertEqual(resp.status_code, 303)
+
+        with connect(self.location) as db:
+            self.assertEqual(db.one("SELECT status FROM review_items WHERE scope = 'live' AND question_id = ?", (qid_c,))["status"], "verified")
+
+        # Overlap: 1 item agrees, 1 item disagrees -> kappa < 1.0 & flagged for adjudication
+        for idx, qid_o in enumerate(overlap):
+            for slot in (1, 2, 3):
+                page = experts[slot].get(f"/review/{qid_o}")
+                chunk_id = re.search(r'name="evidence_id" type="checkbox" value="([^"]+)"', page.text).group(1)
+                label = "PARTIALLY_ANSWERABLE" if (idx == 1 and slot in (1, 2)) else "ANSWERABLE"
+                resp = experts[slot].post(f"/review/{qid_o}", data={
+                    "csrf": csrf(page), "revision": field(page, "revision"), "action": "confirm",
+                    "answer": f"Đáp án overlap {qid_o}", "answerability": label,
+                    "evidence_id": chunk_id, "notes": "",
+                })
+                self.assertEqual(resp.status_code, 303)
+
+        with connect(self.location) as db:
+            self.assertEqual(db.one("SELECT status FROM review_items WHERE scope = 'live' AND question_id = ?", (overlap[0],))["status"], "verified")
+            disagreed = db.one("SELECT status, revision FROM review_items WHERE scope = 'live' AND question_id = ?", (overlap[1],))
+            self.assertEqual(disagreed["status"], "flagged")
+
+        admin_view = self.admin.get("/admin?scope=live")
+        self.assertIn("Chỉ số Fleiss' Kappa (Gói Overlap)", admin_view.text)
+        self.assertIn("2 / 2", admin_view.text)
+
+        history = self.admin.get(f"/admin/history/live/{overlap[1]}")
+        self.assertIn("Đối chiếu kết quả chuyên gia", history.text)
+        chunk_id_b = re.search(r'name="evidence_id" value="([^"]+)"', history.text).group(1)
+        adj = self.admin.post(f"/admin/adjudicate/live/{overlap[1]}", data={
+            "csrf": self.admin_csrf, "revision": disagreed["revision"],
+            "answer": "Kết quả sau hội đồng thống nhất", "answerability": "PARTIALLY_ANSWERABLE",
+            "evidence_id": chunk_id_b, "notes": "Chốt theo đa số",
+        })
+        self.assertEqual(adj.status_code, 303)
+
+        with connect(self.location) as db:
+            self.assertEqual(db.one("SELECT status FROM review_items WHERE scope = 'live' AND question_id = ?", (overlap[1],))["status"], "verified")
+            # Original expert_reviews in overlap remain untouched for Fleiss' Kappa
+            er_labels = Counter(r["answerability"] for r in db.all(
+                "SELECT answerability FROM expert_reviews WHERE scope = 'live' AND question_id = ? AND role = 'overlap'",
+                (overlap[1],),
+            ))
+            self.assertEqual(er_labels, {"PARTIALLY_ANSWERABLE": 2, "ANSWERABLE": 1})
+
+        # Direct Kappa unit check for perfect agreement
+        kappa_perfect = compute_fleiss_kappa(
+            1,
+            [
+                {"question_id": "q1", "status": "submitted", "answerability": "ANSWERABLE", "evidence_ids": '["c1"]'},
+                {"question_id": "q1", "status": "submitted", "answerability": "ANSWERABLE", "evidence_ids": '["c1"]'},
+                {"question_id": "q1", "status": "submitted", "answerability": "ANSWERABLE", "evidence_ids": '["c1"]'},
+            ],
+            {"q1": ["c1", "c2"]},
+        )
+        self.assertEqual(kappa_perfect["answerability_kappa"], 1.0)
+        self.assertEqual(kappa_perfect["evidence_kappa"], 1.0)
+
+    def test_cross_audit_reject_and_revision_loop(self):
+        self._setup_app(12)
+        experts = self._join_experts("live")
+
+        with connect(self.location) as db:
+            audited = db.one(
+                "SELECT question_id, primary_slot, auditor_slot FROM question_allocations "
+                "WHERE batch_type = 'independent' AND primary_slot = 1 AND requires_audit = 1 LIMIT 1"
+            )
+            self.assertIsNotNone(audited)
+            qid = audited["question_id"]
+            auditor_slot = audited["auditor_slot"]
+
+        # Auditor cannot approve before primary submits
+        auditor_wait = experts[auditor_slot].get(f"/review/{qid}")
+        self.assertIn("chưa", auditor_wait.text.casefold())
+        premature = experts[auditor_slot].post(f"/review/{qid}", data={
+            "csrf": csrf(auditor_wait), "revision": field(auditor_wait, "revision"),
+            "action": "audit_approve", "audit_note": "",
+        })
+        self.assertEqual(premature.status_code, 409)
+
+        # Expert 1 (Primary) submits
+        p1 = experts[1].get(f"/review/{qid}")
+        chunk_id = re.search(r'name="evidence_id" type="checkbox" value="([^"]+)"', p1.text).group(1)
+        submit1 = experts[1].post(f"/review/{qid}", data={
+            "csrf": csrf(p1), "revision": field(p1, "revision"), "action": "confirm",
+            "answer": "Bản nháp sơ bộ của E1", "answerability": "PARTIALLY_ANSWERABLE",
+            "evidence_id": chunk_id, "notes": "",
+        })
+        self.assertEqual(submit1.status_code, 303)
+        self.assertEqual(self.admin.get("/admin/export/live").json()["goldens"], [])
+
+        # Auditor rejects with error note
+        a_page = experts[auditor_slot].get(f"/review/{qid}")
+        self.assertIn("Bản nháp sơ bộ của E1", a_page.text)
+        reject = experts[auditor_slot].post(f"/review/{qid}", data={
+            "csrf": csrf(a_page), "revision": field(a_page, "revision"),
+            "action": "audit_reject", "audit_note": "Thiếu thông tin liều dùng.",
+        })
+        self.assertEqual(reject.status_code, 303)
+
+        # Expert 1 sees warning at queue and question page, then resubmits
+        queue1 = experts[1].get("/review")
+        self.assertIn("bị kiểm định chéo trả lại để sửa", queue1.text)
+        revisit = experts[1].get(f"/review/{qid}")
+        self.assertIn("Thiếu thông tin liều dùng.", revisit.text)
+        submit2 = experts[1].post(f"/review/{qid}", data={
+            "csrf": csrf(revisit), "revision": field(revisit, "revision"), "action": "confirm",
+            "answer": "Bản đã bổ sung đủ liều dùng.", "answerability": "PARTIALLY_ANSWERABLE",
+            "evidence_id": chunk_id, "notes": "Đã bổ sung.",
+        })
+        self.assertEqual(submit2.status_code, 303)
+
+        # Auditor approves the revised submission
+        a_page2 = experts[auditor_slot].get(f"/review/{qid}")
+        self.assertIn("Bản đã bổ sung đủ liều dùng.", a_page2.text)
+        approve = experts[auditor_slot].post(f"/review/{qid}", data={
+            "csrf": csrf(a_page2), "revision": field(a_page2, "revision"),
+            "action": "audit_approve", "audit_note": "Đạt yêu cầu.",
+        })
+        self.assertEqual(approve.status_code, 303)
+
+        exported = self.admin.get("/admin/export/live").json()["goldens"]
+        self.assertEqual(len(exported), 1)
+        meta = exported[0]["additional_metadata"]
+        self.assertEqual(meta["query_id"], qid)
+        self.assertEqual(meta["review_batch"], "independent")
+        self.assertTrue(meta["audited"])
+        self.assertEqual(meta["ANNOTATOR_IDS"], ["Bác sĩ Chuyên gia 1", f"Bác sĩ Chuyên gia {auditor_slot}"])
 
 
 class SourceRendering(unittest.TestCase):

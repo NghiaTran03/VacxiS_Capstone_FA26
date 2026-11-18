@@ -9,7 +9,24 @@ import nh3
 
 from dataset_format import as_golden, context_title
 
-STATUS = {"pending": "Chưa duyệt", "draft": "Đang duyệt", "flagged": "Cần xem lại", "verified": "Đã xác nhận"}
+STATUS = {
+    "pending": "Chưa duyệt",
+    "draft": "Đang duyệt",
+    "flagged": "Cần xem lại",
+    "verified": "Đã xác nhận",
+    "submitted": "Đã nộp",
+    "needs_revision": "Cần sửa lại",
+    "approved": "Đạt kiểm định",
+    "rejected": "Báo lỗi trả lại",
+}
+ADMIN_STATUSES = {"pending": "Chưa duyệt", "draft": "Đang duyệt", "flagged": "Cần xem lại", "verified": "Đã xác nhận"}
+BATCH_LABELS = {
+    "calibration": "Hiệu chỉnh (Calibration)",
+    "overlap": "Đo đồng thuận (Overlap)",
+    "independent": "Chấm độc lập",
+    "primary": "Chấm chính (Primary)",
+    "auditor": "Kiểm định chéo (Audit)",
+}
 ANSWERABILITY = {
     "ANSWERABLE": "Tài liệu trả lời đầy đủ",
     "PARTIALLY_ANSWERABLE": "Tài liệu trả lời một phần",
@@ -107,12 +124,14 @@ def review_fields(row, original, same_answer):
     if not same_answer:
         notes.append(f"Câu trả lời sau chỉnh sửa:\n{row['answer']}")
     annotator = reviewer_label(row) if row["full_name"] else row["reviewer_id"]
-    return {
+    annotators = row.get("annotator_labels") or [annotator]
+    fields = {
         "VERIFIED": True,
-        "ANNOTATOR_IDS": list(dict.fromkeys([*(original.get("ANNOTATOR_IDS") or []), annotator])),
-        "ADJUDICATED": not same_answer or bool(reviewer_note),
+        "ANNOTATOR_IDS": list(dict.fromkeys([*(original.get("ANNOTATOR_IDS") or []), *annotators])),
+        "ADJUDICATED": not same_answer or bool(reviewer_note) or bool(row.get("adjudicated")),
         "VERIFICATION_NOTES": "\n\n".join(notes) or None,
     }
+    return fields
 
 
 def export_golden(row, golden):
@@ -123,6 +142,11 @@ def export_golden(row, golden):
     doc_ids = {identifier.rsplit("_c_", 1)[0] for identifier, _ in selected}
     doc_titles = {context_title(text) for _, text in selected}
     same_answer = remove_citations(golden["expected_output"]) == row["answer"]
+    extra_meta = {}
+    if row.get("review_batch"):
+        extra_meta["review_batch"] = row["review_batch"]
+    if row.get("audited"):
+        extra_meta["audited"] = True
     return dict(golden,
                 expected_output=golden["expected_output"] if same_answer else row["answer"],
                 context=[text for _, text in selected],
@@ -132,6 +156,7 @@ def export_golden(row, golden):
                     "source_chunk_ids": [identifier for identifier, _ in selected],
                     "doc_ids": [doc for doc in metadata["doc_ids"] if doc in doc_ids],
                     "doc_titles": [title for title in metadata["doc_titles"] if title in doc_titles],
+                    **extra_meta,
                     **review_fields(row, metadata, same_answer),
                 })
 

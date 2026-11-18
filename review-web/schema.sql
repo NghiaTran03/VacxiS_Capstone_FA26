@@ -76,3 +76,40 @@ CREATE TABLE IF NOT EXISTS review_events (
     PRIMARY KEY (scope, question_id, revision),
     FOREIGN KEY (scope, question_id) REFERENCES review_items (scope, question_id)
 );
+
+CREATE TABLE IF NOT EXISTS question_allocations (
+    question_id TEXT PRIMARY KEY REFERENCES questions (id),
+    batch_type TEXT NOT NULL CHECK (batch_type IN ('calibration', 'overlap', 'independent')),
+    stratum TEXT NOT NULL,
+    primary_slot INTEGER CHECK (primary_slot IN (1, 2, 3)),
+    auditor_slot INTEGER CHECK (auditor_slot IN (1, 2, 3)),
+    requires_audit INTEGER NOT NULL DEFAULT 0 CHECK (requires_audit IN (0, 1))
+);
+
+CREATE TABLE IF NOT EXISTS expert_slots (
+    scope TEXT NOT NULL CHECK (scope IN ('live', 'test')),
+    slot INTEGER NOT NULL CHECK (slot IN (1, 2, 3)),
+    reviewer_id TEXT NOT NULL UNIQUE REFERENCES reviewers (id),
+    PRIMARY KEY (scope, slot)
+);
+
+CREATE TABLE IF NOT EXISTS expert_reviews (
+    scope TEXT NOT NULL CHECK (scope IN ('live', 'test')),
+    question_id TEXT NOT NULL REFERENCES questions (id),
+    reviewer_id TEXT NOT NULL REFERENCES reviewers (id),
+    role TEXT NOT NULL CHECK (role IN ('calibration', 'overlap', 'primary', 'auditor')),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN (
+        'pending', 'draft', 'flagged', 'submitted', 'needs_revision', 'approved', 'rejected'
+    )),
+    revision INTEGER NOT NULL DEFAULT 0,
+    answer TEXT,
+    answerability TEXT,
+    evidence_ids TEXT,
+    notes TEXT NOT NULL DEFAULT '',
+    review_note TEXT NOT NULL DEFAULT '',
+    updated_at TEXT,
+    PRIMARY KEY (scope, question_id, role, reviewer_id),
+    FOREIGN KEY (scope, question_id) REFERENCES review_items (scope, question_id)
+);
+
+CREATE INDEX IF NOT EXISTS expert_reviews_assignee ON expert_reviews (scope, reviewer_id, status);

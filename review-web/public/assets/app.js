@@ -48,7 +48,7 @@
       copy.hidden = false;
       copy.addEventListener("click", async () => {
         const field = document.getElementById(copy.dataset.copy);
-        const feedback = document.querySelector("[data-copy-feedback]");
+        const feedback = copy.closest(".actions")?.querySelector("[data-copy-feedback]") || document.querySelector("[data-copy-feedback]");
         try {
           await navigator.clipboard.writeText(field.value);
           feedback.textContent = "Đã sao chép.";

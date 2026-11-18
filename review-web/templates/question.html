@@ -8,14 +8,60 @@
 <div class="reading-width stack">
   <p><a href="/review">‹ Danh sách câu hỏi</a></p>
   <section class="panel stack compact">
-    <div class="heading-row"><span class="code">{{ item.question_id }}</span><span class="state state-{{ item.status }}">{{ statuses[item.status] }}</span></div>
+    <div class="heading-row"><span class="code">{{ item.question_id }}{% if audit_ctx.role %} · {{ batch_labels[audit_ctx.role] }}{% endif %}</span><span class="state state-{{ item.status }}">{{ statuses[item.status] }}</span></div>
     <h1>{{ item.query }}</h1>
-    {% if item.status == 'verified' %}<p class="muted">Người xác nhận · {{ reviewer_label(person) }}</p>{% endif %}
+    {% if audit_ctx.is_auditor %}
+      <p class="muted">Người chấm chính: <strong>{{ audit_ctx.primary_reviewer }}</strong>{% if audit_ctx.primary_notes %} · Ghi chú: {{ audit_ctx.primary_notes }}{% endif %}</p>
+      {% if not audit_ctx.primary_ready %}
+        <p class="notice warn">Người chấm chính đang hoàn thiện hoặc sửa lại câu này. Bạn có thể xem trước, nút kiểm định sẽ mở sau khi người chấm chính nộp bản hoàn chỉnh.</p>
+      {% endif %}
+    {% elif audit_ctx.review_note %}
+      <p class="notice warn" role="alert"><strong>Kiểm định chéo yêu cầu sửa lại:</strong> {{ audit_ctx.review_note }}</p>
+    {% elif item.status in ('verified', 'submitted', 'approved') %}
+      <p class="muted">Người xác nhận · {{ reviewer_label(person) }}</p>
+    {% endif %}
   </section>
   <form method="post" action="/review/{{ item.question_id }}" class="stack" data-review-form>
     <input type="hidden" name="csrf" value="{{ csrf }}">
     <input type="hidden" name="revision" value="{{ item.revision }}">
-    <fieldset class="stack review-fields"{% if item.status == 'verified' %} disabled{% endif %}>
+    {% if audit_ctx.is_auditor %}
+      <section class="panel stack">
+        <h2>Bản chấm chính cần kiểm định nhanh</h2>
+        <div class="field">
+          <label>Câu trả lời của người chấm chính</label>
+          <p class="original">{{ values.answer }}</p>
+        </div>
+        <p><strong>Mức độ trả lời:</strong> {{ labels[values.answerability] }}</p>
+        <details class="disclosure"><summary>Xem câu trả lời AI ban đầu</summary><p class="original">{{ original_answer }}</p></details>
+      </section>
+      <section class="panel stack" aria-labelledby="sources-title">
+        <h2 id="sources-title">Đoạn trích trong tài liệu{% if sources %} ({{ sources|length }}){% endif %}</h2>
+        {% for source in sources %}
+          <details class="disclosure source"{% if source.id in values.evidence_ids %} open{% endif %}>
+            <summary id="source-{{ loop.index }}">{{ source_title(source, loop.index, true) }}{% if source.id in values.evidence_ids %} · [Đã chọn làm căn cứ]{% endif %}</summary>
+            <div class="source-content">
+              <p class="code">{{ source.id }}</p>
+              <div class="source-text">{{ source.html }}</div>
+            </div>
+          </details>
+        {% endfor %}
+      </section>
+      <fieldset class="panel stack review-fields"{% if audit_ctx.locked %} disabled{% endif %}>
+        <div class="field">
+          <label for="audit-note">Nhận xét kiểm định (bắt buộc nếu báo lỗi trả lại)</label>
+          <textarea id="audit-note" name="audit_note" rows="3" maxlength="3000">{{ values.audit_note }}</textarea>
+        </div>
+      </fieldset>
+      {% if not audit_ctx.locked %}
+        <div class="actions">
+          <button class="primary" type="submit" name="action" value="audit_approve">Xác nhận đạt chuẩn (Pass)</button>
+          <button type="submit" name="action" value="audit_reject">Có lỗi — Trả lại người chấm chính</button>
+        </div>
+      {% else %}
+        <div><a class="button" href="/review">Về danh sách câu hỏi</a></div>
+      {% endif %}
+    {% else %}
+    <fieldset class="stack review-fields"{% if audit_ctx.locked %} disabled{% endif %}>
       <div class="panel stack">
         <div class="field">
           <label for="answer"><strong>Câu trả lời để duyệt</strong></label>
@@ -65,14 +111,15 @@
         </div>
       </section>
     </fieldset>
-    {% if item.status != 'verified' %}
+    {% if not audit_ctx.locked %}
       <div class="actions">
-        <button class="primary" type="submit" name="action" value="confirm">Xác nhận và sang câu tiếp</button>
+        <button class="primary" type="submit" name="action" value="confirm">{% if audit_ctx.role == 'primary' and audit_ctx.requires_audit %}Xác nhận &amp; gửi kiểm định{% else %}Xác nhận và sang câu tiếp{% endif %}</button>
         <button type="submit" name="action" value="draft">Lưu nháp</button>
         <button type="submit" name="action" value="flag">Đánh dấu cần xem lại</button>
       </div>
     {% else %}
       <div><a class="button" href="/review">Về danh sách câu hỏi</a></div>
+    {% endif %}
     {% endif %}
   </form>
 </div>

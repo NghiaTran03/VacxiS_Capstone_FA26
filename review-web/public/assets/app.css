@@ -95,8 +95,12 @@ input[type="checkbox"] { width: 1.2rem; height: 1.2rem; accent-color: var(--acce
 .question-name { display: block; color: var(--text); font-weight: 650; }
 .state { width: fit-content; padding: .12rem .53rem; border-radius: 6px; font-size: .94rem; font-weight: 650; white-space: nowrap; background: var(--tint); color: var(--accent); }
 .state-pending { color: var(--muted); background: var(--background); }
-.state-verified { color: var(--success); background: var(--success-bg); }
-.state-flagged, .test-notice { color: var(--warn); background: var(--warn-bg); }
+.state-verified, .state-approved { color: var(--success); background: var(--success-bg); }
+.state-submitted { color: var(--accent); background: var(--tint); }
+.state-flagged, .state-needs_revision, .state-rejected, .test-notice, .notice.warn { color: var(--warn); background: var(--warn-bg); }
+.metrics-grid, .compare-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .85rem; }
+.metric-card { border: 1px solid var(--line); border-radius: 8px; padding: .75rem .9rem; display: grid; gap: .3rem; background: var(--background); }
+.metric-value { font-size: 1.35rem; font-weight: 750; }
 .test-notice, .notice { padding: .6rem .85rem; border-radius: 7px; font-weight: 650; }
 .notice, .consent { background: var(--tint); color: var(--text); }
 .notice.error { background: var(--error-bg); color: var(--error); }

@@ -4,7 +4,7 @@
 <article class="reading-width stack">
   <p><a href="/admin?scope={{ scope }}">‹ {{ scopes[scope] }}</a></p>
   <section class="panel stack">
-    <div class="heading-row"><span class="code">{{ item.question_id }}</span><span class="state state-{{ item.status }}">{{ statuses[item.status] }}</span></div>
+    <div class="heading-row"><span class="code">{{ item.question_id }}{% if alloc %} · {{ batch_labels[alloc.batch_type] }}{% endif %}</span><span class="state state-{{ item.status }}">{{ statuses[item.status] }}</span></div>
     <h1>{{ item.query }}</h1>
     {% if item.status in ('draft', 'flagged', 'verified') %}
       <form method="post" action="/admin/reopen" class="stack">
@@ -16,12 +16,63 @@
           {% if item.status in ('flagged', 'verified') %}
             <button type="submit" name="action" value="reopen">Mở lại để người cũ duyệt</button>
           {% endif %}
-          <button type="submit" name="action" value="unassign">Trả về chưa phân công</button>
+          {% if not expert_rows %}
+            <button type="submit" name="action" value="unassign">Trả về chưa phân công</button>
+          {% endif %}
         </div>
-        <p class="muted">Trả câu về danh sách chung sẽ đưa câu về nội dung ban đầu. Bản duyệt vừa làm được giữ trong lịch sử.</p>
+        {% if not expert_rows %}<p class="muted">Trả câu về danh sách chung sẽ đưa câu về nội dung ban đầu. Bản duyệt vừa làm được giữ trong lịch sử.</p>{% endif %}
       </form>
     {% endif %}
   </section>
+  {% if expert_rows %}
+    <section class="panel stack">
+      <h2>Đối chiếu kết quả chuyên gia</h2>
+      <div class="compare-grid">
+        {% for er in expert_rows %}
+          <div class="metric-card">
+            <div class="heading-row"><strong>{% if er.slot %}Expert {{ er.slot }} · {% endif %}{{ batch_labels[er.role] }}</strong><span class="state state-{{ er.status }}">{{ statuses[er.status] }}</span></div>
+            <p class="muted">{{ reviewer_label(er) }}</p>
+            {% if er.answerability %}<p><strong>Nhãn:</strong> {{ labels[er.answerability] }}</p>{% endif %}
+            {% if er.evidence_list %}<p class="code"><strong>Căn cứ:</strong> {{ er.evidence_list|join(', ') }}</p>{% endif %}
+            {% if er.answer %}<p class="original">{{ er.answer }}</p>{% endif %}
+            {% if er.notes %}<p class="muted">Ghi chú: {{ er.notes }}</p>{% endif %}
+            {% if er.review_note %}<p class="muted">Phản hồi kiểm định: {{ er.review_note }}</p>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+  {% if alloc and alloc.batch_type in ('calibration', 'overlap') %}
+    <section class="panel stack">
+      <h2>Chốt kết quả thống nhất (Adjudication)</h2>
+      <p class="muted">Bản chốt cuối dùng cho bộ dữ liệu chuẩn; các bản chấm độc lập của 3 chuyên gia trong gói Overlap vẫn được giữ nguyên để tính Fleiss' Kappa.</p>
+      <form method="post" action="/admin/adjudicate/{{ scope }}/{{ item.question_id }}" class="stack">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="hidden" name="revision" value="{{ item.revision }}">
+        <div class="field">
+          <label for="adj-answer">Câu trả lời thống nhất</label>
+          <textarea id="adj-answer" name="answer" rows="4" maxlength="20000">{{ adj_values.answer }}</textarea>
+        </div>
+        <div class="field">
+          <label for="adj-answerability">Mức độ trả lời</label>
+          <select id="adj-answerability" name="answerability">
+            {% for key, label in labels.items() %}<option value="{{ key }}"{% if adj_values.answerability == key %} selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <fieldset class="review-fields stack">
+          <legend><strong>Đoạn trích căn cứ</strong></legend>
+          {% for source in sources %}
+            <label class="check"><input type="checkbox" name="evidence_id" value="{{ source.id }}"{% if source.id in adj_values.evidence_ids %} checked{% endif %}> {{ source.id }}{% if source.section %} · {{ source.section }}{% endif %}</label>
+          {% endfor %}
+        </fieldset>
+        <div class="field">
+          <label for="adj-notes">Ghi chú thống nhất</label>
+          <textarea id="adj-notes" name="notes" rows="2" maxlength="3000">{{ adj_values.notes }}</textarea>
+        </div>
+        <div><button class="primary" type="submit">Chốt kết quả thống nhất</button></div>
+      </form>
+    </section>
+  {% endif %}
   <section class="panel stack">
     <h2>Lịch sử duyệt</h2>
     {% for entry in events %}

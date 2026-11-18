@@ -11,6 +11,31 @@
 <nav class="actions" aria-label="Chọn lượt duyệt">
   {% for key, label in scopes.items() %}<a class="button{% if key == scope %} primary{% endif %}" href="/admin?scope={{ key }}"{% if key == scope %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
 </nav>
+{% if scientific_invites %}
+  <div class="panel stack consent" data-focus tabindex="-1">
+    <h2>Lời mời 3 chuyên gia đã sẵn sàng</h2>
+    <p>Gửi riêng mã hoặc liên kết tương ứng cho từng chuyên gia. Lời mời có hạn 7 ngày và dùng một lần.</p>
+    <div class="compare-grid">
+      {% for item in scientific_invites %}
+        <div class="metric-card">
+          <strong>Expert {{ item.slot }} · {{ item.reviewer_id }}</strong>
+          <div class="field"><label for="invite-code-{{ item.slot }}">Mã mời</label><input id="invite-code-{{ item.slot }}" class="invite-code" readonly value="{{ item.code }}"></div>
+          <div class="field"><label for="invite-url-{{ item.slot }}">Liên kết mời</label><input id="invite-url-{{ item.slot }}" readonly value="{{ item.url }}"></div>
+          <textarea id="invite-message-{{ item.slot }}" hidden readonly>Nhóm đồ án VacxiS mời anh/chị (Expert {{ item.slot }}) tham gia duyệt bộ câu hỏi. Mở liên kết sau để bắt đầu:
+{{ item.url }}
+
+Hoặc mở {{ public_url }} và nhập mã {{ item.code }}.
+Lời mời dùng một lần, có hạn 7 ngày.</textarea>
+          <div class="actions">
+            <button class="primary" type="button" data-copy="invite-message-{{ item.slot }}" hidden>Sao chép lời mời</button>
+            <button type="button" data-copy="invite-code-{{ item.slot }}" hidden>Sao chép mã</button>
+            <span class="muted" data-copy-feedback role="status"></span>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
 {% if invite_url %}
   <div class="panel stack consent" data-focus tabindex="-1">
     <h2>Lời mời đã sẵn sàng</h2>
@@ -72,6 +97,81 @@ Lời mời dùng một lần, có hạn 7 ngày.</textarea></div>
     {% else %}<p class="muted">Chưa có người được mời.</p>{% endif %}
   </section>
 </div>
+<section class="panel stack" aria-label="Phân công chuẩn khoa học">
+  <h2>Phân công chuẩn khoa học (3 Chuyên gia)</h2>
+  {% if scientific.active %}
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <span class="muted">Gói Calibration (Hiệu chỉnh)</span>
+        <span class="metric-value">{{ scientific.batches.calibration.verified }} / {{ scientific.batches.calibration.total }}</span>
+        <span class="muted">Cần thống nhất: {{ scientific.batches.calibration.flagged }}</span>
+      </div>
+      <div class="metric-card">
+        <span class="muted">Gói Overlap (Đo đồng thuận)</span>
+        <span class="metric-value">{{ scientific.batches.overlap.verified }} / {{ scientific.batches.overlap.total }}</span>
+        <span class="muted">Cần thống nhất: {{ scientific.batches.overlap.flagged }}</span>
+      </div>
+      <div class="metric-card">
+        <span class="muted">Gói Độc lập (85 × 3)</span>
+        <span class="metric-value">{{ scientific.batches.independent.verified }} / {{ scientific.batches.independent.total }}</span>
+        <span class="muted">Đang xử lý/lỗi: {{ scientific.batches.independent.flagged }}</span>
+      </div>
+      <div class="metric-card">
+        <span class="muted">Kiểm định chéo (15 × 3)</span>
+        <span class="metric-value">{{ scientific.batches.audit.verified }} / {{ scientific.batches.audit.total }}</span>
+        <span class="muted">Trả lại sửa: {{ scientific.batches.audit.flagged }}</span>
+      </div>
+    </div>
+    <h3>Tiến độ từng chuyên gia</h3>
+    <div class="compare-grid">
+      {% for slot in scientific.slots %}
+        <div class="metric-card">
+          <strong>Expert {{ slot.slot }} · {{ reviewer_label(slot) }}</strong>
+          <span class="muted">Calibration: {{ slot.counts.calibration.done }} / {{ slot.counts.calibration.total }}</span>
+          <span class="muted">Overlap: {{ slot.counts.overlap.done }} / {{ slot.counts.overlap.total }}</span>
+          <span class="muted">Chấm chính: {{ slot.counts.primary.done }} / {{ slot.counts.primary.total }}{% if slot.counts.primary.needs_revision %} (Cần sửa: {{ slot.counts.primary.needs_revision }}){% endif %}</span>
+          <span class="muted">Audit: {{ slot.counts.auditor.done }} / {{ slot.counts.auditor.total }} (Sẵn sàng: {{ slot.counts.auditor.ready }})</span>
+        </div>
+      {% endfor %}
+    </div>
+    {% if scientific.kappa %}
+      <h3>Chỉ số Fleiss' Kappa (Gói Overlap)</h3>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <span class="muted">Số câu 3 người đã nộp</span>
+          <span class="metric-value">{{ scientific.kappa.completed }} / {{ scientific.kappa.total }}</span>
+        </div>
+        <div class="metric-card">
+          <span class="muted">Fleiss' Kappa (Answerability)</span>
+          <span class="metric-value">{{ '%.4f'|format(scientific.kappa.answerability_kappa) if scientific.kappa.answerability_kappa is not none else '—' }}</span>
+          <span class="muted">{{ scientific.kappa.answerability_level }}</span>
+        </div>
+        <div class="metric-card">
+          <span class="muted">Fleiss' Kappa (Evidence Chunks)</span>
+          <span class="metric-value">{{ '%.4f'|format(scientific.kappa.evidence_kappa) if scientific.kappa.evidence_kappa is not none else '—' }}</span>
+          <span class="muted">{{ scientific.kappa.evidence_level }}</span>
+        </div>
+        <div class="metric-card">
+          <span class="muted">Đồng thuận tuyệt đối &amp; Jaccard</span>
+          <span class="metric-value">{{ '%.1f%%'|format(scientific.kappa.answerability_exact_rate * 100) if scientific.kappa.answerability_exact_rate is not none else '—' }}</span>
+          <span class="muted">Evidence exact: {{ '%.1f%%'|format(scientific.kappa.evidence_exact_rate * 100) if scientific.kappa.evidence_exact_rate is not none else '—' }} · Jaccard: {{ '%.3f'|format(scientific.kappa.mean_jaccard) if scientific.kappa.mean_jaccard is not none else '—' }}</span>
+        </div>
+      </div>
+    {% endif %}
+  {% elif available == total and scientific.preview %}
+    <p class="muted">Phân tầng tự động: {{ scientific.preview.by_batch.calibration }} câu Calibration + {{ scientific.preview.by_batch.overlap }} câu Overlap + {{ scientific.preview.by_slot[1].primary }} câu Độc lập/người ({{ scientific.preview.by_slot[1].audit }} câu Audit/người ưu tiên PARTIALLY_ANSWERABLE &amp; TABLE_REASONING).</p>
+    <form action="/admin/scientific-setup" method="post" class="actions">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="hidden" name="setup_operation" value="{{ setup_operation }}">
+      <input type="hidden" name="scope" value="{{ scope }}">
+      <button class="primary" type="submit">Khởi tạo 3 gói cho Expert 1, 2, 3</button>
+    </form>
+  {% elif available < total %}
+    <p class="muted">Lượt duyệt đã có phân công thủ công nên không thể bật chế độ 3 chuyên gia.</p>
+  {% else %}
+    <p class="muted">Cần ít nhất 5 câu hỏi để khởi tạo chế độ 3 chuyên gia.</p>
+  {% endif %}
+</section>
 {% if scope == 'live' and people %}
   <details class="disclosure panel">
     <summary>Hồ sơ người duyệt</summary>
@@ -87,14 +187,23 @@ Lời mời dùng một lần, có hạn 7 ngày.</textarea></div>
     <input type="hidden" name="scope" value="{{ scope }}">
     <div class="field"><label for="admin-status">Lọc theo trạng thái</label><select id="admin-status" name="status">
       <option value="">Tất cả</option>
-      {% for key, label in statuses.items() %}<option value="{{ key }}"{% if key == status %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      {% for key, label in admin_statuses.items() %}<option value="{{ key }}"{% if key == status %} selected{% endif %}>{{ label }}</option>{% endfor %}
     </select></div>
+    {% if scientific.active %}
+      <div class="field"><label for="admin-batch">Gói câu hỏi</label><select id="admin-batch" name="batch">
+        <option value="">Tất cả gói</option>
+        <option value="calibration"{% if batch == 'calibration' %} selected{% endif %}>Calibration</option>
+        <option value="overlap"{% if batch == 'overlap' %} selected{% endif %}>Overlap</option>
+        <option value="independent"{% if batch == 'independent' %} selected{% endif %}>Độc lập (Independent)</option>
+        <option value="audit"{% if batch == 'audit' %} selected{% endif %}>Có Audit chéo</option>
+      </select></div>
+    {% endif %}
     <button type="submit">Áp dụng</button>
   </form>
   <ul class="question-list panel">
     {% for row in rows %}
       <li><a href="/admin/history/{{ scope }}/{{ row.question_id }}">
-        <span><span class="code">{{ row.question_id }}</span><span class="question-name">{{ row.query }}</span><span class="muted">{{ reviewer_label(row) if row.reviewer_id else 'Chưa phân công' }}</span></span>
+        <span><span class="code">{{ row.question_id }}{% if row.batch_type %} · {{ row.batch_type|upper }}{% if row.primary_slot %} (E{{ row.primary_slot }}{% if row.requires_audit %} → Audit E{{ row.auditor_slot }}{% endif %}){% endif %}{% endif %}</span><span class="question-name">{{ row.query }}</span><span class="muted">{{ reviewer_label(row) if row.reviewer_id else 'Chưa phân công' }}</span></span>
         <span class="state state-{{ row.status }}">{{ statuses[row.status] }}</span>
       </a></li>
     {% else %}<li class="empty">Không có câu phù hợp.</li>{% endfor %}

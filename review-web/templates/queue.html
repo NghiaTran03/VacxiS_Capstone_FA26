@@ -3,18 +3,42 @@
 {% block content %}
 <div class="heading-row">
   <div class="stack compact">
-    <h1>Câu hỏi được giao</h1>
-    <p class="muted">Đã xác nhận <strong>{{ done }} / {{ total }}</strong> câu</p>
+    <h1>Câu hỏi được giao{% if expert_summary %} · Expert {{ expert_summary.slot }}{% endif %}</h1>
+    <p class="muted">Đã hoàn thành <strong>{{ done }} / {{ total }}</strong> lượt</p>
   </div>
   {% if next_row %}<a class="button primary" href="/review/{{ next_row.question_id }}">Duyệt tiếp</a>{% endif %}
 </div>
+{% if expert_summary %}
+  {% if expert_summary.needs_revision %}
+    <p class="notice warn" role="alert">Bạn có <strong>{{ expert_summary.needs_revision }}</strong> câu bị kiểm định chéo trả lại để sửa. Vui lòng kiểm tra trước.</p>
+  {% endif %}
+  <div class="metrics-grid">
+    <div class="metric-card"><span class="muted">1. Hiệu chỉnh (Calibration)</span><span class="metric-value">{{ expert_summary.calibration.done }} / {{ expert_summary.calibration.total }}</span></div>
+    <div class="metric-card"><span class="muted">2. Đo đồng thuận (Overlap)</span><span class="metric-value">{{ expert_summary.overlap.done }} / {{ expert_summary.overlap.total }}</span></div>
+    <div class="metric-card"><span class="muted">3. Chấm chính (Primary)</span><span class="metric-value">{{ expert_summary.primary.done }} / {{ expert_summary.primary.total }}</span></div>
+    <div class="metric-card"><span class="muted">4. Kiểm định chéo (Audit)</span><span class="metric-value">{{ expert_summary.auditor.done }} / {{ expert_summary.auditor.total }}</span><span class="muted">Sẵn sàng kiểm định: {{ expert_summary.auditor.ready }}</span></div>
+  </div>
+{% endif %}
 <form method="get" action="/review" class="filter-row panel">
   <div class="field"><label for="search">Tìm câu hỏi</label><input id="search" name="q" type="search" value="{{ search }}" maxlength="120"></div>
+  {% if expert_summary %}
+    <div class="field">
+      <label for="filter-role">Gói công việc</label>
+      <select id="filter-role" name="role">
+        <option value="">Tất cả gói</option>
+        <option value="needs_revision"{% if role == 'needs_revision' %} selected{% endif %}>Cần sửa lại</option>
+        <option value="calibration"{% if role == 'calibration' %} selected{% endif %}>Hiệu chỉnh (Calibration)</option>
+        <option value="overlap"{% if role == 'overlap' %} selected{% endif %}>Đo đồng thuận (Overlap)</option>
+        <option value="primary"{% if role == 'primary' %} selected{% endif %}>Chấm chính (Primary)</option>
+        <option value="auditor"{% if role == 'auditor' %} selected{% endif %}>Kiểm định chéo (Audit)</option>
+      </select>
+    </div>
+  {% endif %}
   <div class="field">
     <label for="filter-status">Trạng thái</label>
     <select id="filter-status" name="status">
       <option value="">Tất cả</option>
-      {% for value, label in statuses.items() %}<option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      {% for value, label in (statuses if expert_summary else admin_statuses).items() %}<option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
     </select>
   </div>
   <button type="submit">Áp dụng</button>
@@ -22,8 +46,8 @@
 <ul class="question-list panel" aria-label="Danh sách câu hỏi">
   {% for row in rows %}
     <li><a href="/review/{{ row.question_id }}">
-      <span><span class="code">{{ row.question_id }}</span><span class="question-name">{{ row.query }}</span></span>
-      <span class="state state-{{ row.status }}">{{ statuses[row.status] }}</span>
+      <span><span class="code">{{ row.question_id }}{% if row.role %} · {{ batch_labels[row.role] }}{% endif %}</span><span class="question-name">{{ row.query }}</span></span>
+      <span class="state state-{{ row.status }}">{% if row.role == 'auditor' and not row.audit_ready and row.status == 'pending' %}Chờ người chấm chính{% else %}{{ statuses[row.status] }}{% endif %}</span>
     </a></li>
   {% else %}<li class="empty">Không có câu phù hợp.</li>{% endfor %}
 </ul>

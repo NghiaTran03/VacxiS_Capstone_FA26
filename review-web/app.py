@@ -18,12 +18,16 @@ from itsdangerous import URLSafeSerializer
 from starlette.datastructures import FormData
 from starlette.middleware.sessions import SessionMiddleware
 
-from content import ANSWERABILITY, PROFESSIONS, STATUS, export_record, remove_citations, render_chunk, review_content, reviewer_label
+from content import (
+    ADMIN_STATUSES, ANSWERABILITY, BATCH_LABELS, PROFESSIONS, STATUS,
+    export_record, remove_citations, render_chunk, review_content, reviewer_label,
+)
 from dataset_format import as_golden, is_golden
 from store import (
-    BASE_DIR, CONSENT_VERSION, SCOPES, ReviewConflict, ReviewError, accept_invite, connect, database_location, digest,
-    invite, invited_reviewer, issue_link,
-    release_unstarted, reopen, reserve_operation, save_review, timestamp, update_profile,
+    BASE_DIR, CONSENT_VERSION, SCOPES, ReviewConflict, ReviewError, accept_invite, adjudicate_item,
+    connect, database_location, digest, expert_slot_for, invite, invited_reviewer, issue_link,
+    release_unstarted, reopen, reserve_operation, save_expert_review, save_review,
+    scientific_dashboard_data, setup_scientific_review, submit_audit_decision, timestamp, update_profile,
 )
 
 
@@ -123,18 +127,59 @@ def require_admin(request):
         raise HTTPException(403, "Trang này dành cho nhóm đồ án.")
 
 
-def get_item(db, person, identifier):
-    item = db.one(
-        "SELECT r.*, q.query, q.original FROM review_items r JOIN questions q ON r.question_id = q.id "
-        "WHERE r.scope = ? AND r.reviewer_id = ? AND r.question_id = ?",
+def get_item(db, person, identifier, *, lock=False):
+    slot = expert_slot_for(db, person["id"])
+    select = db.locked if lock else db.one
+    if not slot:
+        item = select(
+            "SELECT r.*, q.query, q.original FROM review_items r JOIN questions q ON r.question_id = q.id "
+            "WHERE r.scope = ? AND r.reviewer_id = ? AND r.question_id = ?",
+            (person["scope"], person["id"], identifier),
+        )
+        if not item:
+            raise HTTPException(404, "Câu hỏi này chưa được giao cho bạn.")
+        return item, None
+
+    erow = select(
+        "SELECT * FROM expert_reviews WHERE scope = ? AND reviewer_id = ? AND question_id = ?",
         (person["scope"], person["id"], identifier),
     )
-    if not item:
+    if not erow:
         raise HTTPException(404, "Câu hỏi này chưa được giao cho bạn.")
-    return item
+    item = select(
+        "SELECT r.*, q.query, q.original FROM review_items r JOIN questions q ON r.question_id = q.id "
+        "WHERE r.scope = ? AND r.question_id = ?",
+        (person["scope"], identifier),
+    )
+    alloc = db.one("SELECT * FROM question_allocations WHERE question_id = ?", (identifier,))
+    primary_row = None
+    if erow["role"] == "auditor":
+        primary_row = db.one(
+            "SELECT er.*, u.full_name, u.profession, u.consent, u.consent_version FROM expert_reviews er "
+            "JOIN reviewers u ON u.id = er.reviewer_id "
+            "WHERE er.scope = ? AND er.question_id = ? AND er.role = 'primary'",
+            (person["scope"], identifier),
+        )
+    return item, {"slot": slot, "erow": erow, "alloc": alloc, "primary": primary_row}
 
 
 def next_item(db, person, excluded=""):
+    if expert_slot_for(db, person["id"]):
+        return db.one(
+            "SELECT er.question_id FROM expert_reviews er JOIN questions q ON er.question_id = q.id "
+            "LEFT JOIN expert_reviews pr ON pr.scope = er.scope AND pr.question_id = er.question_id AND pr.role = 'primary' "
+            "WHERE er.scope = ? AND er.reviewer_id = ? AND er.question_id <> ? AND ("
+            "  (er.role = 'primary' AND er.status = 'needs_revision')"
+            "  OR (er.role IN ('calibration', 'overlap', 'primary') AND er.status IN ('draft', 'pending'))"
+            "  OR (er.role = 'auditor' AND er.status IN ('draft', 'pending') AND pr.status = 'submitted')"
+            ") ORDER BY "
+            "  CASE WHEN er.role = 'primary' AND er.status = 'needs_revision' THEN 0 "
+            "       WHEN er.role = 'calibration' THEN 1 "
+            "       WHEN er.role = 'overlap' THEN 2 "
+            "       WHEN er.role = 'primary' THEN 3 ELSE 4 END, "
+            "  CASE WHEN er.status = 'draft' THEN 0 ELSE 1 END, q.position LIMIT 1",
+            (person["scope"], person["id"], excluded),
+        )
     return db.one(
         "SELECT r.question_id FROM review_items r JOIN questions q ON r.question_id = q.id "
         "WHERE r.scope = ? AND r.reviewer_id = ? AND r.question_id <> ? AND r.status IN ('draft', 'pending') "
@@ -173,7 +218,8 @@ def create_app(location=None):
     def page(request, name, *, code=200, **context):
         return templates.TemplateResponse(request=request, name=f"{name}.html", status_code=code, context={
             "csrf": request.session.setdefault("csrf", secrets.token_urlsafe(32)),
-            "admin": is_admin(request), "statuses": STATUS, "scopes": SCOPES, "professions": PROFESSIONS,
+            "admin": is_admin(request), "statuses": STATUS, "admin_statuses": ADMIN_STATUSES,
+            "batch_labels": BATCH_LABELS, "scopes": SCOPES, "professions": PROFESSIONS,
             "labels": ANSWERABILITY, "reviewer_label": reviewer_label,
             "signed_in": bool(request.session.get("reviewer_id")) or is_admin(request),
             "consent_version": CONSENT_VERSION, **context,
@@ -296,23 +342,86 @@ def create_app(location=None):
         request.session.clear()
         return redirect("/")
 
+    def _parse_submission(form, original_json, *, require_content=True):
+        answer = remove_citations(str(form.get("answer", "")))
+        notes = str(form.get("notes", "")).strip()
+        label = form.get("answerability")
+        if len(answer) > 20000 or len(notes) > 3000 or label not in ANSWERABILITY:
+            raise ReviewError("Kiểm tra độ dài câu trả lời, ghi chú và mức độ tài liệu trả lời được.")
+        choices = set(form.getlist("evidence_id"))
+        _, _, sources = review_content(json.loads(original_json))
+        selected = [chunk["CHUNK_ID"] for chunk in sources if chunk["CHUNK_ID"] in choices]
+        if label == "UNANSWERABLE":
+            selected = []
+        if require_content and (not answer or (label != "UNANSWERABLE" and not selected)):
+            raise ReviewError("Hãy điền câu trả lời và chọn đoạn làm căn cứ nếu tài liệu trả lời được.")
+        return answer, label, selected, notes
+
     @app.get("/review")
-    def review_list(request: Request, status: str = "", q: str = ""):
+    def review_list(request: Request, status: str = "", q: str = "", role: str = ""):
         with connect(location) as db:
             person = require_reviewer(db, request)
             if needs_profile(person):
                 return redirect(REVIEW_START)
-            rows = db.all(
-                "SELECT r.question_id, r.status, q.query FROM review_items r JOIN questions q ON q.id = r.question_id "
-                "WHERE r.scope = ? AND r.reviewer_id = ? ORDER BY q.position",
-                (person["scope"], person["id"]),
-            )
-            next_row = next_item(db, person)
+            slot = expert_slot_for(db, person["id"])
+            if not slot:
+                rows = db.all(
+                    "SELECT r.question_id, r.status, q.query FROM review_items r JOIN questions q ON q.id = r.question_id "
+                    "WHERE r.scope = ? AND r.reviewer_id = ? ORDER BY q.position",
+                    (person["scope"], person["id"]),
+                )
+                next_row = next_item(db, person)
+                expert_summary = None
+            else:
+                rows = db.all(
+                    "SELECT er.question_id, er.status, er.role, er.review_note, q.query, "
+                    "pr.status AS primary_status "
+                    "FROM expert_reviews er JOIN questions q ON q.id = er.question_id "
+                    "LEFT JOIN expert_reviews pr ON pr.scope = er.scope AND pr.question_id = er.question_id "
+                    "AND pr.role = 'primary' "
+                    "WHERE er.scope = ? AND er.reviewer_id = ? "
+                    "ORDER BY CASE WHEN er.status = 'needs_revision' THEN 0 ELSE 1 END, "
+                    "CASE WHEN er.role = 'calibration' THEN 1 WHEN er.role = 'overlap' THEN 2 "
+                    "WHEN er.role = 'primary' THEN 3 ELSE 4 END, q.position",
+                    (person["scope"], person["id"]),
+                )
+                for r in rows:
+                    r["audit_ready"] = (r["role"] != "auditor") or (r["primary_status"] == "submitted")
+                expert_summary = {
+                    "slot": slot["slot"],
+                    "needs_revision": sum(1 for r in rows if r["status"] == "needs_revision"),
+                    "calibration": {
+                        "total": sum(1 for r in rows if r["role"] == "calibration"),
+                        "done": sum(1 for r in rows if r["role"] == "calibration" and r["status"] == "submitted"),
+                    },
+                    "overlap": {
+                        "total": sum(1 for r in rows if r["role"] == "overlap"),
+                        "done": sum(1 for r in rows if r["role"] == "overlap" and r["status"] == "submitted"),
+                    },
+                    "primary": {
+                        "total": sum(1 for r in rows if r["role"] == "primary"),
+                        "done": sum(1 for r in rows if r["role"] == "primary" and r["status"] == "submitted"),
+                    },
+                    "auditor": {
+                        "total": sum(1 for r in rows if r["role"] == "auditor"),
+                        "done": sum(1 for r in rows if r["role"] == "auditor" and r["status"] == "approved"),
+                        "ready": sum(1 for r in rows if r["role"] == "auditor" and r["audit_ready"] and r["status"] in ("pending", "draft")),
+                    },
+                }
+                next_row = next_item(db, person)
         search = q.strip()[:120].casefold()
-        filtered = [row for row in rows if (not status or row["status"] == status)
-                    and (search in row["query"].casefold() or search in row["question_id"].casefold())]
+        filtered = [
+            row for row in rows
+            if (not status or row["status"] == status)
+            and (not role or (role == "needs_revision" and row["status"] == "needs_revision") or row.get("role") == role)
+            and (search in row["query"].casefold() or search in row["question_id"].casefold())
+        ]
+        done = (
+            sum(row["status"] in ("submitted", "approved") for row in rows)
+            if slot else sum(row["status"] == "verified" for row in rows)
+        )
         return page(request, "queue", person=person, rows=filtered, total=len(rows),
-                    done=sum(row["status"] == "verified" for row in rows), next_row=next_row,
+                    done=done, next_row=next_row, expert_summary=expert_summary, role=role,
                     status=status, search=q[:120], message=request.session.pop("message", ""))
 
     @app.get(REVIEW_START)
@@ -335,19 +444,54 @@ def create_app(location=None):
                                    code=409 if isinstance(error, ReviewConflict) else 422)
         return redirect(f"/review/{following['question_id']}" if following else "/review")
 
-    def question_page(request, person, item, *, form=None, error=None, code=200):
+    def question_page(request, person, item, expert_ctx=None, *, form=None, error=None, code=200):
         original = json.loads(item["original"])
         reference, original_label, sources = review_content(original)
         reference = remove_citations(reference)
-        answer = item["answer"] if item["answer"] is not None else reference
-        label = item["answerability"] or original_label
-        selected = json.loads(item["evidence_ids"]) if item["evidence_ids"] is not None else [c["CHUNK_ID"] for c in sources]
-        values = {"answer": answer, "answerability": label, "evidence_ids": selected, "notes": item["notes"]}
+        if expert_ctx:
+            erow = expert_ctx["erow"]
+            is_auditor = erow["role"] == "auditor"
+            source_row = expert_ctx["primary"] if is_auditor else erow
+            answer = source_row["answer"] if source_row["answer"] is not None else reference
+            label = source_row["answerability"] or original_label
+            selected = json.loads(source_row["evidence_ids"]) if source_row["evidence_ids"] is not None else [c["CHUNK_ID"] for c in sources]
+            notes = erow["notes"]
+            locked = (
+                (erow["status"] in ("approved", "rejected") or expert_ctx["primary"]["status"] != "submitted")
+                if is_auditor else (erow["status"] in ("submitted", "approved"))
+            )
+            view_item = dict(item, status=erow["status"], revision=erow["revision"])
+            audit_ctx = {
+                "slot": expert_ctx["slot"]["slot"],
+                "role": erow["role"],
+                "batch_type": expert_ctx["alloc"]["batch_type"],
+                "stratum": expert_ctx["alloc"]["stratum"],
+                "requires_audit": expert_ctx["alloc"]["requires_audit"],
+                "review_note": erow["review_note"],
+                "locked": locked,
+                "is_auditor": is_auditor,
+                "primary_ready": expert_ctx["primary"]["status"] == "submitted" if is_auditor else True,
+                "primary_notes": expert_ctx["primary"]["notes"] if is_auditor else "",
+                "primary_reviewer": (
+                    reviewer_label(expert_ctx["primary"])
+                    if (is_auditor and expert_ctx["primary"].get("consent") == "accepted"
+                        and (expert_ctx["primary"].get("consent_version") or 0) >= CONSENT_VERSION)
+                    else (f"Người duyệt {expert_ctx['primary']['reviewer_id']}" if is_auditor else "")
+                ),
+            }
+        else:
+            answer = item["answer"] if item["answer"] is not None else reference
+            label = item["answerability"] or original_label
+            selected = json.loads(item["evidence_ids"]) if item["evidence_ids"] is not None else [c["CHUNK_ID"] for c in sources]
+            notes = item["notes"]
+            view_item = dict(item)
+            audit_ctx = {"locked": item["status"] == "verified", "is_auditor": False}
+        values = {"answer": answer, "answerability": label, "evidence_ids": selected, "notes": notes, "audit_note": notes}
         if form is not None:
-            values = {field: str(form.get(field, "")) for field in ("answer", "answerability", "notes")}
+            values = {field: str(form.get(field, "")) for field in ("answer", "answerability", "notes", "audit_note")}
             values["evidence_ids"] = form.getlist("evidence_id")
-        return page(request, "question", person=person, item=item, values=values,
-                    original_answer=reference,
+        return page(request, "question", person=person, item=view_item, values=values,
+                    audit_ctx=audit_ctx, original_answer=reference,
                     sources=[render_chunk(chunk) for chunk in sources], error=error, code=code,
                     message=request.session.pop("message", ""))
 
@@ -355,52 +499,68 @@ def create_app(location=None):
     def question(request: Request, identifier: str):
         with connect(location) as db:
             person = require_reviewer(db, request)
-            item = get_item(db, person, identifier)
+            item, expert_ctx = get_item(db, person, identifier)
             if needs_profile(person):
                 return redirect(REVIEW_START)
-        return question_page(request, person, item)
+        return question_page(request, person, item, expert_ctx)
 
     @app.post("/review/{identifier}")
     def review_save(request: Request, identifier: str, form: PostForm):
         action = form.get("action")
+        expert_ctx = None
         try:
             with connect(location, write=True) as db:
                 person = require_reviewer(db, request, lock=True)
-                item = get_item(db, person, identifier)
+                item, expert_ctx = get_item(db, person, identifier, lock=True)
                 if needs_profile(person):
                     return redirect(REVIEW_START)
                 revision = integer(form.get("revision"), "Tải lại trang trước khi lưu.")
-                if item["revision"] != revision or item["status"] == "verified":
-                    raise ReviewConflict("Câu này vừa được cập nhật. Hãy mở lại để xem bản mới.")
-                actions = {"draft": "draft", "flag": "flagged", "confirm": "verified"}
-                if action not in actions:
-                    raise ReviewError("Hãy chọn một thao tác duyệt.")
-                status = actions[action]
-                answer = remove_citations(str(form.get("answer", "")))
-                notes = str(form.get("notes", "")).strip()
-                label = form.get("answerability")
-                if len(answer) > 20000 or len(notes) > 3000 or label not in ANSWERABILITY:
-                    raise ReviewError("Kiểm tra độ dài câu trả lời, ghi chú và mức độ tài liệu trả lời được.")
-                choices = set(form.getlist("evidence_id"))
-                original = json.loads(item["original"])
-                _, _, sources = review_content(original)
-                selected = [chunk["CHUNK_ID"] for chunk in sources if chunk["CHUNK_ID"] in choices]
-                if label == "UNANSWERABLE":
-                    selected = []
-                if status == "flagged" and not notes:
-                    raise ReviewError("Hãy ghi lý do cần xem lại.")
-                if status == "verified" and (not answer or (label != "UNANSWERABLE" and not selected)):
-                    raise ReviewError("Hãy điền câu trả lời và chọn đoạn làm căn cứ nếu tài liệu trả lời được.")
-                save_review(db, item, person["id"], revision, status, answer, label, selected, notes)
-                following = next_item(db, person, identifier) if status == "verified" else None
+                if expert_ctx and expert_ctx["erow"]["role"] == "auditor":
+                    if action not in ("audit_approve", "audit_reject"):
+                        raise ReviewError("Hãy chọn thao tác kiểm định chéo.")
+                    decision = "approve" if action == "audit_approve" else "reject"
+                    submit_audit_decision(db, item, expert_ctx["erow"], person["id"], revision, decision,
+                                          str(form.get("audit_note", "")))
+                    status = "approved" if decision == "approve" else "rejected"
+                    following = next_item(db, person, identifier)
+                elif expert_ctx:
+                    erow = expert_ctx["erow"]
+                    actions = {"draft": "draft", "flag": "flagged", "confirm": "submitted"}
+                    if action not in actions:
+                        raise ReviewError("Hãy chọn một thao tác duyệt.")
+                    status = actions[action]
+                    answer, label, selected, notes = _parse_submission(
+                        form, item["original"], require_content=(status == "submitted"),
+                    )
+                    if status == "flagged" and not notes:
+                        raise ReviewError("Hãy ghi lý do cần xem lại.")
+                    save_expert_review(db, item, erow, expert_ctx["alloc"], person["id"], revision,
+                                       status, answer, label, selected, notes)
+                    following = next_item(db, person, identifier) if status == "submitted" else None
+                else:
+                    if item["revision"] != revision or item["status"] == "verified":
+                        raise ReviewConflict("Câu này vừa được cập nhật. Hãy mở lại để xem bản mới.")
+                    actions = {"draft": "draft", "flag": "flagged", "confirm": "verified"}
+                    if action not in actions:
+                        raise ReviewError("Hãy chọn một thao tác duyệt.")
+                    status = actions[action]
+                    answer, label, selected, notes = _parse_submission(
+                        form, item["original"], require_content=(status == "verified"),
+                    )
+                    if status == "flagged" and not notes:
+                        raise ReviewError("Hãy ghi lý do cần xem lại.")
+                    save_review(db, item, person["id"], revision, status, answer, label, selected, notes)
+                    following = next_item(db, person, identifier) if status == "verified" else None
         except ReviewConflict as error:
-            return question_page(request, person, item, error=str(error), code=409)
+            with connect(location) as db:
+                item, expert_ctx = get_item(db, person, identifier)
+            return question_page(request, person, item, expert_ctx, error=str(error), code=409)
         except ReviewError as error:
-            return question_page(request, person, item, form=form, error=str(error), code=422)
+            return question_page(request, person, item, expert_ctx, form=form, error=str(error), code=422)
         request.session["message"] = f"{STATUS[status]} · {identifier}"
         if following:
             return redirect(f"/review/{following['question_id']}")
-        return redirect("/review" if status == "verified" else f"/review/{identifier}")
+        return redirect("/review" if status in ("verified", "submitted", "approved", "rejected") else f"/review/{identifier}")
 
     @app.get("/quyen-rieng-tu")
     def privacy(request: Request):
@@ -459,34 +619,68 @@ def create_app(location=None):
         request.session["message"] = "Đã gửi đề xuất cho nhóm đồ án."
         return redirect("/review")
 
-    def admin_page(request, scope, *, status="", invitation=None, error=None):
+    def admin_page(request, scope, *, status="", batch="", invitation=None, scientific_invites=None, error=None):
         with connect(location) as db:
             rows = db.all(
                 "SELECT r.question_id, r.status, r.revision, r.reviewer_id, r.verified_at, q.query, "
-                "u.id, u.full_name, u.profession FROM review_items r JOIN questions q ON q.id = r.question_id "
-                "LEFT JOIN reviewers u ON u.id = r.reviewer_id WHERE r.scope = ? ORDER BY q.position", (scope,),
+                "u.id, u.full_name, u.profession, qa.batch_type, qa.primary_slot, qa.auditor_slot, qa.requires_audit "
+                "FROM review_items r JOIN questions q ON q.id = r.question_id "
+                "LEFT JOIN reviewers u ON u.id = r.reviewer_id "
+                "LEFT JOIN question_allocations qa ON qa.question_id = r.question_id "
+                "WHERE r.scope = ? ORDER BY q.position", (scope,),
             )
             people = db.all(
                 "SELECT u.id, u.full_name, u.profession, u.workplace FROM reviewers u WHERE u.scope = ? "
-                "AND EXISTS (SELECT 1 FROM review_items r WHERE r.reviewer_id = u.id) ORDER BY u.id", (scope,),
+                "AND (EXISTS (SELECT 1 FROM review_items r WHERE r.reviewer_id = u.id) "
+                "     OR EXISTS (SELECT 1 FROM expert_reviews er WHERE er.reviewer_id = u.id)) ORDER BY u.id", (scope,),
             )
             referrals = db.all("SELECT * FROM referrals WHERE handled_at IS NULL ORDER BY created_at") if scope == "live" else []
+            scientific = scientific_dashboard_data(db, scope)
         code, token = invitation or (None, None)
+        filtered = [
+            row for row in rows
+            if (not status or row["status"] == status)
+            and (not batch or (batch == "audit" and row["requires_audit"]) or row["batch_type"] == batch)
+        ]
         return page(request, "admin", scope=scope, total=len(rows), people=people, referrals=referrals,
+                    scientific=scientific, scientific_invites=scientific_invites,
                     available=sum(not row["reviewer_id"] for row in rows),
-                    done=sum(row["status"] == "verified" for row in rows), status=status,
-                    rows=[row for row in rows if not status or row["status"] == status],
+                    done=sum(row["status"] == "verified" for row in rows), status=status, batch=batch,
+                    rows=filtered,
                     invite_operation=secrets.token_hex(16), reviewer_operation=secrets.token_hex(16),
+                    setup_operation=secrets.token_hex(16),
                     invite_url=f"{public_url}/join#{token}" if token else None, invite_code=code,
                     public_url=public_url, error=error, code=422 if error else 200,
                     message=request.session.pop("message", ""))
 
     @app.get("/admin")
-    def admin_dashboard(request: Request, scope: str = "live", status: str = ""):
+    def admin_dashboard(request: Request, scope: str = "live", status: str = "", batch: str = ""):
         require_admin(request)
         if scope not in SCOPES:
             raise HTTPException(404, "Lượt duyệt không tồn tại.")
-        return admin_page(request, scope, status=status)
+        return admin_page(request, scope, status=status, batch=batch)
+
+    @app.post("/admin/scientific-setup")
+    def admin_scientific_setup(request: Request, form: PostForm):
+        require_admin(request)
+        scope = form.get("scope", "live")
+        if scope not in SCOPES:
+            raise HTTPException(400, "Lượt duyệt không hợp lệ.")
+        credentials = {}
+        try:
+            with connect(location, write=True) as db:
+                reserve_operation(db, form.get("setup_operation"))
+                tokens = {}
+                for slot in (1, 2, 3):
+                    code, token = new_invitation(invitation_key)
+                    tokens[slot] = token
+                    credentials[slot] = {"slot": slot, "code": code, "url": f"{public_url}/join#{token}"}
+                created = setup_scientific_review(db, scope, tokens)
+                for entry in created:
+                    credentials[entry["slot"]]["reviewer_id"] = entry["reviewer_id"]
+        except ReviewError as error:
+            return admin_page(request, scope, error=str(error))
+        return admin_page(request, scope, scientific_invites=[credentials[s] for s in (1, 2, 3)])
 
     @app.post("/admin/invite")
     def admin_invite(request: Request, form: PostForm):
@@ -520,7 +714,11 @@ def create_app(location=None):
                     count = release_unstarted(db, reviewer_id)
                     request.session["message"] = f"Đã thu hồi {count} câu chưa bắt đầu để phân công lại."
                 else:
-                    if not db.one("SELECT question_id FROM review_items WHERE reviewer_id = ? LIMIT 1", (reviewer_id,)):
+                    has_work = (
+                        db.one("SELECT question_id FROM review_items WHERE reviewer_id = ? LIMIT 1", (reviewer_id,))
+                        or db.one("SELECT question_id FROM expert_reviews WHERE reviewer_id = ? LIMIT 1", (reviewer_id,))
+                    )
+                    if not has_work:
                         raise ReviewError("Người duyệt này không còn câu được giao.")
                     code, token = new_invitation(invitation_key)
                     issue_link(db, reviewer_id, token=token)
@@ -529,21 +727,88 @@ def create_app(location=None):
             return admin_page(request, person["scope"], error=str(error))
         return admin_page(request, person["scope"], invitation=invitation)
 
+    def _history_context(db, scope, identifier):
+        item = db.one("SELECT r.*, q.query, q.original FROM review_items r JOIN questions q ON q.id = r.question_id "
+                      "WHERE r.scope = ? AND r.question_id = ?", (scope, identifier))
+        if not item:
+            raise HTTPException(404, "Không tìm thấy câu hỏi.")
+        history_rows = db.all(
+            "SELECT e.*, u.id, u.full_name, u.profession FROM review_events e LEFT JOIN reviewers u ON u.id = e.actor_id "
+            "WHERE e.scope = ? AND e.question_id = ? ORDER BY e.revision DESC", (scope, identifier),
+        )
+        for entry in history_rows:
+            entry["snapshot"] = json.loads(entry["snapshot"])
+        alloc = db.one("SELECT * FROM question_allocations WHERE question_id = ?", (identifier,))
+        expert_rows = db.all(
+            "SELECT er.*, es.slot, u.id, u.full_name, u.profession FROM expert_reviews er "
+            "LEFT JOIN expert_slots es ON es.reviewer_id = er.reviewer_id "
+            "LEFT JOIN reviewers u ON u.id = er.reviewer_id "
+            "WHERE er.scope = ? AND er.question_id = ? ORDER BY er.role, es.slot",
+            (scope, identifier),
+        )
+        for er in expert_rows:
+            er["evidence_list"] = json.loads(er["evidence_ids"] or "[]")
+        reference, original_label, sources = review_content(json.loads(item["original"]))
+        reference = remove_citations(reference)
+        adjudicate_seed = next(
+            (er for er in expert_rows if er["status"] == "submitted"),
+            None,
+        )
+        adj_values = {
+            "answer": item["answer"] if item["answer"] is not None else (
+                adjudicate_seed["answer"] if adjudicate_seed and adjudicate_seed["answer"] is not None else reference
+            ),
+            "answerability": item["answerability"] or (adjudicate_seed["answerability"] if adjudicate_seed else original_label),
+            "evidence_ids": (
+                json.loads(item["evidence_ids"]) if item["evidence_ids"] is not None
+                else (adjudicate_seed["evidence_list"] if adjudicate_seed else [c["CHUNK_ID"] for c in sources])
+            ),
+            "notes": item["notes"] or "",
+        }
+        return {
+            "item": item, "events": history_rows, "alloc": alloc, "expert_rows": expert_rows,
+            "sources": [render_chunk(chunk) for chunk in sources], "adj_values": adj_values,
+        }
+
     @app.get("/admin/history/{scope}/{identifier}")
     def history(request: Request, scope: str, identifier: str):
         require_admin(request)
         with connect(location) as db:
-            item = db.one("SELECT r.*, q.query FROM review_items r JOIN questions q ON q.id = r.question_id "
-                          "WHERE r.scope = ? AND r.question_id = ?", (scope, identifier))
-            if not item:
-                raise HTTPException(404, "Không tìm thấy câu hỏi.")
-            history_rows = db.all(
-                "SELECT e.*, u.id, u.full_name, u.profession FROM review_events e LEFT JOIN reviewers u ON u.id = e.actor_id "
-                "WHERE e.scope = ? AND e.question_id = ? ORDER BY e.revision DESC", (scope, identifier),
-            )
-        for entry in history_rows:
-            entry["snapshot"] = json.loads(entry["snapshot"])
-        return page(request, "history", scope=scope, item=item, events=history_rows)
+            ctx = _history_context(db, scope, identifier)
+        return page(request, "history", scope=scope, message=request.session.pop("message", ""), **ctx)
+
+    @app.post("/admin/adjudicate/{scope}/{identifier}")
+    def admin_adjudicate(request: Request, scope: str, identifier: str, form: PostForm):
+        require_admin(request)
+        if scope not in SCOPES:
+            raise HTTPException(404, "Lượt duyệt không tồn tại.")
+        try:
+            with connect(location, write=True) as db:
+                item = db.one(
+                    "SELECT r.*, q.original FROM review_items r JOIN questions q ON q.id = r.question_id "
+                    "WHERE r.scope = ? AND r.question_id = ?", (scope, identifier),
+                )
+                if not item:
+                    raise HTTPException(404, "Không tìm thấy câu hỏi.")
+                revision = integer(form.get("revision"), "Hãy tải lại trang.")
+                answer, label, selected, notes = _parse_submission(form, item["original"], require_content=True)
+                adjudicate_item(db, scope, identifier, revision, answer, label, selected, notes)
+        except ReviewConflict as error:
+            with connect(location) as db:
+                ctx = _history_context(db, scope, identifier)
+            return page(request, "history", scope=scope, error=str(error), code=409, **ctx)
+        except ReviewError as error:
+            with connect(location) as db:
+                ctx = _history_context(db, scope, identifier)
+            ctx["adj_values"] = {
+                "answer": str(form.get("answer", "")),
+                "answerability": str(form.get("answerability", "")),
+                "evidence_ids": form.getlist("evidence_id"),
+                "notes": str(form.get("notes", "")),
+            }
+            return page(request, "history", scope=scope, error=str(error), code=422, **ctx)
+        request.session["message"] = f"Đã chốt kết quả thống nhất · {identifier}"
+        return redirect(f"/admin/history/{scope}/{identifier}")
 
     @app.post("/admin/reopen")
     def admin_reopen(request: Request, form: PostForm):
@@ -579,6 +844,34 @@ def create_app(location=None):
                 "AND u.consent = 'accepted' AND u.consent_version >= ? "
                 "WHERE r.scope = ? AND r.status = 'verified' ORDER BY q.position", (CONSENT_VERSION, scope),
             )
+            scientific = bool(db.one("SELECT 1 FROM expert_slots WHERE scope = ? LIMIT 1", (scope,)))
+            if scientific:
+                allocs = {row["question_id"]: row for row in db.all("SELECT * FROM question_allocations")}
+                erows = db.all(
+                    "SELECT er.question_id, er.role, er.reviewer_id, u.scope, u.consent, u.consent_version, "
+                    "u.full_name, u.profession "
+                    "FROM expert_reviews er JOIN reviewers u ON u.id = er.reviewer_id "
+                    "LEFT JOIN expert_slots es ON es.reviewer_id = er.reviewer_id "
+                    "WHERE er.scope = ? AND er.status IN ('submitted', 'approved') "
+                    "ORDER BY CASE WHEN er.role = 'primary' THEN 0 ELSE 1 END, es.slot",
+                    (scope,),
+                )
+                by_qid = {}
+                for er in erows:
+                    label = (
+                        reviewer_label(er)
+                        if (er["scope"] == "live" and er["consent"] == "accepted"
+                            and (er["consent_version"] or 0) >= CONSENT_VERSION and er["full_name"])
+                        else er["reviewer_id"]
+                    )
+                    by_qid.setdefault(er["question_id"], []).append(label)
+                for row in rows:
+                    alloc = allocs.get(row["question_id"])
+                    if alloc:
+                        row["review_batch"] = alloc["batch_type"]
+                        row["audited"] = bool(alloc["requires_audit"])
+                    if row["question_id"] in by_qid:
+                        row["annotator_labels"] = by_qid[row["question_id"]]
         filename = "test_dataset_verified.json" if scope == "live" else "internal_review_test_only.json"
         records = [export_record(row) for row in rows]
         payload = {"metadata": metadata, "goldens": records} if metadata is not None else records

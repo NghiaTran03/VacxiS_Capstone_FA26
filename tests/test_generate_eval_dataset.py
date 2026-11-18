@@ -377,3 +377,176 @@ def test_generate_dataset_sub_batches_multi_hop_by_pair_type(
         "cross_vaccine",
     }
     assert all(g["additional_metadata"]["multi_hop_type"] is None for g in non_mh_items)
+
+
+def test_generate_dataset_matches_out_of_order_and_partial_async_results(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    parquet_path = tmp_path / "chunks.parquet"
+    output_path = tmp_path / "evaluation" / "eval_dataset.json"
+    _write_sample_parquet(parquet_path)
+
+    records = gen.load_chunks_from_parquet(parquet_path)
+    expected_by_ctx = {r.format_context(): r for r in records}
+
+    monkeypatch.setenv("LIGHTRAG_API_KEY", "sk-test")
+    monkeypatch.setenv("LIGHTRAG_BASE_URL", "https://example.com/v1")
+    monkeypatch.setenv("LIGHTRAG_LLM", "qwen/qwen-2.5-7b-instruct")
+
+    class ReversingPartialSynthesizer:
+        def __init__(self, **kwargs) -> None:
+            self.kwargs = kwargs
+
+        def generate_goldens_from_contexts(
+            self,
+            *,
+            contexts: list[list[str]],
+            include_expected_output: bool = True,
+            max_goldens_per_context: int = 1,
+            _send_data: bool = False,
+        ) -> list[SimpleNamespace]:
+            # Simulate async completion order (reversed) and a dropped item when batch > 1.
+            ordered = list(reversed(contexts))
+            if len(ordered) > 1:
+                ordered = ordered[:-1]
+            return [
+                SimpleNamespace(
+                    input=f"Q {i}",
+                    expected_output=f"A {i}",
+                    context=ctx,
+                )
+                for i, ctx in enumerate(ordered)
+            ]
+
+    with patch.object(gen, "Synthesizer", ReversingPartialSynthesizer):
+        payload = gen.generate_dataset(
+            chunks_path=parquet_path,
+            output_path=output_path,
+            limit=20,
+            seed=42,
+            dry_run=False,
+        )
+
+    assert payload["goldens"]
+    for item in payload["goldens"]:
+        matched = [expected_by_ctx[c] for c in item["context"]]
+        meta = item["additional_metadata"]
+        assert meta["source_chunk_ids"] == [m.chunk_id for m in matched]
+        assert meta["doc_ids"] == list(dict.fromkeys(m.doc_id for m in matched))
+        assert meta["doc_titles"] == list(dict.fromkeys(m.doc_title for m in matched))
+
+
+def test_repair_dataset_metadata_restores_aligned_ids(tmp_path: Path) -> None:
+    parquet_path = tmp_path / "chunks.parquet"
+    broken_path = tmp_path / "broken.json"
+    fixed_path = tmp_path / "fixed.json"
+    _write_sample_parquet(parquet_path)
+
+    records = gen.load_chunks_from_parquet(parquet_path)
+    c1, c2, c3, c4 = records
+
+    broken_payload = {
+        "metadata": {"limit": 2, "total_generated": 2},
+        "goldens": [
+            {
+                "input": "Câu hỏi 1",
+                "expected_output": "Trả lời 1",
+                "context": [c1.format_context()],
+                "additional_metadata": {
+                    "query_id": "eval_0001",
+                    "answerability": "ANSWERABLE",
+                    "complexity": "SINGLE_HOP",
+                    "multi_hop_type": None,
+                    "query_style": "PATIENT_STYLE",
+                    "source_chunk_ids": [c3.chunk_id],
+                    "doc_ids": [c3.doc_id],
+                    "doc_titles": [c3.doc_title],
+                },
+            },
+            {
+                "input": "Câu hỏi 2",
+                "expected_output": "Trả lời 2",
+                "context": [c1.format_context(), c4.format_context()],
+                "additional_metadata": {
+                    "query_id": "eval_0002",
+                    "answerability": "ANSWERABLE",
+                    "complexity": "MULTI_HOP",
+                    "multi_hop_type": "cross_vaccine",
+                    "query_style": "CLINICAL_STYLE",
+                    "source_chunk_ids": [c2.chunk_id, c3.chunk_id],
+                    "doc_ids": [c2.doc_id, c3.doc_id],
+                    "doc_titles": [c2.doc_title, c3.doc_title],
+                },
+            },
+        ],
+    }
+    broken_path.write_text(json.dumps(broken_payload, ensure_ascii=False), encoding="utf-8")
+
+    stats = gen.repair_dataset_metadata(
+        dataset_path=broken_path,
+        chunks_path=parquet_path,
+        output_path=fixed_path,
+    )
+    assert stats == {"total": 2, "updated": 2, "unchanged": 0}
+
+    repaired = json.loads(fixed_path.read_text(encoding="utf-8"))
+    g1, g2 = repaired["goldens"]
+    assert g1["input"] == "Câu hỏi 1"
+    assert g1["expected_output"] == "Trả lời 1"
+    assert g1["additional_metadata"]["source_chunk_ids"] == [c1.chunk_id]
+    assert g1["additional_metadata"]["doc_ids"] == [c1.doc_id]
+    assert g1["additional_metadata"]["doc_titles"] == [c1.doc_title]
+
+    assert g2["additional_metadata"]["source_chunk_ids"] == [c1.chunk_id, c4.chunk_id]
+    assert g2["additional_metadata"]["doc_ids"] == [c1.doc_id, c4.doc_id]
+    assert g2["additional_metadata"]["doc_titles"] == [c1.doc_title, c4.doc_title]
+
+
+def test_repair_dataset_metadata_fails_on_unmatched_or_ambiguous_context(
+    tmp_path: Path,
+) -> None:
+    parquet_path = tmp_path / "chunks.parquet"
+    rows = [
+        {"chunk_id": "c1", "doc_id": "d1", "doc_title": "Vaccine A", "category": "liều", "header": "H", "content_type": "text", "text": "Dup text", "metadata": {"has_table": False}},
+        {"chunk_id": "c2", "doc_id": "d2", "doc_title": "Vaccine A", "category": "liều", "header": "H", "content_type": "text", "text": "Dup text", "metadata": {"has_table": False}},
+    ]
+    pq.write_table(pa.Table.from_pylist(rows), str(parquet_path))
+    dup_ctx = gen.load_chunks_from_parquet(parquet_path)[0].format_context()
+
+    unmatched_path = tmp_path / "unmatched.json"
+    unmatched_path.write_text(
+        json.dumps(
+            {
+                "goldens": [
+                    {
+                        "input": "Q",
+                        "expected_output": "A",
+                        "context": ["[Unknown]\nMissing"],
+                        "additional_metadata": {"query_id": "eval_0001"},
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="unmatched"):
+        gen.repair_dataset_metadata(dataset_path=unmatched_path, chunks_path=parquet_path)
+
+    ambiguous_path = tmp_path / "ambiguous.json"
+    ambiguous_path.write_text(
+        json.dumps(
+            {
+                "goldens": [
+                    {
+                        "input": "Q",
+                        "expected_output": "A",
+                        "context": [dup_ctx],
+                        "additional_metadata": {"query_id": "eval_0001"},
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="ambiguous"):
+        gen.repair_dataset_metadata(dataset_path=ambiguous_path, chunks_path=parquet_path)
