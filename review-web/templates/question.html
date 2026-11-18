@@ -15,7 +15,7 @@
   {% if kind == 'query' %}<h1 data-edit-view>{{ value }}</h1>{% else %}<p class="original" data-edit-view>{{ value }}</p>{% endif %}
   <textarea id="{{ kind }}" name="{{ kind }}" rows="{{ 3 if kind == 'query' else 5 }}" maxlength="{{ limit }}" data-edit-input{% if audit_ctx.locked %} readonly{% endif %}>{{ value }}</textarea>
   <div class="field" data-reason-box>
-    <label for="{{ kind }}-reason">Lí do chỉnh sửa (Vui lòng ghi chú ngắn gọn)</label>
+    <label for="{{ kind }}-reason">Lí do chỉnh sửa (Người đánh giá vui lòng ghi chú ngắn gọn)</label>
     <textarea id="{{ kind }}-reason" name="{{ 'question_reason' if kind == 'query' else 'answer_reason' }}" rows="2" maxlength="3000" data-edit-reason{% if audit_ctx.locked %} readonly{% endif %}>{{ reason }}</textarea>
     <p class="edit-error" role="alert" data-edit-error hidden>Vui lòng điền nội dung và lí do chỉnh sửa.</p>
   </div>
