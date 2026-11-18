@@ -15,7 +15,9 @@ from vacxis_capstone_fa26.evaluation import (
     require_judge_credentials,
     resolve_judge_model,
 )
+from vacxis_capstone_fa26.evaluation.datasets import to_record
 from vacxis_capstone_fa26.evaluation.schemas import EvaluationSummary
+from vacxis_capstone_fa26.generation.prompts import get_chunk_field
 from vacxis_capstone_fa26.generation.schemas import GenerationConfig
 
 logging.basicConfig(
@@ -118,7 +120,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Print breakdowns by stratification axis",
     )
-    # Live-mode pipeline arguments (only used with --live).
+    # Live-mode pipeline arguments (used when --results is absent).
+    parser.add_argument(
+        "--baseline", action="store_true",
+        help="Use BM25 over --chunks for live retrieval and keep the standard generator",
+    )
     parser.add_argument("--collection-name", type=str, default="VacxiS_Capstone_FA26")
     parser.add_argument("--qdrant-host", type=str, default="localhost")
     parser.add_argument("--qdrant-port", type=int, default=6333)
@@ -141,7 +147,14 @@ def parse_args() -> argparse.Namespace:
         "When set, DeepEval's per-task budget (default 180s) is raised so slow "
         "judge models do not cancel in-flight cases mid-run",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.baseline and args.results is not None:
+        parser.error("--baseline requires live evaluation without --results.")
+    if args.baseline and not args.chunks.is_file():
+        parser.error(f"--baseline requires a chunk corpus at {args.chunks}.")
+    if args.results is None and args.top_k < 1:
+        parser.error("--top-k must be positive.")
+    return args
 
 
 def _print_summary(summary: EvaluationSummary, show_breakdown: bool) -> None:
@@ -226,35 +239,30 @@ def _load_flat_dataset(path: Path) -> list[dict[str, Any]]:
     return records
 
 
-def _build_answer_fn(args: argparse.Namespace):
+def _build_answer_fn(args: argparse.Namespace, chunk_texts: dict[str, str]):
     """Build a live-pipeline answer callback (lazy-imports heavy deps).
 
     Returns ``(pipeline, answer_fn)``; the caller must keep ``pipeline`` open
     (context manager) for the entire evaluation and close it after.
     """
-    from argparse import Namespace as _NS
-
     from vacxis_capstone_fa26.cli import retrieval_config
     from vacxis_capstone_fa26.generation.generator import MedicalGenerator
     from vacxis_capstone_fa26.generation.pipeline import VacxisRAGPipeline
     from vacxis_capstone_fa26.generation.schemas import GenerationConfig
 
-    ns = _NS(
-        collection_name=args.collection_name,
-        qdrant_host=args.qdrant_host,
-        qdrant_port=args.qdrant_port,
-        model_path=args.model_path,
-        reranker_path=args.reranker_path,
-        top_k=args.top_k,
-        skip_rerank=args.skip_rerank,
-    )
-    ret_config = retrieval_config(ns)
     gen_config = GenerationConfig(timeout=args.timeout)
     generator = MedicalGenerator(config=gen_config)
-    pipeline = VacxisRAGPipeline(retrieval_config=ret_config, generator=generator)
+    if args.baseline:
+        from vacxis_capstone_fa26.retrieval.bm25 import BM25Retriever
+
+        retriever = BM25Retriever(chunk_texts)
+        pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
+    else:
+        pipeline = VacxisRAGPipeline(retrieval_config=retrieval_config(args), generator=generator)
 
     def answer_fn(query: str, golden: dict) -> dict:
-        return pipeline.answer(query=query, top_k=ns.top_k, skip_rerank=ns.skip_rerank).to_dict()
+        chunks = retriever.retrieve(query, top_k=args.top_k) if args.baseline else None
+        return pipeline.answer(query=query, top_k=args.top_k, override_chunks=chunks).to_dict()
 
     return pipeline, answer_fn
 
@@ -266,7 +274,7 @@ def _evaluate_live(
     chunk_texts: dict[str, str],
 ) -> EvaluationSummary:
     """Run the RAG pipeline per golden, then score the live answers with DeepEval."""
-    pipeline, answer_fn = _build_answer_fn(args)
+    pipeline, answer_fn = _build_answer_fn(args, chunk_texts)
     with pipeline:
         return evaluator.evaluate_live(dataset_items, answer_fn, chunk_texts=chunk_texts)
 
@@ -277,35 +285,33 @@ def _evaluate_live_retrieval(
     args: argparse.Namespace,
 ) -> EvaluationSummary:
     """Run live retrieval over goldens and evaluate deterministic IR metrics."""
-    from argparse import Namespace as _NS
-    from vacxis_capstone_fa26.cli import retrieval_config
-    from vacxis_capstone_fa26.retrieval.retriever import VacxisRetriever
+    from contextlib import ExitStack
 
-    ns = _NS(
-        collection_name=args.collection_name,
-        qdrant_host=args.qdrant_host,
-        qdrant_port=args.qdrant_port,
-        model_path=args.model_path,
-        reranker_path=args.reranker_path,
-        top_k=args.top_k,
-        skip_rerank=args.skip_rerank,
-    )
-    ret_config = retrieval_config(ns)
-    retriever = VacxisRetriever(config=ret_config)
     results: list[dict[str, Any]] = []
-    for item in dataset_items:
-        record = datasets.to_record(item)
-        chunks = retriever.retrieve(query=record.query, top_k=ns.top_k, skip_rerank=ns.skip_rerank)
-        results.append(
-            {
-                "QUERY_ID": record.query_id,
-                "GENERATED_ANSWER": {
-                    "retrieved_chunk_ids": [c.chunk_id for c in chunks],
-                    "answer": "",
-                    "is_refusal": False,
-                },
-            }
-        )
+    with ExitStack() as resources:
+        if args.baseline:
+            from vacxis_capstone_fa26.retrieval.bm25 import BM25Retriever
+
+            retriever = BM25Retriever(load_chunk_texts(args.chunks))
+        else:
+            from vacxis_capstone_fa26.cli import retrieval_config
+            from vacxis_capstone_fa26.retrieval.retriever import VacxisRetriever
+
+            retriever = resources.enter_context(VacxisRetriever(config=retrieval_config(args)))
+
+        for item in dataset_items:
+            record = to_record(item)
+            chunks = retriever.retrieve(query=record.query, top_k=args.top_k)
+            results.append(
+                {
+                    "QUERY_ID": record.query_id,
+                    "GENERATED_ANSWER": {
+                        "retrieved_chunk_ids": [get_chunk_field(c, "chunk_id", "") for c in chunks],
+                        "answer": "",
+                        "is_refusal": False,
+                    },
+                }
+            )
     return evaluator.evaluate_retrieval(dataset_items, results)
 
 
