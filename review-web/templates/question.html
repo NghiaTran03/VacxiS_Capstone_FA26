@@ -19,7 +19,7 @@
     <textarea id="{{ kind }}-reason" name="{{ 'question_reason' if kind == 'query' else 'answer_reason' }}" rows="2" maxlength="3000" data-edit-reason{% if audit_ctx.locked %} readonly{% endif %}>{{ reason }}</textarea>
     <p class="edit-error" role="alert" data-edit-error hidden>Vui lòng điền nội dung và lí do chỉnh sửa.</p>
   </div>
-  {{ hint('Câu hỏi hợp lý, rõ ràng về y khoa và tài liệu trả lời được đến đâu?' if kind == 'query' else 'Câu trả lời đúng về y khoa, đủ điều kiện, ngoại lệ và cảnh báo an toàn, dễ hiểu?') }}
+  {{ hint('Câu hỏi liệu có hợp lý, rõ ràng về y khoa và tài liệu trả lời được đến đâu?' if kind == 'query' else 'Câu trả lời có đúng về y khoa, đủ điều kiện, ngoại lệ và cảnh báo an toàn và có dễ hiểu không?') }}
   <details class="disclosure"><summary>Xem {{ 'câu hỏi' if kind == 'query' else 'câu trả lời' }} ban đầu</summary><p class="original">{{ original }}</p></details>
 </section>
 {% endmacro %}
@@ -41,13 +41,13 @@
     <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="revision" value="{{ item.revision }}">
     {% if audit_ctx.is_auditor %}
       <section class="panel stack"><h1>{{ values.query }}</h1>
-        {{ hint('Câu hỏi hợp lý, rõ ràng về y khoa và tài liệu trả lời được đến đâu?') }}
+        {{ hint('Câu hỏi liệu có hợp lý, rõ ràng về y khoa và tài liệu trả lời được đến đâu?') }}
         {% if values.question_reason %}<p class="muted">Lí do sửa câu hỏi · {{ values.question_reason }}</p>{% endif %}
       </section>
       <section class="panel stack"><h2>Câu trả lời của người chấm chính</h2><p class="original">{{ values.answer }}</p>
         {% if values.answer_reason %}<p class="muted">Lí do sửa câu trả lời · {{ values.answer_reason }}</p>{% endif %}
         {% if audit_ctx.primary_notes %}<p class="original">Ghi chú · {{ audit_ctx.primary_notes }}</p>{% endif %}
-        {{ hint('Câu trả lời đúng về y khoa, đủ điều kiện, ngoại lệ và cảnh báo an toàn, dễ hiểu?') }}
+        {{ hint('Câu trả lời có đúng về y khoa, đủ điều kiện, ngoại lệ và cảnh báo an toàn và có dễ hiểu không?') }}
         <details class="disclosure"><summary>Xem câu trả lời ban đầu</summary><p class="original">{{ original_answer }}</p></details>
       </section>
     {% else %}
@@ -56,7 +56,7 @@
     {% endif %}
     <section class="panel stack" aria-labelledby="sources-title">
       <h2 id="sources-title">Đoạn trích trong tài liệu{% if sources %} ({{ sources|length }}){% endif %}</h2>
-      {{ hint('Đoạn trích đúng vắc xin, đối tượng, vấn đề được hỏi và đủ căn cứ hỗ trợ câu trả lời?') }}
+      {{ hint('Đoạn trích có đúng vắc xin, đối tượng, vấn đề được hỏi và có đủ căn cứ để hỗ trợ câu trả lời?') }}
       {% set subjects = sources|map(attribute='subject')|unique|list %}
       {% set shared_subject = subjects[0] if sources|length > 1 and subjects|length == 1 else '' %}
       {% if sources|length > 1 %}
