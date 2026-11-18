@@ -1,126 +1,130 @@
 {% extends "base.html" %}
-{% macro source_title(source, number, show_subject) -%}
-  {%- if show_subject and source.subject %}<strong>{{ source.subject }}</strong> · {% endif -%}
-  {{- source.section or ('Đoạn trích ' ~ number) -}}
-{%- endmacro %}
+{% macro hint(text) %}
+<details class="review-hint"><summary>Đầu mục cần review</summary><p>{{ text }}</p></details>
+{% endmacro %}
+{% macro editor(kind, title, value, reason, original, limit) %}
+<section class="panel stack" data-editor data-edit-kind="{{ kind }}" data-original="{{ original }}" data-locked="{{ 'yes' if audit_ctx.locked else 'no' }}" data-editing="{{ 'yes' if error else 'no' }}">
+  <div class="heading-row">
+    <label for="{{ kind }}">{{ title }}</label>
+    {% if not audit_ctx.locked %}<div class="actions">
+      <button type="button" data-edit hidden>Chỉnh sửa</button>
+      <button type="button" data-edit-save hidden>Lưu chỉnh sửa</button>
+      <button type="button" data-edit-cancel hidden>Hủy thay đổi</button>
+    </div>{% endif %}
+  </div>
+  {% if kind == 'query' %}<h1 data-edit-view>{{ value }}</h1>{% else %}<p class="original" data-edit-view>{{ value }}</p>{% endif %}
+  <textarea id="{{ kind }}" name="{{ kind }}" rows="{{ 3 if kind == 'query' else 5 }}" maxlength="{{ limit }}" data-edit-input{% if audit_ctx.locked %} readonly{% endif %}>{{ value }}</textarea>
+  <div class="field" data-reason-box>
+    <label for="{{ kind }}-reason">Lí do chỉnh sửa (Người đánh giá vui lòng ghi chú ngắn gọn)</label>
+    <textarea id="{{ kind }}-reason" name="{{ 'question_reason' if kind == 'query' else 'answer_reason' }}" rows="2" maxlength="3000" data-edit-reason{% if audit_ctx.locked %} readonly{% endif %}>{{ reason }}</textarea>
+    <p class="edit-error" role="alert" data-edit-error hidden>Vui lòng điền nội dung và lí do chỉnh sửa.</p>
+  </div>
+  {{ hint('Câu hỏi liệu có hợp lý, rõ ràng về y khoa và tài liệu trả lời được đến đâu?' if kind == 'query' else 'Câu trả lời có đúng về y khoa, đủ điều kiện, ngoại lệ và cảnh báo an toàn và có dễ hiểu không?') }}
+  <details class="disclosure"><summary>Xem {{ 'câu hỏi' if kind == 'query' else 'câu trả lời' }} ban đầu</summary><p class="original">{{ original }}</p></details>
+</section>
+{% endmacro %}
 {% block title %}Duyệt {{ item.question_id }}{% endblock %}
 {% block content %}
-<div class="reading-width stack">
+<div class="review-workspace" data-review-workspace>
+<div class="reading-width stack review-reading">
   <p><a href="/review">‹ Danh sách câu hỏi</a></p>
-  <section class="panel stack compact">
-    <div class="heading-row"><span class="code">{{ item.question_id }}{% if audit_ctx.role %} · {{ batch_labels[audit_ctx.role] }}{% endif %}</span><span class="state state-{{ item.status }}">{{ statuses[item.status] }}</span></div>
-    <h1>{{ item.query }}</h1>
-    {% if audit_ctx.is_auditor %}
-      <p class="muted">Người chấm chính: <strong>{{ audit_ctx.primary_reviewer }}</strong>{% if audit_ctx.primary_notes %} · Ghi chú: {{ audit_ctx.primary_notes }}{% endif %}</p>
-      {% if not audit_ctx.primary_ready %}
-        <p class="notice warn">Người chấm chính đang hoàn thiện hoặc sửa lại câu này. Bạn có thể xem trước, nút kiểm định sẽ mở sau khi người chấm chính nộp bản hoàn chỉnh.</p>
-      {% endif %}
-    {% elif audit_ctx.review_note %}
-      <p class="notice warn" role="alert"><strong>Kiểm định chéo yêu cầu sửa lại:</strong> {{ audit_ctx.review_note }}</p>
-    {% elif item.status in ('verified', 'submitted', 'approved') %}
-      <p class="muted">Người xác nhận · {{ reviewer_label(person) }}</p>
-    {% endif %}
-  </section>
+  <div class="heading-row">
+    <span class="code">{{ item.question_id }}{% if audit_ctx.role %} · {{ batch_labels[audit_ctx.role] }}{% endif %}</span>
+    <span class="state state-{{ item.status }}">{% if result_status == 'REJECTED' %}Tài liệu vô nghĩa{% elif result_status == 'EDITED' %}Đã chỉnh sửa{% elif result_status == 'APPROVED' %}Đã chấp nhận{% else %}{{ statuses[item.status] }}{% endif %}</span>
+  </div>
+  {% if audit_ctx.is_auditor %}
+    <p class="muted">Người chấm chính · <strong>{{ audit_ctx.primary_reviewer }}</strong></p>
+    {% if not audit_ctx.primary_ready %}<p class="notice">Người chấm chính đang hoàn thiện câu này. Nút kiểm định sẽ mở sau khi nộp bản hoàn chỉnh.</p>{% endif %}
+  {% elif audit_ctx.review_note %}<p class="notice" role="alert"><strong>Kiểm định chéo yêu cầu sửa lại</strong> · {{ audit_ctx.review_note }}</p>{% endif %}
+  {% if not audit_ctx.is_auditor and item.status in ('verified', 'submitted', 'approved') %}<p class="muted">Người xác nhận · {{ reviewer_label(person) }}</p>{% endif %}
   <form method="post" action="/review/{{ item.question_id }}" class="stack" data-review-form>
-    <input type="hidden" name="csrf" value="{{ csrf }}">
-    <input type="hidden" name="revision" value="{{ item.revision }}">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="revision" value="{{ item.revision }}">
     {% if audit_ctx.is_auditor %}
-      <section class="panel stack">
-        <h2>Bản chấm chính cần kiểm định nhanh</h2>
-        <div class="field">
-          <label>Câu trả lời của người chấm chính</label>
-          <p class="original">{{ values.answer }}</p>
-        </div>
-        <p><strong>Mức độ trả lời:</strong> {{ labels[values.answerability] }}</p>
-        <details class="disclosure"><summary>Xem câu trả lời AI ban đầu</summary><p class="original">{{ original_answer }}</p></details>
+      <section class="panel stack"><h1>{{ values.query }}</h1>
+        {{ hint('Câu hỏi liệu có hợp lý, rõ ràng về y khoa và tài liệu trả lời được đến đâu?') }}
+        {% if values.question_reason %}<p class="muted">Lí do sửa câu hỏi · {{ values.question_reason }}</p>{% endif %}
       </section>
-      <section class="panel stack" aria-labelledby="sources-title">
-        <h2 id="sources-title">Đoạn trích trong tài liệu{% if sources %} ({{ sources|length }}){% endif %}</h2>
-        {% for source in sources %}
-          <details class="disclosure source"{% if source.id in values.evidence_ids %} open{% endif %}>
-            <summary id="source-{{ loop.index }}">{{ source_title(source, loop.index, true) }}{% if source.id in values.evidence_ids %} · [Đã chọn làm căn cứ]{% endif %}</summary>
-            <div class="source-content">
-              <p class="code">{{ source.id }}</p>
-              <div class="source-text">{{ source.html }}</div>
-            </div>
-          </details>
-        {% endfor %}
-      </section>
-      <fieldset class="panel stack review-fields"{% if audit_ctx.locked %} disabled{% endif %}>
-        <div class="field">
-          <label for="audit-note">Nhận xét kiểm định (bắt buộc nếu báo lỗi trả lại)</label>
-          <textarea id="audit-note" name="audit_note" rows="3" maxlength="3000">{{ values.audit_note }}</textarea>
-        </div>
-      </fieldset>
-      {% if not audit_ctx.locked %}
-        <div class="actions">
-          <button class="primary" type="submit" name="action" value="audit_approve">Xác nhận đạt chuẩn (Pass)</button>
-          <button type="submit" name="action" value="audit_reject">Có lỗi — Trả lại người chấm chính</button>
-        </div>
-      {% else %}
-        <div><a class="button" href="/review">Về danh sách câu hỏi</a></div>
-      {% endif %}
-    {% else %}
-    <fieldset class="stack review-fields"{% if audit_ctx.locked %} disabled{% endif %}>
-      <div class="panel stack">
-        <div class="field">
-          <label for="answer"><strong>Câu trả lời để duyệt</strong></label>
-          <textarea id="answer" name="answer" rows="5" maxlength="20000">{{ values.answer }}</textarea>
-        </div>
+      <section class="panel stack"><h2>Câu trả lời của người chấm chính</h2><p class="original">{{ values.answer }}</p>
+        {% if values.answer_reason %}<p class="muted">Lí do sửa câu trả lời · {{ values.answer_reason }}</p>{% endif %}
+        {% if audit_ctx.primary_notes %}<p class="original">Ghi chú · {{ audit_ctx.primary_notes }}</p>{% endif %}
+        {{ hint('Câu trả lời có đúng về y khoa, đủ điều kiện, ngoại lệ và cảnh báo an toàn và có dễ hiểu không?') }}
         <details class="disclosure"><summary>Xem câu trả lời ban đầu</summary><p class="original">{{ original_answer }}</p></details>
-      </div>
-      <section class="panel stack" aria-labelledby="sources-title">
-        <h2 id="sources-title">Đoạn trích trong tài liệu{% if sources %} ({{ sources|length }}){% endif %}</h2>
-        {% set has_index = sources|length > 1 %}
-        {% set subjects = sources|map(attribute='subject')|unique|list %}
-        {% set shared_subject = subjects[0] if has_index and subjects|length == 1 else '' %}
-        {% if has_index %}
-          <nav class="source-index" id="source-index" aria-label="Danh sách đoạn trích" tabindex="-1" data-source-index>
-            {% if shared_subject %}<p><strong>{{ shared_subject }}</strong></p>{% endif %}
-            <ul>
-              {% for source in sources %}
-                <li><a href="#source-{{ loop.index }}">{{ source_title(source, loop.index, not shared_subject) }}</a></li>
-              {% endfor %}
-            </ul>
-          </nav>
-        {% endif %}
-        {% for source in sources %}
-          <details class="disclosure source"{% if loop.first %} open{% endif %}>
-            <summary id="source-{{ loop.index }}">{{ source_title(source, loop.index, not shared_subject) }}</summary>
-            <div class="source-content">
-              <p class="code">{{ source.id }}</p>
-              <div class="source-text">{{ source.html }}</div>
-              <details class="disclosure raw"><summary>Xem nguyên văn</summary><pre>{{ source.raw }}</pre></details>
-              <label class="check"><input name="evidence_id" type="checkbox" value="{{ source.id }}"{% if source.id in values.evidence_ids %} checked{% endif %}> Dùng đoạn này làm căn cứ</label>
-              {% if has_index %}<a class="source-return" href="#source-index">Về danh sách đoạn trích</a>{% endif %}
-            </div>
-          </details>
-        {% else %}<p class="muted">Chưa có đoạn trích đính kèm.</p>{% endfor %}
       </section>
-      <section class="panel stack" aria-label="Đánh giá và ghi chú">
-        <div class="field">
-          <label for="answerability">Tài liệu trả lời được đến đâu?</label>
-          <select id="answerability" name="answerability">
-            {% for key, label in labels.items() %}<option value="{{ key }}"{% if values.answerability == key %} selected{% endif %}>{{ label }}</option>{% endfor %}
-          </select>
-        </div>
-        <div class="field">
-          <label for="notes">Ghi chú cho nhóm đồ án</label>
-          <textarea id="notes" name="notes" rows="2" maxlength="3000" aria-describedby="notes-help">{{ values.notes }}</textarea>
-          <p id="notes-help" class="muted">Sau khi xác nhận, ghi chú về câu trả lời sẽ xuất hiện trong tệp JSON nhóm tải về. Khi đánh dấu cần xem lại, hãy ghi lý do.</p>
-        </div>
-      </section>
-    </fieldset>
-    {% if not audit_ctx.locked %}
-      <div class="actions">
-        <button class="primary" type="submit" name="action" value="confirm">{% if audit_ctx.role == 'primary' and audit_ctx.requires_audit %}Xác nhận &amp; gửi kiểm định{% else %}Xác nhận và sang câu tiếp{% endif %}</button>
-        <button type="submit" name="action" value="draft">Lưu nháp</button>
-        <button type="submit" name="action" value="flag">Đánh dấu cần xem lại</button>
-      </div>
     {% else %}
-      <div><a class="button" href="/review">Về danh sách câu hỏi</a></div>
+      {{ editor('query', 'Câu hỏi để duyệt', values.query, values.question_reason, original_query, 10000) }}
+      {{ editor('answer', 'Câu trả lời để duyệt', values.answer, values.answer_reason, original_answer, 20000) }}
     {% endif %}
+    <section class="panel stack" aria-labelledby="sources-title">
+      <h2 id="sources-title">Đoạn trích trong tài liệu{% if sources %} ({{ sources|length }}){% endif %}</h2>
+      {{ hint('Đoạn trích có đúng vắc xin, đối tượng, vấn đề được hỏi và có đủ căn cứ để hỗ trợ câu trả lời?') }}
+      {% set subjects = sources|map(attribute='subject')|unique|list %}
+      {% set shared_subject = subjects[0] if sources|length > 1 and subjects|length == 1 else '' %}
+      {% if sources|length > 1 %}
+      <nav class="source-index" id="source-index" aria-label="Danh sách đoạn trích" tabindex="-1" data-source-index>
+        {% if shared_subject %}<p><strong>{{ shared_subject }}</strong></p>{% endif %}
+        <ul>{% for source in sources %}<li><a href="#source-{{ loop.index }}">{% if not shared_subject and source.subject %}<strong>{{ source.subject }}</strong> · {% endif %}{{ source.section or ('Đoạn trích ' ~ loop.index) }}</a></li>{% endfor %}</ul>
+      </nav>
+      {% endif %}
+      {% for source in sources %}
+      <details class="disclosure source"{% if loop.first or audit_ctx.is_auditor and source.id in values.evidence_ids %} open{% endif %}>
+        <summary id="source-{{ loop.index }}">{% if not shared_subject and source.subject %}<strong>{{ source.subject }}</strong> · {% endif %}{{ source.section or ('Đoạn trích ' ~ loop.index) }}</summary>
+        <div class="source-content">
+          <p class="code">{{ source.id }}</p><div class="source-text">{{ source.html }}</div>
+          <details class="disclosure raw"><summary>Xem nguyên văn</summary><pre>{{ source.raw }}</pre></details>
+          <div class="heading-row">
+            <label class="check"><input name="evidence_id" type="checkbox" value="{{ source.id }}"{% if source.id in values.evidence_ids %} checked{% endif %}{% if audit_ctx.locked or audit_ctx.is_auditor %} disabled{% endif %}> Dùng đoạn này làm căn cứ</label>
+            <button type="button" class="document-open" data-document-open data-doc-id="{{ source.doc_id }}" hidden>Toàn bộ tài liệu</button>
+          </div>
+          {% if sources|length > 1 %}<a class="source-return" href="#source-index">Về danh sách đoạn trích</a>{% endif %}
+        </div>
+      </details>
+      {% else %}<p class="muted">Chưa có đoạn trích đính kèm.</p>{% endfor %}
+    </section>
+    {% if audit_ctx.is_auditor %}
+    <section class="panel stack">
+      <p><strong>Đánh giá tài liệu</strong> · {{ labels[values.answerability] }}</p>
+      {% if result_status %}<p><strong>Kết quả người chấm chính</strong> · {{ result_status }}</p>{% endif %}
+      <label for="audit-note">Nhận xét kiểm định (bắt buộc nếu báo lỗi trả lại)</label>
+      <textarea id="audit-note" name="audit_note" rows="3" maxlength="3000"{% if audit_ctx.locked %} disabled{% endif %}>{{ values.audit_note }}</textarea>
+    </section>
+    {% if not audit_ctx.locked %}<div class="actions">
+      <button class="primary" type="submit" name="action" value="audit_approve">Xác nhận đạt chuẩn (Pass)</button>
+      <button type="submit" name="action" value="audit_reject">Có lỗi — Trả lại người chấm chính</button>
+    </div>{% endif %}
+    {% else %}
+    <fieldset class="panel stack review-fields" aria-labelledby="review-summary-title"{% if audit_ctx.locked %} disabled{% endif %}>
+      <h2 id="review-summary-title">Tổng kết đánh giá</h2>
+      <div class="field"><label for="answerability">Đánh giá tài liệu</label>
+        <select id="answerability" name="answerability">{% for key, label in labels.items() %}<option value="{{ key }}"{% if values.answerability == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      </div>
+      <div class="field"><label for="notes">Ghi chú cho nhóm đồ án</label>
+        <textarea id="notes" name="notes" rows="2" maxlength="3000">{{ values.notes }}</textarea>
+        <p class="muted">Ghi chú sẽ được gửi cho nhóm đồ án cùng kết quả đánh giá.</p>
+      </div>
+      {{ hint('Chấp nhận bản ghi hay cần chỉnh sửa? Ghi nội dung cần sửa và nhận xét bổ sung nếu có.') }}
+    </fieldset>
+    {% if not audit_ctx.locked %}<div class="actions">
+      <button class="primary" type="submit" name="action" value="confirm">{% if audit_ctx.role == 'primary' and audit_ctx.requires_audit %}Xác nhận &amp; gửi kiểm định{% else %}Xác nhận và sang câu tiếp{% endif %}</button>
+      <button type="submit" name="action" value="draft">Lưu nháp</button>
+      <button type="submit" name="action" value="reject">Tài liệu vô nghĩa</button>
+    </div>{% endif %}
     {% endif %}
+    {% if audit_ctx.locked %}<p><a class="button" href="/review">Về danh sách câu hỏi</a></p>{% endif %}
   </form>
+</div>
+<aside class="documents-panel" data-documents-panel hidden aria-label="Toàn bộ tài liệu" data-url="/review/{{ item.question_id }}/documents">
+  <div class="documents-heading"><h2 id="documents-title">Toàn bộ tài liệu</h2><div class="actions">
+    <button type="button" data-documents-expand>Thu hẹp</button><button type="button" data-documents-close>Đóng</button>
+  </div></div>
+  <div class="documents-search field">
+    <label for="document-search">Tìm trong toàn bộ tài liệu</label>
+    <div class="input-with-action"><input id="document-search" type="search" placeholder="Ví dụ: bảo quản" data-document-search autocomplete="off">
+      <button type="button" data-find-previous aria-label="Kết quả trước">Trước</button>
+      <button type="button" data-find-next aria-label="Kết quả tiếp theo">Tiếp</button>
+    </div>
+    <p class="muted" role="status" data-search-status></p>
+  </div>
+  <div class="documents-body" data-documents-body><p role="status">Đang tải tài liệu…</p></div>
+</aside>
 </div>
 {% endblock %}

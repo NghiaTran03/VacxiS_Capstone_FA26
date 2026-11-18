@@ -11,7 +11,7 @@ import re
 import secrets
 import sqlite3
 
-from content import review_content
+from content import changed_content, review_content, review_data
 from dataset_format import as_golden, context_title, is_golden
 from sampling import allocate_scientific_batches, compute_fleiss_kappa, summarize_allocation
 
@@ -92,9 +92,42 @@ def connect(location, *, write=False):
 
 
 def ensure_schema(db):
+    if db.postgres:
+        db.execute("SELECT pg_advisory_xact_lock(73418302)")
     for statement in (BASE_DIR / "schema.sql").read_text(encoding="utf-8").split(";"):
         if statement.strip():
             db.execute(statement)
+    for table in ("review_items", "expert_reviews"):
+        if db.postgres:
+            db.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS review_data TEXT NOT NULL DEFAULT '{{}}'")
+        elif "review_data" not in {row["name"] for row in db.all(f"PRAGMA table_info({table})")}:
+            db.execute(f"ALTER TABLE {table} ADD COLUMN review_data TEXT NOT NULL DEFAULT '{{}}'")
+
+
+def import_documents(location, path):
+    records = json.loads(path.read_text(encoding="utf-8"))
+    required = {"chunk_id", "doc_id", "doc_title", "category", "header", "text", "position"}
+    if not isinstance(records, list) or not records:
+        raise ReviewError("Danh sách đoạn tài liệu phải có nội dung.")
+    identifiers = set()
+    for row in records:
+        if (not isinstance(row, dict) or not required <= row.keys()
+                or any(not isinstance(row[key], str) for key in required - {"position"})
+                or not isinstance(row["position"], int) or not row["chunk_id"] or not row["doc_id"]
+                or row["chunk_id"] in identifiers):
+            raise ReviewError("Định dạng đoạn tài liệu không hợp lệ.")
+        identifiers.add(row["chunk_id"])
+    with connect(location, write=True) as db:
+        ensure_schema(db)
+        db.locked("SELECT source_hash FROM dataset WHERE id = 1")
+        for doc_id in {row["doc_id"] for row in records}:
+            db.execute("DELETE FROM document_chunks WHERE doc_id = ?", (doc_id,))
+        for row in records:
+            db.execute(
+                "INSERT INTO document_chunks VALUES (?, ?, ?, ?, ?, ?, ?)",
+                tuple(row[key] for key in ("chunk_id", "doc_id", "doc_title", "category", "header", "text", "position")),
+            )
+    return len(records)
 
 
 def ensure_allocations(db, *, refresh=False):
@@ -323,6 +356,7 @@ def update_profile(db, person, decision, profile):
 
 def record_event(db, item, actor_id, now):
     snapshot = {field: item[field] for field in ("answer", "answerability", "evidence_ids", "notes", "verified_at")}
+    snapshot["review_data"] = json.loads(item.get("review_data") or "{}")
     db.execute(
         "INSERT INTO review_events VALUES (?, ?, ?, ?, ?, ?, ?)",
         (item["scope"], item["question_id"], item["revision"], actor_id, item["status"], now,
@@ -330,25 +364,27 @@ def record_event(db, item, actor_id, now):
     )
 
 
-def save_review(db, item, reviewer_id, revision, status, answer, answerability, evidence_ids, notes):
+def save_review(db, item, reviewer_id, revision, status, answer, answerability, evidence_ids, notes, *, review_data=None):
     now = timestamp()
     if item["status"] == "verified" or item["revision"] != revision:
         raise ReviewConflict("Câu này vừa được cập nhật. Hãy mở lại để xem bản mới.")
     updated = dict(item, status=status, revision=revision + 1, answer=answer, answerability=answerability,
-                   evidence_ids=json.dumps(evidence_ids), notes=notes, verified_at=now if status == "verified" else None)
+                   evidence_ids=json.dumps(evidence_ids), notes=notes, verified_at=now if status == "verified" else None,
+                   review_data=json.dumps(review_data or {}, ensure_ascii=False))
     changed = db.execute(
         "UPDATE review_items SET status = ?, revision = ?, answer = ?, answerability = ?, "
-        "evidence_ids = ?, notes = ?, verified_at = ? "
+        "evidence_ids = ?, notes = ?, verified_at = ?, review_data = ? "
         "WHERE scope = ? AND question_id = ? AND revision = ? AND reviewer_id = ?",
         (status, updated["revision"], answer, answerability, updated["evidence_ids"], notes, updated["verified_at"],
-         item["scope"], item["question_id"], revision, reviewer_id),
+         updated["review_data"], item["scope"], item["question_id"], revision, reviewer_id),
     ).rowcount
     if changed != 1:
         raise ReviewConflict("Câu này vừa được cập nhật. Hãy mở lại để xem bản mới.")
     record_event(db, updated, reviewer_id, now)
 
 
-def _advance_item(db, item, status, actor_id, now, *, answer=None, answerability=None, evidence_ids=None, notes=None, verified_at=None):
+def _advance_item(db, item, status, actor_id, now, *, answer=None, answerability=None, evidence_ids=None, notes=None,
+                  verified_at=None, review_data=None):
     """Advance review_items revision atomically and append a matching review_events snapshot."""
     next_rev = item["revision"] + 1
     new_answer = item["answer"] if answer is None else answer
@@ -357,10 +393,11 @@ def _advance_item(db, item, status, actor_id, now, *, answer=None, answerability
         evidence_ids if isinstance(evidence_ids, str) else json.dumps(evidence_ids)
     )
     new_notes = item["notes"] if notes is None else notes
+    new_data = item.get("review_data", "{}") if review_data is None else json.dumps(review_data, ensure_ascii=False)
     db.execute(
         "UPDATE review_items SET status = ?, revision = ?, answer = ?, answerability = ?, "
-        "evidence_ids = ?, notes = ?, verified_at = ? WHERE scope = ? AND question_id = ?",
-        (status, next_rev, new_answer, new_label, new_ev, new_notes, verified_at, item["scope"], item["question_id"]),
+        "evidence_ids = ?, notes = ?, verified_at = ?, review_data = ? WHERE scope = ? AND question_id = ?",
+        (status, next_rev, new_answer, new_label, new_ev, new_notes, verified_at, new_data, item["scope"], item["question_id"]),
     )
     updated = dict(
         item,
@@ -371,6 +408,7 @@ def _advance_item(db, item, status, actor_id, now, *, answer=None, answerability
         evidence_ids=new_ev,
         notes=new_notes,
         verified_at=verified_at,
+        review_data=new_data,
     )
     record_event(db, updated, actor_id, now)
     return updated
@@ -386,10 +424,11 @@ def reopen(db, scope, question_id, revision, *, unassign=False):
         raise ReviewError("Không thể trả về danh sách chung khi đang chạy chế độ 3 chuyên gia.")
     updated = dict(item, status="draft", revision=revision + 1, verified_at=None)
     if unassign:
-        updated.update(status="pending", answer=None, answerability=None, evidence_ids=None, notes="")
+        updated.update(status="pending", answer=None, answerability=None, evidence_ids=None, notes="", review_data="{}")
         db.execute(
             "UPDATE review_items SET reviewer_id = NULL, status = 'pending', revision = ?, verified_at = NULL, "
-            "answer = NULL, answerability = NULL, evidence_ids = NULL, notes = '' WHERE scope = ? AND question_id = ?",
+            "answer = NULL, answerability = NULL, evidence_ids = NULL, notes = '', review_data = '{}' "
+            "WHERE scope = ? AND question_id = ?",
             (updated["revision"], scope, question_id),
         )
     else:
@@ -470,13 +509,56 @@ def setup_scientific_review(db, scope, tokens_by_slot):
     return [{"slot": slot, "reviewer_id": slot_rids[slot]} for slot in (1, 2, 3)]
 
 
-def _consensus_check(rows):
-    """Return True if all 3 submitted expert rows agree on answerability, evidence_ids, and answer."""
+def reset_scientific_review(db, scope, expected_reviewers):
+    """Withdraw an unused scientific assignment and invalidate its invitations."""
+    if scope not in SCOPES:
+        raise ReviewError("Lượt duyệt không hợp lệ.")
+    db.locked("SELECT source_hash FROM dataset WHERE id = 1")
+    slots = db.all("SELECT reviewer_id FROM expert_slots WHERE scope = ? ORDER BY reviewer_id", (scope,))
+    if not slots:
+        raise ReviewError("Lượt duyệt này chưa có phân công 3 chuyên gia.")
+    if [slot["reviewer_id"] for slot in slots] != expected_reviewers:
+        raise ReviewConflict("Phân công đã thay đổi. Hãy tải lại trang rồi thử lại.")
+    for slot in slots:
+        db.locked("SELECT id FROM reviewers WHERE id = ?", (slot["reviewer_id"],))
+    db.all("SELECT question_id FROM review_items WHERE scope = ? ORDER BY question_id" +
+           (" FOR UPDATE" if db.postgres else ""), (scope,))
+    started = db.one(
+        "SELECT question_id FROM expert_reviews WHERE scope = ? AND "
+        "(status <> 'pending' OR revision <> 0 OR answer IS NOT NULL OR answerability IS NOT NULL "
+        "OR evidence_ids IS NOT NULL OR notes <> '' OR review_note <> '' OR review_data <> '{}') LIMIT 1",
+        (scope,),
+    )
+    shared_progress = db.one(
+        "SELECT question_id FROM review_items WHERE scope = ? AND "
+        "(status <> 'pending' OR answer IS NOT NULL OR answerability IS NOT NULL OR evidence_ids IS NOT NULL "
+        "OR notes <> '' OR verified_at IS NOT NULL OR review_data <> '{}') LIMIT 1",
+        (scope,),
+    )
+    if started or shared_progress:
+        raise ReviewError("Đã có nội dung duyệt được lưu. Hãy liên hệ nhóm để xử lý kết quả trước khi thu hồi toàn bộ.")
+    db.execute("DELETE FROM expert_reviews WHERE scope = ?", (scope,))
+    db.execute("DELETE FROM expert_slots WHERE scope = ?", (scope,))
+    db.execute("UPDATE review_items SET reviewer_id = NULL, revision = revision + 1 WHERE scope = ?", (scope,))
+    for slot in slots:
+        reviewer_id = slot["reviewer_id"]
+        db.execute("DELETE FROM invitations WHERE reviewer_id = ?", (reviewer_id,))
+        db.execute("DELETE FROM reviewers WHERE id = ? AND scope = ?", (reviewer_id, scope))
+    return len(slots)
+
+
+def _consensus_check(rows, original):
+    """Compare submitted answers, questions, evidence, and final decisions."""
     signatures = set()
     for row in rows:
         ev = tuple(sorted(json.loads(row["evidence_ids"] or "[]")))
         ans = " ".join((row["answer"] or "").split())
-        signatures.add((row["answerability"], ev, ans))
+        data = review_data(row)
+        query = data.get("query") or original.get("input", original.get("QUERY", ""))
+        result = data.get("status") or (
+            "EDITED" if changed_content(original, query, row["answer"], row["answerability"], ev) else "APPROVED"
+        )
+        signatures.add((row["answerability"], ev, ans, query, result))
     return len(signatures) == 1
 
 
@@ -485,7 +567,8 @@ def _combined_notes(rows):
     return "\n\n".join(dict.fromkeys(parts))
 
 
-def save_expert_review(db, item, erow, allocation, reviewer_id, revision, status, answer, answerability, evidence_ids, notes):
+def save_expert_review(db, item, erow, allocation, reviewer_id, revision, status, answer, answerability, evidence_ids, notes,
+                       *, review_data=None):
     """Persist an expert's calibration, overlap, or primary submission and advance shared state."""
     now = timestamp()
     if erow["role"] == "auditor":
@@ -497,9 +580,9 @@ def save_expert_review(db, item, erow, allocation, reviewer_id, revision, status
     ev_json = json.dumps(evidence_ids)
     changed = db.execute(
         "UPDATE expert_reviews SET status = ?, revision = ?, answer = ?, answerability = ?, "
-        "evidence_ids = ?, notes = ?, updated_at = ? "
+        "evidence_ids = ?, notes = ?, updated_at = ?, review_data = ? "
         "WHERE scope = ? AND question_id = ? AND role = ? AND reviewer_id = ? AND revision = ?",
-        (status, new_rev, answer, answerability, ev_json, notes, now,
+        (status, new_rev, answer, answerability, ev_json, notes, now, json.dumps(review_data or {}, ensure_ascii=False),
          erow["scope"], erow["question_id"], erow["role"], reviewer_id, revision),
     ).rowcount
     if changed != 1:
@@ -510,18 +593,20 @@ def save_expert_review(db, item, erow, allocation, reviewer_id, revision, status
     if batch in ("calibration", "overlap"):
         next_status = item["status"] if item["status"] == "verified" else "draft"
         item = _advance_item(db, item, next_status, reviewer_id, now,
-                             answer=answer, answerability=answerability, evidence_ids=ev_json, notes=notes)
+                             answer=answer, answerability=answerability, evidence_ids=ev_json, notes=notes,
+                             review_data=review_data)
         if status == "submitted":
             peers = db.all(
                 "SELECT * FROM expert_reviews WHERE scope = ? AND question_id = ? AND role = ? ORDER BY reviewer_id",
                 (scope, qid, batch),
             )
             if len(peers) == 3 and all(p["status"] == "submitted" for p in peers):
-                if _consensus_check(peers):
+                if _consensus_check(peers, json.loads(item["original"])):
                     _advance_item(
                         db, item, "verified", "consensus", now,
                         answer=peers[0]["answer"], answerability=peers[0]["answerability"],
                         evidence_ids=peers[0]["evidence_ids"], notes=_combined_notes(peers), verified_at=now,
+                        review_data=json.loads(peers[0].get("review_data") or "{}"),
                     )
                 else:
                     _advance_item(
@@ -533,13 +618,14 @@ def save_expert_review(db, item, erow, allocation, reviewer_id, revision, status
         _advance_item(
             db, item, final_status, reviewer_id, now,
             answer=answer, answerability=answerability, evidence_ids=ev_json, notes=notes,
-            verified_at=now if status == "submitted" else None,
+            verified_at=now if status == "submitted" else None, review_data=review_data,
         )
     else:
         item_status = "draft" if status == "submitted" else status
         _advance_item(
             db, item, item_status, reviewer_id, now,
             answer=answer, answerability=answerability, evidence_ids=ev_json, notes=notes, verified_at=None,
+            review_data=review_data,
         )
         if status == "submitted":
             db.execute(
@@ -589,6 +675,7 @@ def submit_audit_decision(db, item, erow, auditor_id, revision, decision, audit_
             db, item, "verified", auditor_id, now,
             answer=primary["answer"], answerability=primary["answerability"],
             evidence_ids=primary["evidence_ids"], notes="\n\n".join(notes_parts), verified_at=now,
+            review_data=json.loads(primary.get("review_data") or "{}"),
         )
     else:
         db.execute(
@@ -603,7 +690,7 @@ def submit_audit_decision(db, item, erow, auditor_id, revision, decision, audit_
         )
 
 
-def adjudicate_item(db, scope, question_id, revision, answer, answerability, evidence_ids, notes):
+def adjudicate_item(db, scope, question_id, revision, answer, answerability, evidence_ids, notes, *, review_data=None):
     """Finalize a calibration or overlap item after 3-expert disagreement while preserving expert_reviews."""
     now = timestamp()
     item = db.locked("SELECT * FROM review_items WHERE scope = ? AND question_id = ?", (scope, question_id))
@@ -612,6 +699,7 @@ def adjudicate_item(db, scope, question_id, revision, answer, answerability, evi
     _advance_item(
         db, item, "verified", "admin", now,
         answer=answer, answerability=answerability, evidence_ids=evidence_ids, notes=notes, verified_at=now,
+        review_data=review_data,
     )
 
 
@@ -691,10 +779,22 @@ def scientific_dashboard_data(db, scope):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Import the VacxiS review dataset into the configured database.")
     parser.add_argument("--upgrade-eval", action="store_true", help="Upgrade a matching existing eval import in place.")
-    parser.add_argument("dataset", type=Path)
+    parser.add_argument("--migrate", action="store_true", help="Apply compatible schema additions to the current database.")
+    parser.add_argument("--documents", type=Path, help="Import packaged document chunks.")
+    parser.add_argument("dataset", type=Path, nargs="?")
     args = parser.parse_args()
     try:
-        count = import_dataset(database_location(), args.dataset, upgrade_eval=args.upgrade_eval)
+        if args.migrate:
+            with connect(database_location(), write=True) as db:
+                ensure_schema(db)
+            print("Đã cập nhật cấu trúc cơ sở dữ liệu.")
+        elif args.documents:
+            count = import_documents(database_location(), args.documents)
+            print(f"Đã nạp {count} đoạn tài liệu.")
+        elif args.dataset:
+            count = import_dataset(database_location(), args.dataset, upgrade_eval=args.upgrade_eval)
+            print(f"Đã chuẩn bị {count} câu cho hai lượt duyệt.")
+        else:
+            parser.error("Chọn dataset, --migrate hoặc --documents.")
     except (ReviewError, OSError) as error:
         parser.exit(1, f"{error}\n")
-    print(f"Đã chuẩn bị {count} câu cho hai lượt duyệt.")

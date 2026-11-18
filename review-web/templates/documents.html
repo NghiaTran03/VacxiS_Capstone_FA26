@@ -1,0 +1,17 @@
+{% for document in documents %}
+<details class="full-document" data-doc-id="{{ document.id }}">
+  <summary>{{ document.title }}</summary>
+  {% if document.missing %}<p class="notice">Chưa có nội dung đầy đủ cho tài liệu này. Nhóm cần cập nhật dữ liệu tài liệu.</p>{% endif %}
+  <div class="document-categories">
+  {% for category in document.categories %}
+    <details class="document-category"><summary>{{ category.name }}</summary>
+      <div class="document-category-body">
+      {% for chunk in category.chunks %}
+        <section class="document-chunk">{% if chunk.header %}<h3>{{ chunk.header }}</h3>{% endif %}<div class="source-text">{{ chunk.html }}</div></section>
+      {% endfor %}
+      </div>
+    </details>
+  {% endfor %}
+  </div>
+</details>
+{% else %}<p class="notice">Câu hỏi chưa có tài liệu nguồn đính kèm.</p>{% endfor %}

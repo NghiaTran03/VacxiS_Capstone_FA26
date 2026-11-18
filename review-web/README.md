@@ -53,6 +53,28 @@ uv run --env-file .env.neon store.py --upgrade-eval eval_dataset_300_native.json
 - Nút tải JSON của lượt thật xuất các câu đã xác nhận. Bộ 300 câu dùng cấu trúc DeepEval gồm `metadata` và `goldens`. Mỗi golden lưu câu trả lời đã duyệt trong `expected_output` và giữ `context` cùng `source_chunk_ids` khớp theo thứ tự đoạn nguồn được chọn. Trong `additional_metadata`, `VERIFICATION_NOTES` gồm ghi chú và câu trả lời sau chỉnh sửa nếu có. `ADJUDICATED` là `true` khi người duyệt đã sửa câu trả lời hoặc để lại ghi chú. `ANNOTATOR_IDS` ghi họ tên và vai trò khi người duyệt đồng ý đưa tên vào JSON, hoặc ghi mã người duyệt.
 - Trang nguồn sử dụng Markdown, các bảng HTML đã được lọc và văn bản nguyên gốc. Nút mở PDF theo trang cần tệp PDF và bảng đối chiếu đoạn với trang PDF.
 
+## Cập nhật giao diện duyệt và tài liệu đầy đủ
+
+Trước khi chạy mã mới trên database đang có, từ thư mục `review-web` chạy migration bằng tệp môi trường trỏ đúng database. Ví dụ với Neon Production dùng `.env.neon.300`.
+
+```powershell
+uv run --env-file .env.neon.300 store.py --migrate
+```
+
+Migration bổ sung `review_data` và bảng tài liệu, giữ các lượt duyệt, lời mời và phân công chuyên gia. Với SQLite local, dùng `--env-file .env`. Sau đó deploy mã mới lên Vercel.
+
+Nội dung đầy đủ đã được đóng gói trong `data/documents.json`, đối chiếu theo `doc_ids` của bộ 300 câu fixed. Để cập nhật khi nguồn thay đổi, chạy từ thư mục gốc dự án.
+
+```powershell
+uv run scripts/prepare_review_documents.py evaluation/eval_dataset_300_final_fixed.json chunks_storage/chunks.parquet review-web/data/documents.json
+```
+
+Khung **Toàn bộ tài liệu** dùng nội dung đóng gói sẵn, hoặc các bản tài liệu đã nạp trong bảng `document_chunks`. Nếu chủ động cập nhật bảng đó, từ `review-web` chạy `uv run --env-file .env.neon.300 store.py --documents data/documents.json`.
+
+Reviewer sửa câu hỏi và câu trả lời, ghi lý do riêng rồi bấm **Lưu chỉnh sửa** để trở lại chế độ đọc. Dữ liệu được ghi lên máy chủ khi bấm **Lưu nháp**, **Xác nhận** hoặc **Tài liệu vô nghĩa**. Các lý do được lưu trong `additional_metadata.annotator_notes` với ba key `lí do sửa câu hỏi`, `lí do sửa câu trả lời`, `ghi chú cho nhóm đồ án`.
+
+`additional_metadata.status` là `null` khi đang nháp, `APPROVED` khi xác nhận nguyên trạng, `EDITED` khi đổi câu hỏi, câu trả lời, nhãn đánh giá hoặc căn cứ, và `REJECTED` khi chọn **Tài liệu vô nghĩa**. Ghi chú riêng không làm trạng thái chuyển sang `EDITED`. JSON xuất gồm cả kết quả `REJECTED`. Trong luồng 3 chuyên gia, kết quả tiếp tục qua bước đồng thuận hoặc kiểm định theo phân công hiện tại.
+
 ## Kiểm thử
 
 ```powershell
