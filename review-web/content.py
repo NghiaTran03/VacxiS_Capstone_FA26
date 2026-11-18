@@ -12,14 +12,14 @@ from dataset_format import as_golden, context_title
 STATUS = {
     "pending": "Chưa duyệt",
     "draft": "Đang duyệt",
-    "flagged": "Cần xem lại",
+    "flagged": "Cần đối chiếu",
     "verified": "Đã xác nhận",
     "submitted": "Đã nộp",
     "needs_revision": "Cần sửa lại",
     "approved": "Đạt kiểm định",
     "rejected": "Báo lỗi trả lại",
 }
-ADMIN_STATUSES = {"pending": "Chưa duyệt", "draft": "Đang duyệt", "flagged": "Cần xem lại", "verified": "Đã xác nhận"}
+ADMIN_STATUSES = {"pending": "Chưa duyệt", "draft": "Đang duyệt", "flagged": "Cần đối chiếu", "verified": "Đã xác nhận"}
 BATCH_LABELS = {
     "calibration": "Hiệu chỉnh (Calibration)",
     "overlap": "Đo đồng thuận (Overlap)",

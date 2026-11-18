@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import re
+import secrets
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -61,7 +62,7 @@ class ReviewWorkflow(unittest.TestCase):
         return self.admin.post(path, data={"csrf": self.admin_csrf, **data})
 
     def create_invite(self, scope, count, **extra):
-        operation = field(self.admin.get(f"/admin?scope={scope}"), "operation")
+        operation = secrets.token_hex(16)
         response = self.admin_post("/admin/invite", {"scope": scope, "count": count, "operation": operation, **extra})
         self.assertEqual(response.status_code, 200, response.text)
         return response
@@ -393,7 +394,9 @@ class ReviewWorkflow(unittest.TestCase):
         self.assertEqual(self.admin_post("/admin/reopen", recovery).status_code, 303)
         self.assertEqual(self.admin_post("/admin/reopen", recovery).status_code, 409)
         self.assertEqual(self.admin.get("/admin/export/live").json(), [])
-        self.assertIn("3 câu chưa phân công", self.admin.get("/admin").text)
+        with connect(self.location) as db:
+            available = db.one("SELECT COUNT(*) AS total FROM review_items WHERE scope = 'live' AND reviewer_id IS NULL")
+        self.assertEqual(available["total"], 3)
         self.assertEqual(client.get(FIRST).status_code, 404)
         self.assertIn("Bản duyệt nhầm", self.admin.get(history_path).text)
 
@@ -408,7 +411,9 @@ class ReviewWorkflow(unittest.TestCase):
         operations = re.findall(r'name="operation" value="([a-f0-9]{32})"', dashboard.text)
         released = self.admin_post("/admin/release", {"reviewer_id": assigned["reviewer_id"], "operation": operations[-1]})
         self.assertEqual(released.status_code, 200)
-        self.assertIn("3 câu chưa phân công", released.text)
+        with connect(self.location) as db:
+            available = db.one("SELECT COUNT(*) AS total FROM review_items WHERE scope = 'live' AND reviewer_id IS NULL")
+        self.assertEqual(available["total"], 3)
 
     def test_table_preview_and_edited_export_keep_evidence_in_sync(self):
         client = self.join(self.make_invite())
@@ -507,7 +512,7 @@ class ReviewWorkflow(unittest.TestCase):
         self.assertEqual(client.get(FIRST).status_code, 200)
 
     def test_invite_retry_does_not_reserve_again_and_release_revokes_link(self):
-        operation = field(self.admin.get("/admin"), "operation")
+        operation = secrets.token_hex(16)
         payload = {"scope": "live", "count": 1, "operation": operation}
         invited = self.admin_post("/admin/invite", payload)
         token = re.search(r'/join#([A-Za-z0-9_-]{43})', invited.text).group(1)
@@ -669,7 +674,20 @@ class ScientificReviewWorkflow(unittest.TestCase):
 
     def test_calibration_and_overlap_fleiss_kappa_and_adjudication(self):
         self._setup_app(12)
+        initial = self.admin.get("/admin?scope=live")
+        self.assertNotIn("Số câu giao cho người này", initial.text)
+        self.assertNotIn('action="/admin/invite"', initial.text)
+        self.assertIn("Khởi tạo sẽ tạo 3 tài khoản chuyên gia", initial.text)
+        self.assertIn("Cần đối chiếu", initial.text)
+        self.assertIn("Số câu giao cho người này", self.admin.get("/admin?scope=test").text)
         experts = self._join_experts("live")
+        duplicate = self.admin.post("/admin/scientific-setup", data={
+            "csrf": self.admin_csrf, "scope": "live", "setup_operation": secrets.token_hex(16),
+        })
+        self.assertEqual(duplicate.status_code, 422)
+        with connect(self.location) as db:
+            self.assertEqual(db.one("SELECT COUNT(*) AS total FROM expert_slots WHERE scope = 'live'")["total"], 3)
+        self.assertNotIn("Thu hồi câu chưa bắt đầu", self.admin.get("/admin?scope=live").text)
 
         # Manual invite must be blocked once scientific mode is initialized
         op = field(self.admin.get("/admin?scope=live"), "operation")
