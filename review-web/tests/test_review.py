@@ -610,6 +610,103 @@ class ScientificReviewWorkflow(unittest.TestCase):
             clients[slot] = client
         return clients
 
+    def test_unused_scientific_assignment_can_be_withdrawn_and_recreated(self):
+        self._setup_app(12)
+        experts = self._join_experts("live")
+        other_scope = self.admin.get("/admin?scope=test")
+        self.assertEqual(self.admin.post("/admin/scientific-setup", data={
+            "csrf": self.admin_csrf, "scope": "test", "setup_operation": field(other_scope, "setup_operation"),
+        }).status_code, 200)
+        with connect(self.location) as db:
+            allocations = db.all("SELECT * FROM question_allocations ORDER BY question_id")
+            old_ids = {row["reviewer_id"] for row in db.all("SELECT reviewer_id FROM expert_slots WHERE scope = 'live'")}
+            old_question = db.one("SELECT question_id FROM expert_reviews WHERE scope = 'live' AND role = 'calibration' LIMIT 1")["question_id"]
+            original = json.loads(db.one("SELECT original FROM questions WHERE id = ?", (old_question,))["original"])
+        dashboard = self.admin.get("/admin?scope=live")
+        payload = {"csrf": self.admin_csrf, "scope": "live", "reset_operation": field(dashboard, "reset_operation"),
+                   "reset_assignment": field(dashboard, "reset_assignment")}
+        stale_dashboard = self.admin.get("/admin?scope=live")
+        stale_payload = {**payload, "reset_operation": field(stale_dashboard, "reset_operation")}
+        history = self.admin.get(f"/admin/history/live/{old_question}")
+        stale_adjudication = {"csrf": self.admin_csrf, "revision": field(history, "revision"),
+                              "answer": original["expected_output"], "answerability": original["additional_metadata"]["answerability"],
+                              "evidence_id": original["additional_metadata"]["source_chunk_ids"], "notes": ""}
+        self.assertEqual(self.admin.post("/admin/scientific-reset", data={
+            **payload, "reset_assignment": payload["reset_assignment"] + "x",
+        }).status_code, 422)
+        self.assertEqual(self.admin.post("/admin/scientific-reset", data={**payload, "scope": "test"}).status_code, 422)
+        response = self.admin.post("/admin/scientific-reset", data=payload)
+        self.assertEqual(response.status_code, 303)
+        with connect(self.location) as db:
+            self.assertEqual(db.one("SELECT COUNT(*) AS n FROM expert_slots WHERE scope = 'live'")["n"], 0)
+            self.assertEqual(db.one("SELECT COUNT(*) AS n FROM expert_reviews WHERE scope = 'live'")["n"], 0)
+            self.assertEqual(db.one("SELECT COUNT(*) AS n FROM review_items WHERE scope = 'live' AND reviewer_id IS NULL")["n"], 12)
+            self.assertEqual(db.one("SELECT COUNT(*) AS n FROM expert_slots WHERE scope = 'test'")["n"], 3)
+            self.assertEqual(db.all("SELECT * FROM question_allocations ORDER BY question_id"), allocations)
+            for reviewer_id in old_ids:
+                self.assertIsNone(db.one("SELECT id FROM reviewers WHERE id = ?", (reviewer_id,)))
+                self.assertIsNone(db.one("SELECT token_hash FROM invitations WHERE reviewer_id = ?", (reviewer_id,)))
+        self.assertEqual(experts[1].get(f"/review/{old_question}").status_code, 401)
+        self.assertEqual(self.admin.post("/admin/scientific-reset", data=payload).status_code, 422)
+        self.assertEqual(self.admin.post(f"/admin/adjudicate/live/{old_question}", data=stale_adjudication).status_code, 409)
+        new_experts = self._join_experts("live")
+        self.assertEqual(self.admin.post("/admin/scientific-reset", data=stale_payload).status_code, 422)
+        with connect(self.location) as db:
+            slots = db.all("SELECT reviewer_id FROM expert_slots WHERE scope = 'live'")
+        self.assertEqual(len(slots), 3)
+        self.assertTrue(old_ids.isdisjoint({row["reviewer_id"] for row in slots}))
+        self.assertEqual(new_experts[1].get("/review").status_code, 200)
+        self.assertEqual(self.admin.post(f"/admin/adjudicate/live/{old_question}", data=stale_adjudication).status_code, 409)
+
+    def test_scientific_reset_preserves_saved_drafts(self):
+        self._setup_app(12)
+        experts = self._join_experts("live")
+        with connect(self.location) as db:
+            qid = db.one("SELECT question_id FROM expert_reviews WHERE scope = 'live' AND role = 'calibration' LIMIT 1")["question_id"]
+        page = experts[1].get(f"/review/{qid}")
+        saved = experts[1].post(f"/review/{qid}", data={
+            "csrf": csrf(page), "revision": field(page, "revision"), "action": "draft",
+            "answer": "Nội dung đang duyệt.", "answerability": "UNANSWERABLE", "notes": "Ghi chú đang làm.",
+        })
+        self.assertEqual(saved.status_code, 303)
+        dashboard = self.admin.get("/admin?scope=live")
+        result = self.admin.post("/admin/scientific-reset", data={
+            "csrf": self.admin_csrf, "scope": "live", "reset_operation": field(dashboard, "reset_operation"),
+            "reset_assignment": field(dashboard, "reset_assignment"),
+        })
+        self.assertEqual(result.status_code, 422)
+        self.assertIn("Đã có nội dung duyệt được lưu", result.text)
+        with connect(self.location) as db:
+            self.assertEqual(db.one("SELECT COUNT(*) AS n FROM expert_slots WHERE scope = 'live'")["n"], 3)
+            row = db.one("SELECT answer FROM expert_reviews WHERE scope = 'live' AND question_id = ? AND status = 'draft'", (qid,))
+        self.assertEqual(row["answer"], "Nội dung đang duyệt.")
+        self.assertIn("Nội dung đang duyệt.", experts[1].get(f"/review/{qid}").text)
+
+    def test_scientific_reset_preserves_admin_adjudication(self):
+        self._setup_app(12)
+        self._join_experts("live")
+        dashboard = self.admin.get("/admin?scope=live")
+        with connect(self.location) as db:
+            qid = db.one("SELECT question_id FROM expert_reviews WHERE scope = 'live' AND role = 'calibration' LIMIT 1")["question_id"]
+            original = json.loads(db.one("SELECT original FROM questions WHERE id = ?", (qid,))["original"])
+        history = self.admin.get(f"/admin/history/live/{qid}")
+        self.assertEqual(self.admin.post(f"/admin/adjudicate/live/{qid}", data={
+            "csrf": self.admin_csrf, "revision": field(history, "revision"),
+            "answer": original["expected_output"], "answerability": original["additional_metadata"]["answerability"],
+            "evidence_id": original["additional_metadata"]["source_chunk_ids"], "notes": "Đã chốt.",
+        }).status_code, 303)
+        result = self.admin.post("/admin/scientific-reset", data={
+            "csrf": self.admin_csrf, "scope": "live", "reset_operation": field(dashboard, "reset_operation"),
+            "reset_assignment": field(dashboard, "reset_assignment"),
+        })
+        self.assertEqual(result.status_code, 422)
+        self.assertIn("Đã có nội dung duyệt được lưu", result.text)
+        with connect(self.location) as db:
+            self.assertEqual(db.one("SELECT COUNT(*) AS n FROM expert_slots WHERE scope = 'live'")["n"], 3)
+            item = db.one("SELECT status, notes FROM review_items WHERE scope = 'live' AND question_id = ?", (qid,))
+        self.assertEqual(item["status"], "verified")
+        self.assertEqual(item["notes"], "Đã chốt.")
+
     def test_stratified_300_allocation_and_audit_priority(self):
         fixed_path = Path(__file__).resolve().parents[2] / "evaluation" / "eval_dataset_300_final_fixed.json"
         payload = json.loads(fixed_path.read_text(encoding="utf-8"))

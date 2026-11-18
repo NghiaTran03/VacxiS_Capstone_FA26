@@ -104,7 +104,8 @@ input[type="checkbox"] { width: 1.2rem; height: 1.2rem; accent-color: var(--acce
 .test-notice, .notice { padding: .6rem .85rem; border-radius: 7px; font-weight: 650; }
 .notice, .consent { background: var(--tint); color: var(--text); }
 .notice.error { background: var(--error-bg); color: var(--error); }
-.review-fields { border: 0; padding: 0; min-inline-size: 0; }
+.review-fields { min-inline-size: 0; }
+.review-fields:not(.panel) { border: 0; padding: 0; }
 .disclosure { border: 1px solid var(--line); border-radius: 7px; }
 .disclosure summary { min-height: 44px; padding: .5rem .7rem; cursor: pointer; color: var(--accent); font-weight: 650; }
 .source-index { padding: .65rem .8rem; border-radius: 7px; background: var(--tint); }

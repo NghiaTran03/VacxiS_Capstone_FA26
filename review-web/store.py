@@ -509,6 +509,44 @@ def setup_scientific_review(db, scope, tokens_by_slot):
     return [{"slot": slot, "reviewer_id": slot_rids[slot]} for slot in (1, 2, 3)]
 
 
+def reset_scientific_review(db, scope, expected_reviewers):
+    """Withdraw an unused scientific assignment and invalidate its invitations."""
+    if scope not in SCOPES:
+        raise ReviewError("Lượt duyệt không hợp lệ.")
+    db.locked("SELECT source_hash FROM dataset WHERE id = 1")
+    slots = db.all("SELECT reviewer_id FROM expert_slots WHERE scope = ? ORDER BY reviewer_id", (scope,))
+    if not slots:
+        raise ReviewError("Lượt duyệt này chưa có phân công 3 chuyên gia.")
+    if [slot["reviewer_id"] for slot in slots] != expected_reviewers:
+        raise ReviewConflict("Phân công đã thay đổi. Hãy tải lại trang rồi thử lại.")
+    for slot in slots:
+        db.locked("SELECT id FROM reviewers WHERE id = ?", (slot["reviewer_id"],))
+    db.all("SELECT question_id FROM review_items WHERE scope = ? ORDER BY question_id" +
+           (" FOR UPDATE" if db.postgres else ""), (scope,))
+    started = db.one(
+        "SELECT question_id FROM expert_reviews WHERE scope = ? AND "
+        "(status <> 'pending' OR revision <> 0 OR answer IS NOT NULL OR answerability IS NOT NULL "
+        "OR evidence_ids IS NOT NULL OR notes <> '' OR review_note <> '' OR review_data <> '{}') LIMIT 1",
+        (scope,),
+    )
+    shared_progress = db.one(
+        "SELECT question_id FROM review_items WHERE scope = ? AND "
+        "(status <> 'pending' OR answer IS NOT NULL OR answerability IS NOT NULL OR evidence_ids IS NOT NULL "
+        "OR notes <> '' OR verified_at IS NOT NULL OR review_data <> '{}') LIMIT 1",
+        (scope,),
+    )
+    if started or shared_progress:
+        raise ReviewError("Đã có nội dung duyệt được lưu. Hãy liên hệ nhóm để xử lý kết quả trước khi thu hồi toàn bộ.")
+    db.execute("DELETE FROM expert_reviews WHERE scope = ?", (scope,))
+    db.execute("DELETE FROM expert_slots WHERE scope = ?", (scope,))
+    db.execute("UPDATE review_items SET reviewer_id = NULL, revision = revision + 1 WHERE scope = ?", (scope,))
+    for slot in slots:
+        reviewer_id = slot["reviewer_id"]
+        db.execute("DELETE FROM invitations WHERE reviewer_id = ?", (reviewer_id,))
+        db.execute("DELETE FROM reviewers WHERE id = ? AND scope = ?", (reviewer_id, scope))
+    return len(slots)
+
+
 def _consensus_check(rows, original):
     """Compare submitted answers, questions, evidence, and final decisions."""
     signatures = set()

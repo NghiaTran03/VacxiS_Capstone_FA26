@@ -14,7 +14,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from itsdangerous import URLSafeSerializer
+from itsdangerous import BadData, URLSafeSerializer
 from starlette.datastructures import FormData
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -27,7 +27,7 @@ from documents import packaged_documents
 from store import (
     BASE_DIR, CONSENT_VERSION, SCOPES, ReviewConflict, ReviewError, accept_invite, adjudicate_item,
     connect, database_location, digest, expert_slot_for, invite, invited_reviewer, issue_link,
-    release_unstarted, reopen, reserve_operation, save_expert_review, save_review,
+    release_unstarted, reopen, reserve_operation, reset_scientific_review, save_expert_review, save_review,
     scientific_dashboard_data, setup_scientific_review, submit_audit_decision, timestamp, update_profile,
 )
 
@@ -209,6 +209,7 @@ def create_app(location=None):
     secret = secret or secrets.token_urlsafe(48)
     invitation_key = secret.encode()
     consent_signer = URLSafeSerializer(secret, salt="vacxis-consent-v1")
+    assignment_signer = URLSafeSerializer(secret, salt="vacxis-scientific-reset-v1")
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     app.add_middleware(SessionMiddleware, secret_key=secret,
                        https_only=origin.scheme == "https", max_age=14 * 24 * 60 * 60, session_cookie="vacxis_review")
@@ -724,6 +725,8 @@ def create_app(location=None):
                     rows=filtered,
                     invite_operation=secrets.token_hex(16), reviewer_operation=secrets.token_hex(16),
                     setup_operation=secrets.token_hex(16),
+                    reset_operation=secrets.token_hex(16),
+                    reset_assignment=assignment_signer.dumps([scope, sorted(slot["id"] for slot in scientific["slots"])]),
                     invite_url=f"{public_url}/join#{token}" if token else None, invite_code=code,
                     public_url=public_url, error=error, code=422 if error else 200,
                     message=request.session.pop("message", ""))
@@ -756,6 +759,27 @@ def create_app(location=None):
         except ReviewError as error:
             return admin_page(request, scope, error=str(error))
         return admin_page(request, scope, scientific_invites=[credentials[s] for s in (1, 2, 3)])
+
+    @app.post("/admin/scientific-reset")
+    def admin_scientific_reset(request: Request, form: PostForm):
+        require_admin(request)
+        scope = form.get("scope", "live")
+        if scope not in SCOPES:
+            raise HTTPException(400, "Lượt duyệt không hợp lệ.")
+        try:
+            try:
+                assignment = assignment_signer.loads(form.get("reset_assignment", ""))
+            except BadData as error:
+                raise ReviewError("Phân công không hợp lệ. Hãy tải lại trang rồi thử lại.") from error
+            if not isinstance(assignment, list) or len(assignment) != 2 or assignment[0] != scope:
+                raise ReviewError("Phân công không hợp lệ. Hãy tải lại trang rồi thử lại.")
+            with connect(location, write=True) as db:
+                reserve_operation(db, form.get("reset_operation"))
+                reset_scientific_review(db, scope, assignment[1])
+        except ReviewError as error:
+            return admin_page(request, scope, error=str(error))
+        request.session["message"] = "Đã thu hồi phân công 3 chuyên gia. Các lời mời cũ đã hết hiệu lực."
+        return redirect(f"/admin?scope={scope}")
 
     @app.post("/admin/invite")
     def admin_invite(request: Request, form: PostForm):

@@ -102,6 +102,19 @@ Lời mời dùng một lần, có hạn 7 ngày.</textarea></div>
 <section class="panel stack" aria-label="Phân công chuẩn khoa học">
   <h2>Phân công chuẩn khoa học (3 Chuyên gia)</h2>
   {% if scientific.active %}
+    <details class="disclosure">
+      <summary>Thu hồi phân công 3 chuyên gia</summary>
+      <div class="section-body stack">
+        <p>Đưa các câu hỏi về chưa phân công và vô hiệu hóa 3 lời mời hiện tại. Thao tác thực hiện được khi cả 3 chuyên gia chưa lưu nháp, nộp bài hoặc có kết quả kiểm định.</p>
+        <form action="/admin/scientific-reset" method="post">
+          <input type="hidden" name="csrf" value="{{ csrf }}">
+          <input type="hidden" name="scope" value="{{ scope }}">
+          <input type="hidden" name="reset_operation" value="{{ reset_operation }}">
+          <input type="hidden" name="reset_assignment" value="{{ reset_assignment }}">
+          <button type="submit">Thu hồi toàn bộ phân công</button>
+        </form>
+      </div>
+    </details>
     <div class="metrics-grid">
       <div class="metric-card">
         <span class="muted">Gói Calibration (Hiệu chỉnh)</span>

@@ -92,14 +92,14 @@
       <button type="submit" name="action" value="audit_reject">Có lỗi — Trả lại người chấm chính</button>
     </div>{% endif %}
     {% else %}
-    <fieldset class="panel stack review-fields"{% if audit_ctx.locked %} disabled{% endif %}>
-      <h2>Tổng kết đánh giá</h2>
+    <fieldset class="panel stack review-fields" aria-labelledby="review-summary-title"{% if audit_ctx.locked %} disabled{% endif %}>
+      <h2 id="review-summary-title">Tổng kết đánh giá</h2>
       <div class="field"><label for="answerability">Đánh giá tài liệu</label>
         <select id="answerability" name="answerability">{% for key, label in labels.items() %}<option value="{{ key }}"{% if values.answerability == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
       </div>
       <div class="field"><label for="notes">Ghi chú cho nhóm đồ án</label>
         <textarea id="notes" name="notes" rows="2" maxlength="3000">{{ values.notes }}</textarea>
-        <p class="muted">Ghi chú được lưu trong annotator_notes của tệp JSON kết quả.</p>
+        <p class="muted">Ghi chú sẽ được gửi cho nhóm đồ án cùng kết quả đánh giá.</p>
       </div>
       {{ hint('Chấp nhận bản ghi hay cần chỉnh sửa? Ghi nội dung cần sửa và nhận xét bổ sung nếu có.') }}
     </fieldset>
