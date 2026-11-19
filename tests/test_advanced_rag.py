@@ -1,112 +1,188 @@
-"""Offline advanced RAG tests with injected planner, search, and reranker stubs."""
-from dataclasses import replace
+"""Offline advanced RAG contracts for original-query dense search and top-k generation."""
+import sys
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
 
-from vacxis_capstone_fa26.llm import LLMError
-from vacxis_capstone_fa26.query.schemas import ClarifyPlan, RetrievePlan
-from vacxis_capstone_fa26.retrieval.advanced import AdvancedRAGRetriever
+from vacxis_capstone_fa26.retrieval.dense import DenseRetriever
 from vacxis_capstone_fa26.retrieval.schemas import RetrievalConfig
 
 
-def row(cid):
-    return {"chunk_id": cid, "text": f"Text {cid}", "doc_title": f"Title {cid}"}
+def make_retriever(top_k=2):
+    model, client = Mock(), Mock()
+    model.encode.return_value = {"dense_vecs": [SimpleNamespace(tolist=lambda: [0.1, 0.9])]}
+    client.query_points.return_value = SimpleNamespace(points=[
+        SimpleNamespace(id=1, score=0.95, payload={
+            "chunk_id": "a", "text": "Text a", "doc_title": "Title a",
+            "header": "Indications", "metadata": {"source": "insert"},
+        }),
+        SimpleNamespace(id=2, score=0.8, payload={"chunk_id": "b", "text": "Text b"}),
+    ])
+    retriever = DenseRetriever(
+        RetrievalConfig(top_k=top_k, collection_name="test-collection"),
+        embed_model=model, client=client,
+    )
+    return retriever, model, client
 
 
-def test_expands_fuses_and_reranks_against_original_question():
-    search = Mock()
-    search.retrieve.side_effect = [[row("a"), row("shared")], [row("b"), row("shared")]]
-    planner = Mock()
-    planner.plan.return_value = RetrievePlan("ignored", ("question", "expansion"))
-    reranker = Mock()
-    reranker.rerank.side_effect = lambda query, candidates, top_k: [replace(candidates[1], score=0.9, rerank_score=0.9)]
-    advanced = AdvancedRAGRetriever(search, planner, candidate_k=10, reranker=reranker)
-    result = advanced.retrieve("question", top_k=1)
-    assert [c.kwargs["query"] for c in search.retrieve.call_args_list] == ["question", "expansion"]
-    call = reranker.rerank.call_args.kwargs
-    assert call["query"] == "question"
-    assert [c.chunk_id for c in call["candidates"]] == ["shared", "a", "b"]
-    assert call["candidates"][0].rrf_score == pytest.approx(2 / 62)
+def test_embeds_original_query_once_and_returns_dense_top_k_with_native_scores():
+    retriever, model, client = make_retriever()
+    result = retriever.retrieve(" original question ", top_k=1)
+    model.encode.assert_called_once_with(
+        [" original question "], batch_size=1, max_length=512,
+        return_dense=True, return_sparse=False, return_colbert_vecs=False,
+    )
+    client.query_points.assert_called_once_with(
+        collection_name="test-collection", query=[0.1, 0.9], using="dense",
+        limit=1, with_payload=True,
+    )
+    assert len(result) == 1
+    assert result[0]["chunk_id"] == "a"
+    assert result[0]["score"] == 0.95
     assert result[0]["doc_title"] == "Title a"
-    assert result[0]["rerank_score"] == 0.9
-    assert advanced.last_trace["planner_status"] == "expanded"
-    assert advanced.last_trace["unique_candidate_count"] == 3
-    assert advanced.last_trace["retrieved_chunk_ids"] == ["a"]
+    assert result[0]["header"] == "Indications"
+    assert result[0]["metadata"] == {"source": "insert"}
+    assert "rrf_score" not in result[0]
+    assert "rerank_score" not in result[0]
+    assert retriever.last_trace == {
+        "search_queries": [" original question "], "top_k": 1, "retrieved_chunk_ids": ["a"],
+    }
 
 
-@pytest.mark.parametrize("plan,status", [
-    (ClarifyPlan("Which vaccine?"), "clarification_fallback"),
-    (LLMError("unavailable"), "planner_error_fallback"),
-    (RetrievePlan("question", ("question",)), "original_only"),
-])
-def test_planner_fallback_keeps_original_search(plan, status):
-    search, planner = Mock(), Mock()
-    search.retrieve.return_value = [row("a")]
-    if isinstance(plan, Exception):
-        planner.plan.side_effect = plan
-    else:
-        planner.plan.return_value = plan
-    advanced = AdvancedRAGRetriever(search, planner, config=RetrievalConfig(skip_rerank=True))
-    assert advanced.retrieve("question", top_k=1)[0]["chunk_id"] == "a"
-    search.retrieve.assert_called_once_with(query="question", top_k=50)
-    assert advanced.last_trace["planner_status"] == status
-    assert advanced.last_trace["search_queries"] == ["question"]
+def test_default_depth_and_empty_results_preserve_search_order():
+    retriever, _, client = make_retriever()
+    result = retriever.retrieve("question")
+    assert [row["chunk_id"] for row in result] == ["a", "b"]
+    assert [row["score"] for row in result] == [0.95, 0.8]
+    assert client.query_points.call_args.kwargs["limit"] == 2
+    client.query_points.return_value.points = []
+    assert retriever.retrieve("missing") == []
+    assert retriever.last_trace["retrieved_chunk_ids"] == []
 
 
-def test_query_and_candidate_budgets_and_deduplication():
-    search, planner = Mock(), Mock()
-    search.retrieve.return_value = [row("a"), row("a"), row("b")]
-    planner.plan.return_value = RetrievePlan("question", (" question ", "one", " one ", "two", "three"))
-    advanced = AdvancedRAGRetriever(search, planner, config=RetrievalConfig(skip_rerank=True), candidate_k=1)
-    result = advanced.retrieve("question", top_k=2)
-    assert len(search.retrieve.call_args_list) == 3
-    assert [c.kwargs["query"] for c in search.retrieve.call_args_list] == ["question", "one", "two"]
-    assert all(c.kwargs["top_k"] == 2 for c in search.retrieve.call_args_list)
-    assert [r["chunk_id"] for r in result] == ["a", "b"]
-    assert result[1]["rrf_score"] == pytest.approx(3 / 62)
-
-
-def test_search_errors_propagate_and_owned_resources_close():
-    search, planner = Mock(), Mock()
-    planner.plan.return_value = RetrievePlan("q", ("q",))
-    search.retrieve.side_effect = RuntimeError("store unavailable")
-    advanced = AdvancedRAGRetriever(search, planner, owns_retriever=True)
-    with pytest.raises(RuntimeError, match="store unavailable"):
-        with advanced:
-            advanced.retrieve("q")
-    search.close.assert_called_once()
-
-
-def test_empty_query_and_invalid_top_k_do_not_invoke_models():
-    search, planner = Mock(), Mock()
-    advanced = AdvancedRAGRetriever(search, planner)
-    assert advanced.retrieve(" ") == []
+@pytest.mark.parametrize("top_k", [0, -1, True, 1.5])
+def test_invalid_depth_is_rejected_before_model_or_search(top_k):
+    retriever, model, client = make_retriever()
     with pytest.raises(ValueError, match="positive integer"):
-        advanced.retrieve("q", top_k=0)
-    planner.plan.assert_not_called()
-    search.retrieve.assert_not_called()
+        retriever.retrieve("question", top_k=top_k)
+    model.encode.assert_not_called()
+    client.query_points.assert_not_called()
 
 
-def test_advanced_cli_and_report_traces(monkeypatch, tmp_path):
+def test_blank_query_resets_trace_without_model_or_search():
+    retriever, model, client = make_retriever()
+    retriever.last_trace = {"retrieved_chunk_ids": ["stale"]}
+    assert retriever.retrieve(" \n ") == []
+    assert retriever.last_trace == {"search_queries": [], "top_k": 2, "retrieved_chunk_ids": []}
+    model.encode.assert_not_called()
+    client.query_points.assert_not_called()
+
+
+def test_model_and_store_errors_propagate_and_injected_client_is_not_closed():
+    retriever, model, client = make_retriever()
+    model.encode.side_effect = RuntimeError("model unavailable")
+    with pytest.raises(RuntimeError, match="model unavailable"):
+        retriever.retrieve("question")
+    client.query_points.assert_not_called()
+    model.encode.side_effect = None
+    client.query_points.side_effect = RuntimeError("store unavailable")
+    with pytest.raises(RuntimeError, match="store unavailable"):
+        with retriever:
+            retriever.retrieve("question")
+    client.close.assert_not_called()
+
+
+def test_owned_client_is_lazy_and_closed_on_failure(monkeypatch):
+    _, model, client = make_retriever()
+    factory = Mock(return_value=client)
+    monkeypatch.setitem(sys.modules, "qdrant_client", SimpleNamespace(QdrantClient=factory))
+    retriever = DenseRetriever(
+        RetrievalConfig(qdrant_host="store", qdrant_port=6334), embed_model=model,
+    )
+    factory.assert_not_called()
+    client.query_points.side_effect = RuntimeError("store unavailable")
+    with pytest.raises(RuntimeError, match="store unavailable"):
+        with retriever:
+            retriever.retrieve("question")
+    factory.assert_called_once_with(host="store", port=6334)
+    client.close.assert_called_once()
+    retriever.close()
+    client.close.assert_called_once()
+
+
+def test_advanced_retrieval_cli_and_metadata_need_no_planner_or_corpus(monkeypatch, tmp_path):
     from vacxis_capstone_fa26.evaluation import cli
     from vacxis_capstone_fa26.evaluation.schemas import EvaluationSummary
 
-    chunks = tmp_path / "chunks.parquet"
-    chunks.touch()
-    base = ["vacxis-eval", "--advanced-rag", "--chunks", str(chunks), "--planner-model", "test-planner"]
-    monkeypatch.setattr("sys.argv", base)
+    base = ["vacxis-eval", "--advanced-rag", "--chunks", str(tmp_path / "absent.parquet")]
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    monkeypatch.setattr(sys, "argv", base + ["--retrieval-only"])
     args = cli.parse_args()
+    assert args.advanced_rag
+    retriever = cli._build_advanced_retriever(args)
+    assert isinstance(retriever, DenseRetriever)
     summary = EvaluationSummary(per_query_results=[{"query_id": "Q1", "metadata": {}}])
     cli._record_retrieval_run(summary, args)
-    assert summary.metadata["run"]["retriever"] == "advanced_bm25_dense"
-    assert summary.metadata["run"]["planner_model"] == "test-planner"
-    trace = {"planner_status": "clarification_fallback", "search_queries": ["q"]}
-    cli._attach_advanced_traces(summary, {"Q1": trace})
+    run = summary.metadata["run"]
+    assert run["retriever"] == "advanced_dense"
+    assert run["dense_only"] is True
+    assert run["skip_rerank"] is True
+    assert "planner_model" not in run
+    assert "reranker_path" not in run
+    trace = {"search_queries": ["question"], "top_k": 1, "retrieved_chunk_ids": ["a"]}
+    cli._attach_retrieval_traces(summary, {"Q1": trace})
     assert summary.per_query_results[0]["metadata"]["retrieval_trace"] == trace
-    assert summary.metadata["planner_status_counts"] == {"clarification_fallback": 1}
+    assert "planner_status_counts" not in summary.metadata
     for extra in (["--baseline"], ["--hybrid-baseline"], ["--results", "saved.json"],
-                  ["--advanced-candidate-k", "0"], ["--planner-timeout", "121"]):
-        monkeypatch.setattr("sys.argv", base + extra)
+                  ["--top-k", "0"], ["--planner-model", "unused"]):
+        monkeypatch.setattr(sys, "argv", base + ["--retrieval-only"] + extra)
         with pytest.raises(SystemExit):
             cli.parse_args()
+
+
+def test_full_evaluation_requires_corpus_for_judge_context(monkeypatch, tmp_path, capsys):
+    from vacxis_capstone_fa26.evaluation.cli import parse_args
+
+    chunks = tmp_path / "chunks.parquet"
+    monkeypatch.setattr(sys, "argv", ["vacxis-eval", "--advanced-rag", "--chunks", str(chunks)])
+    with pytest.raises(SystemExit):
+        parse_args()
+    assert "requires a chunk corpus" in capsys.readouterr().err
+    chunks.touch()
+    assert parse_args().advanced_rag
+
+
+def test_dense_top_k_flows_directly_to_generator(monkeypatch, tmp_path):
+    from vacxis_capstone_fa26.evaluation import cli
+    from vacxis_capstone_fa26.generation import generator
+
+    retriever, model, client = make_retriever()
+    chunks = tmp_path / "chunks.parquet"
+    chunks.touch()
+    monkeypatch.setattr(sys, "argv", [
+        "vacxis-eval", "--advanced-rag", "--top-k", "1", "--chunks", str(chunks),
+    ])
+    monkeypatch.setattr(cli, "_build_advanced_retriever", Mock(return_value=retriever))
+    gen = Mock()
+    gen.generate.return_value.to_dict.return_value = {"answer": "answer"}
+    monkeypatch.setattr(generator, "MedicalGenerator", Mock(return_value=gen))
+    pipeline, answer_fn = cli._build_answer_fn(cli.parse_args(), {})
+    with pipeline:
+        assert answer_fn("original question", {"query_id": "Q1"}) == {"answer": "answer"}
+    model.encode.assert_called_once()
+    client.query_points.assert_called_once()
+    gen.generate.assert_called_once()
+    sent = gen.generate.call_args.kwargs
+    assert sent["query"] == "original question"
+    assert [row["chunk_id"] for row in sent["chunks"]] == ["a"]
+    assert sent["chunks"][0]["score"] == 0.95
+    assert answer_fn.retrieval_traces["Q1"]["retrieved_chunk_ids"] == ["a"]
+    gen.close.assert_called_once()
+
+
+def test_advanced_import_uses_dense_retrieval():
+    from vacxis_capstone_fa26.retrieval import DenseRetriever as PublicRetriever
+    from vacxis_capstone_fa26.retrieval.advanced import AdvancedRAGRetriever
+
+    assert AdvancedRAGRetriever is PublicRetriever is DenseRetriever
