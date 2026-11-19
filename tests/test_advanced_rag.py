@@ -186,3 +186,38 @@ def test_advanced_import_uses_dense_retrieval():
     from vacxis_capstone_fa26.retrieval.advanced import AdvancedRAGRetriever
 
     assert AdvancedRAGRetriever is PublicRetriever is DenseRetriever
+
+
+def test_advanced_generation_and_retrieval_evaluation_share_factory(monkeypatch, tmp_path):
+    from vacxis_capstone_fa26.evaluation import cli
+    from vacxis_capstone_fa26.generation import generator
+
+    chunks = tmp_path / "chunks.parquet"
+    chunks.touch()
+    monkeypatch.setattr("sys.argv", ["vacxis-eval", "--advanced-rag", "--chunks", str(chunks)])
+    args = cli.parse_args()
+    retriever = Mock()
+    retriever.__enter__ = Mock(return_value=retriever)
+    retriever.__exit__ = Mock(return_value=False)
+    ranked = [{"chunk_id": "c1", "text": "context", "doc_title": "Title"}]
+    retriever.retrieve.return_value = ranked
+    retriever.last_trace = {"search_queries": ["question"], "retrieved_chunk_ids": ["c1"]}
+    factory = Mock(return_value=retriever)
+    monkeypatch.setattr(cli, "_build_advanced_retriever", factory)
+    gen = Mock()
+    gen.generate.return_value.to_dict.return_value = {"answer": "answer", "retrieved_chunk_ids": ["c1"]}
+    monkeypatch.setattr(generator, "MedicalGenerator", Mock(return_value=gen))
+    pipeline, answer_fn = cli._build_answer_fn(args, {})
+    with pipeline:
+        assert answer_fn("question", {"query_id": "Q1"})["retrieved_chunk_ids"] == ["c1"]
+    gen.generate.assert_called_once_with(query="question", chunks=ranked)
+    gen.close.assert_called_once()
+    evaluator = Mock()
+    from vacxis_capstone_fa26.evaluation.schemas import EvaluationSummary
+    evaluator.evaluate_retrieval.return_value = EvaluationSummary(per_query_results=[{"query_id": "Q1", "metadata": {}}])
+    dataset = [{"QUERY_ID": "Q1", "QUERY": "question"}]
+    cli._evaluate_live_retrieval(evaluator, dataset, args)
+    evaluated = evaluator.evaluate_retrieval.call_args.args[1]
+    assert evaluated[0]["GENERATED_ANSWER"]["retrieved_chunk_ids"] == ["c1"]
+    assert factory.call_count == 2
+    assert retriever.__exit__.call_count == 2

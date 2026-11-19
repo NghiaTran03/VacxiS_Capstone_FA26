@@ -128,17 +128,9 @@ def parse_args() -> argparse.Namespace:
         help="Use BM25 over --chunks for live retrieval and keep the standard generator",
     )
     baselines.add_argument(
-        "--hybrid-baseline", action="store_true",
-        help="Use BM25 + BGE-M3 dense RRF retrieval without learned sparse search or reranking",
-    )
-    baselines.add_argument(
         "--advanced-rag", action="store_true",
         help="Original query -> BGE-M3 dense embedding -> Qdrant top-k -> standard generator",
     )
-    parser.add_argument("--baseline-candidate-k", type=int, default=50,
-                        help="Candidates per BM25/dense branch for --hybrid-baseline")
-    parser.add_argument("--baseline-rrf-k", type=int, default=60,
-                        help="RRF smoothing constant for --hybrid-baseline")
     parser.add_argument("--collection-name", type=str, default="VacxiS_Capstone_FA26")
     parser.add_argument("--qdrant-host", type=str, default="localhost")
     parser.add_argument("--qdrant-port", type=int, default=6333)
@@ -170,12 +162,6 @@ def parse_args() -> argparse.Namespace:
         parser.error("--advanced-rag requires live evaluation without --results.")
     if args.advanced_rag and not args.retrieval_only and not args.chunks.is_file():
         parser.error(f"Full --advanced-rag evaluation requires a chunk corpus at {args.chunks}.")
-    if args.hybrid_baseline and args.results is not None:
-        parser.error("--hybrid-baseline requires live evaluation without --results.")
-    if args.baseline_candidate_k < 1 or args.baseline_rrf_k < 1:
-        parser.error("Baseline candidate count and RRF constant must be positive.")
-    if args.hybrid_baseline and not args.chunks.is_file():
-        parser.error(f"--hybrid-baseline requires a chunk corpus at {args.chunks}.")
     if args.baseline and args.results is not None:
         parser.error("--baseline requires live evaluation without --results.")
     if args.baseline and not args.chunks.is_file():
@@ -276,16 +262,6 @@ def _load_flat_dataset(path: Path) -> list[dict[str, Any]]:
     return records
 
 
-def _build_hybrid_baseline(args: argparse.Namespace):
-    from vacxis_capstone_fa26.cli import retrieval_config
-    from vacxis_capstone_fa26.retrieval.hybrid_baseline import HybridBaselineRetriever
-
-    return HybridBaselineRetriever.from_parquet(
-        args.chunks, config=retrieval_config(args),
-        candidate_k=args.baseline_candidate_k, rrf_k=args.baseline_rrf_k,
-    )
-
-
 def _build_advanced_retriever(args: argparse.Namespace):
     from vacxis_capstone_fa26.cli import retrieval_config
     from vacxis_capstone_fa26.retrieval.dense import DenseRetriever
@@ -322,16 +298,13 @@ def _build_answer_fn(args: argparse.Namespace, chunk_texts: dict[str, str]):
     elif args.advanced_rag:
         retriever = _build_advanced_retriever(args)
         pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
-    elif args.hybrid_baseline:
-        retriever = _build_hybrid_baseline(args)
-        pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
     else:
         pipeline = VacxisRAGPipeline(retrieval_config=retrieval_config(args), generator=generator)
 
     traces: dict[str, Any] = {}
 
     def answer_fn(query: str, golden: dict) -> dict:
-        chunks = retriever.retrieve(query, top_k=args.top_k) if (args.baseline or args.hybrid_baseline or args.advanced_rag) else None
+        chunks = retriever.retrieve(query, top_k=args.top_k) if (args.baseline or args.advanced_rag) else None
         if args.advanced_rag:
             traces[golden["query_id"]] = dict(retriever.last_trace)
         return pipeline.answer(query=query, top_k=args.top_k, override_chunks=chunks).to_dict()
@@ -372,8 +345,6 @@ def _evaluate_live_retrieval(
             retriever = BM25Retriever(load_chunk_texts(args.chunks))
         elif args.advanced_rag:
             retriever = resources.enter_context(_build_advanced_retriever(args))
-        elif args.hybrid_baseline:
-            retriever = resources.enter_context(_build_hybrid_baseline(args))
         else:
             from vacxis_capstone_fa26.cli import retrieval_config
             from vacxis_capstone_fa26.retrieval.retriever import VacxisRetriever
@@ -506,15 +477,11 @@ def _record_retrieval_run(summary: EvaluationSummary, args: argparse.Namespace) 
         "results": str(args.results) if args.results is not None else None,
     }
     if args.results is None:
-        name = "advanced_dense" if args.advanced_rag else ("bm25" if args.baseline else ("bm25_dense_rrf" if args.hybrid_baseline else "hybrid"))
+        name = "advanced_dense" if args.advanced_rag else ("bm25" if args.baseline else "hybrid")
         run.update({"retriever": name,
                     "top_k": args.top_k, "chunks": str(args.chunks)})
         if args.advanced_rag:
             run.update({"dense_only": True, "skip_rerank": True,
-                        "collection_name": args.collection_name, "model_path": args.model_path})
-        elif args.hybrid_baseline:
-            run.update({"candidate_k": args.baseline_candidate_k, "rrf_k": args.baseline_rrf_k,
-                        "dense_only": True, "skip_rerank": True,
                         "collection_name": args.collection_name, "model_path": args.model_path})
         elif not args.baseline:
             run.update({"collection_name": args.collection_name,
