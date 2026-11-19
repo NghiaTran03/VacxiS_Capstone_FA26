@@ -56,10 +56,11 @@ class GeneratedAnswer:
     model: str = ""
     latency_seconds: float = 0.0
     usage: dict[str, int] = field(default_factory=dict)
+    query_context: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert answer object to serializable dictionary."""
-        return {
+        result = {
             "query": self.query,
             "answer": self.answer,
             "citations": self.citations,
@@ -71,3 +72,6 @@ class GeneratedAnswer:
             "latency_seconds": round(self.latency_seconds, 4),
             "usage": self.usage,
         }
+        if self.query_context:
+            result["query_context"] = self.query_context
+        return result

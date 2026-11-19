@@ -6,6 +6,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack
 from copy import deepcopy
+from dataclasses import asdict
 import logging
 import os
 from pathlib import Path
@@ -15,10 +16,9 @@ from uuid import uuid4
 
 import gradio as gr
 
-from ..cli import add_retrieval_arguments, retrieval_config
 from ..generation import VacxisRAGPipeline
 from ..llm import LLMError, validate_config
-from ..query import Clarification, ClarifyPlan, QueryPlanner
+from ..query import Clarification, ClarifyPlan, ConversationMessage, QueryPlanner
 from ..retrieval.schemas import RetrievalConfig
 from .documents import Documents, citation
 
@@ -113,6 +113,89 @@ def _progress(events: list[tuple[str, int | None]], outcome: str | None = None) 
     }
 
 
+def _conversation_history(messages: list[dict]) -> tuple[ConversationMessage, ...]:
+    """Extract plain text without progress records or citation metadata."""
+    return tuple(
+        ConversationMessage(message["role"], message["content"])
+        for message in messages
+        if message.get("role") in {"user", "assistant"}
+        and isinstance(message.get("content"), str) and message["content"].strip()
+        and message.get("metadata", {}).get("title") != "Quá trình trả lời"
+    )
+
+
+def _submit(text: str, saved: dict, run_turn):
+    """Preview a turn and commit browser history only after a successful result."""
+    text = text.strip()
+    if not text or len(text) > 2000:
+        if text:
+            gr.Warning("Câu hỏi có thể dài tối đa 2.000 ký tự.")
+        yield (gr.skip(),) * 6
+        return
+
+    updated = deepcopy(saved)
+    active = _active(updated)
+    if active is None:
+        chat_id = str(uuid4())
+        active = {"title": text[:65], "messages": [], "pending": None}
+        updated["conversations"][chat_id] = active
+        updated["active"] = chat_id
+    messages = active["messages"]
+    pending = active["pending"]
+    snapshot = (
+        tuple(ConversationMessage(**message) for message in pending.get("history", []))
+        if pending else _conversation_history(messages)
+    )
+    messages.append({"role": "user", "content": text})
+    original = pending["query"] if pending else text
+    clarifications = pending["clarifications"] + [{"question": pending["question"], "answer": text}] if pending else []
+    events = []
+
+    def preview():
+        return gr.skip(), gr.skip(), gr.skip(), _display(messages + [_progress(events)], updated["active"]), gr.update(value="", interactive=False), gr.update(interactive=False)
+
+    yield preview()
+    notices = SimpleQueue()
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(
+            run_turn, original, clarifications=[Clarification(**turn) for turn in clarifications],
+            history=snapshot,
+            on_progress=lambda stage, count: notices.put((stage, count)),
+        )
+        future.add_done_callback(lambda _: notices.put(None))
+        for notice in iter(notices.get, None):
+            events.append(notice)
+            yield preview()
+        try:
+            result = future.result()
+        except Exception as exc:
+            if isinstance(exc, LLMError):
+                logger.warning("Chat model unavailable: %s", exc)
+                gr.Warning("Dịch vụ trả lời chưa sẵn sàng. Hãy kiểm tra cấu hình OpenRouter.")
+            else:
+                logger.error("Chat turn failed (%s). Check retrieval services and model settings.", type(exc).__name__)
+                gr.Warning("Tra cứu gặp lỗi. Hãy kiểm tra Qdrant và các model rồi thử lại.")
+            previous = _active(saved)
+            yield gr.skip(), gr.skip(), gr.skip(), _display(
+                (previous["messages"] if previous else []) + [_progress(events, "failed")], saved["active"],
+            ), gr.update(value=text, interactive=True), gr.update(interactive=True)
+            return
+
+    if isinstance(result, ClarifyPlan):
+        active["pending"] = {
+            "query": original, "clarifications": clarifications,
+            "question": result.clarification_question,
+            "history": [asdict(message) for message in snapshot],
+        }
+        messages.extend([_progress(events, "clarified"), {"role": "assistant", "content": result.clarification_question}])
+    else:
+        active["pending"] = None
+        messages.extend([_progress(events, "answered"), {
+            "role": "assistant", "content": result.answer, "sources": [citation(chunk) for chunk in result.cited_chunks],
+        }])
+    yield updated, updated, _history_picker(updated), _display(messages, updated["active"]), gr.update(value="", interactive=True), gr.update(interactive=True)
+
+
 def build_app(run_turn, documents: Documents) -> gr.Blocks:
     with gr.Blocks(title="VacxiS") as app:
         browser_history = gr.BrowserState(
@@ -170,62 +253,7 @@ def build_app(run_turn, documents: Documents) -> gr.Blocks:
             return gr.skip(), gr.skip(), gr.skip()
 
         def submit(text: str, saved: dict):
-            text = text.strip()
-            if not text or len(text) > 2000:
-                if text:
-                    gr.Warning("Câu hỏi có thể dài tối đa 2.000 ký tự.")
-                yield (gr.skip(),) * 6
-                return
-
-            updated = deepcopy(saved)
-            active = _active(updated)
-            if active is None:
-                chat_id = str(uuid4())
-                active = {"title": text[:65], "messages": [], "pending": None}
-                updated["conversations"][chat_id] = active
-                updated["active"] = chat_id
-            messages = active["messages"]
-            messages.append({"role": "user", "content": text})
-            pending = active["pending"]
-            original = pending["query"] if pending else text
-            clarifications = pending["clarifications"] + [{"question": pending["question"], "answer": text}] if pending else []
-            events = []
-
-            def preview():
-                return gr.skip(), gr.skip(), gr.skip(), _display(messages + [_progress(events)], updated["active"]), gr.update(value="", interactive=False), gr.update(interactive=False)
-
-            yield preview()
-            notices = SimpleQueue()
-            with ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(
-                    run_turn, original, clarifications=[Clarification(**turn) for turn in clarifications],
-                    on_progress=lambda stage, count: notices.put((stage, count)),
-                )
-                future.add_done_callback(lambda _: notices.put(None))
-                for notice in iter(notices.get, None):
-                    events.append(notice)
-                    yield preview()
-                try:
-                    result = future.result()
-                except Exception as exc:
-                    if isinstance(exc, LLMError):
-                        logger.warning("Chat model unavailable: %s", exc)
-                        gr.Warning("Dịch vụ trả lời chưa sẵn sàng. Hãy kiểm tra cấu hình OpenRouter.")
-                    else:
-                        logger.error("Chat turn failed (%s). Check retrieval services and model settings.", type(exc).__name__)
-                        gr.Warning("Tra cứu gặp lỗi. Hãy kiểm tra Qdrant và các model rồi thử lại.")
-                    yield gr.skip(), gr.skip(), gr.skip(), _display(messages + [_progress(events, "failed")], updated["active"]), gr.update(value=text, interactive=True), gr.update(interactive=True)
-                    return
-
-            if isinstance(result, ClarifyPlan):
-                active["pending"] = {"query": original, "clarifications": clarifications, "question": result.clarification_question}
-                messages.extend([_progress(events, "clarified"), {"role": "assistant", "content": result.clarification_question}])
-            else:
-                active["pending"] = None
-                messages.extend([_progress(events, "answered"), {
-                    "role": "assistant", "content": result.answer, "sources": [citation(chunk) for chunk in result.cited_chunks],
-                }])
-            yield updated, updated, _history_picker(updated), _display(messages, updated["active"]), gr.update(value="", interactive=True), gr.update(interactive=True)
+            yield from _submit(text, saved, run_turn)
 
         app.load(restore, browser_history, [history, picker, chat], api_visibility="private")
         conversation_events = {"concurrency_id": "vacxis-conversation", "api_visibility": "private"}
@@ -241,6 +269,8 @@ def build_app(run_turn, documents: Documents) -> gr.Blocks:
 
 
 def main(argv: list[str] | None = None) -> int:
+    from ..cli import add_retrieval_arguments, retrieval_config
+
     parser = argparse.ArgumentParser(description="Run the local VacxiS chat UI")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--chunks", type=Path, default=Path("chunks_storage/chunks.parquet"))
