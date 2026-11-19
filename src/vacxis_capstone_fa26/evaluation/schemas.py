@@ -136,6 +136,18 @@ class EvaluationSummary:
                 f"| {agg.pass_rate:.2%} | {agg.count} |"
             )
 
+        if self.task == "retrieval":
+            lines += ["", "IR metrics use binary relevance against labeled chunk IDs; unlabeled alternatives count as nonrelevant.",
+                      f"Pass rate is the fraction of scored queries meeting the configured threshold ({self.metadata.get('threshold', 0.5)}); it is not a retrieval accuracy measure."]
+            if "scored_queries" in self.metadata:
+                lines.append(f"Scored queries: {self.metadata['scored_queries']}; excluded without relevance labels: {self.metadata['unscored_queries']}.")
+            for warning in self.metadata.get("warnings", []):
+                lines.append(f"Warning: {warning}")
+            if "run" in self.metadata:
+                lines += ["", "## Run Settings"]
+                for key, value in self.metadata["run"].items():
+                    lines.append(f"- {key}: {value}")
+
         breakdown_sections = [
             ("Breakdown by Answerability", self.by_answerability, "Answerability"),
             ("Breakdown by Complexity", self.by_complexity, "Complexity"),

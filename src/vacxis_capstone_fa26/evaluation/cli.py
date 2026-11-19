@@ -15,7 +15,10 @@ from vacxis_capstone_fa26.evaluation import (
     require_judge_credentials,
     resolve_judge_model,
 )
+from vacxis_capstone_fa26.evaluation.datasets import to_record
+from vacxis_capstone_fa26.evaluation.ir_metrics import DEFAULT_K_VALUES
 from vacxis_capstone_fa26.evaluation.schemas import EvaluationSummary
+from vacxis_capstone_fa26.generation.prompts import get_chunk_field
 from vacxis_capstone_fa26.generation.schemas import GenerationConfig
 
 logging.basicConfig(
@@ -27,7 +30,7 @@ logger = logging.getLogger("vacxis.evaluation.cli")
 
 _DEFAULT_UNANSWERABLE = Path("test_dataset.json")
 _DEFAULT_CHUNKS = Path("chunks_storage/chunks.parquet")
-_MAIN_DATASET = Path("evaluation/eval_dataset_300_final.json")
+_MAIN_DATASET = Path("evaluation/eval_dataset_300_final_fixed.json")
 
 
 def parse_args() -> argparse.Namespace:
@@ -118,13 +121,39 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Print breakdowns by stratification axis",
     )
-    # Live-mode pipeline arguments (only used with --live).
+    # Live-mode pipeline arguments (used when --results is absent).
+    baselines = parser.add_mutually_exclusive_group()
+    baselines.add_argument(
+        "--baseline", action="store_true",
+        help="Use BM25 over --chunks for live retrieval and keep the standard generator",
+    )
+    baselines.add_argument(
+        "--hybrid-baseline", action="store_true",
+        help="Use BM25 + BGE-M3 dense RRF retrieval without learned sparse search or reranking",
+    )
+    baselines.add_argument(
+        "--advanced-rag", action="store_true",
+        help="Multi-query BM25+dense fusion with original-query reranking; uses an LLM planner",
+    )
+    parser.add_argument("--planner-model", default=None, help="Defaults to VACXIS_QUERY_PLANNER_MODEL")
+    parser.add_argument("--planner-timeout", type=float, default=20.0)
+    parser.add_argument("--advanced-candidate-k", type=int, default=50,
+                        help="Candidates per search and merged reranking pool for --advanced-rag")
+    parser.add_argument("--advanced-rrf-k", type=int, default=60)
+    parser.add_argument("--baseline-candidate-k", type=int, default=50,
+                        help="Candidates per BM25/dense branch for --hybrid-baseline")
+    parser.add_argument("--baseline-rrf-k", type=int, default=60,
+                        help="RRF smoothing constant for --hybrid-baseline")
     parser.add_argument("--collection-name", type=str, default="VacxiS_Capstone_FA26")
     parser.add_argument("--qdrant-host", type=str, default="localhost")
     parser.add_argument("--qdrant-port", type=int, default=6333)
     parser.add_argument("--model-path", type=str, default="models/bge-m3")
     parser.add_argument("--reranker-path", type=str, default="models/bge-reranker")
     parser.add_argument("--top-k", type=int, default=5)
+    parser.add_argument(
+        "--ir-k-values", type=int, nargs="+", default=None, metavar="K",
+        help="IR cutoffs; defaults to 1, 3, 5, 10, capped at --top-k in live mode",
+    )
     parser.add_argument("--skip-rerank", action="store_true")
     parser.add_argument(
         "--timeout",
@@ -141,7 +170,37 @@ def parse_args() -> argparse.Namespace:
         "When set, DeepEval's per-task budget (default 180s) is raised so slow "
         "judge models do not cancel in-flight cases mid-run",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.advanced_rag and args.results is not None:
+        parser.error("--advanced-rag requires live evaluation without --results.")
+    if args.advanced_rag and not args.chunks.is_file():
+        parser.error(f"--advanced-rag requires a chunk corpus at {args.chunks}.")
+    if args.advanced_candidate_k < 1 or args.advanced_rrf_k < 1:
+        parser.error("Advanced candidate count and RRF constant must be positive.")
+    if not 0 < args.planner_timeout <= 120:
+        parser.error("--planner-timeout must be in (0, 120] seconds.")
+    if args.hybrid_baseline and args.results is not None:
+        parser.error("--hybrid-baseline requires live evaluation without --results.")
+    if args.baseline_candidate_k < 1 or args.baseline_rrf_k < 1:
+        parser.error("Baseline candidate count and RRF constant must be positive.")
+    if args.hybrid_baseline and not args.chunks.is_file():
+        parser.error(f"--hybrid-baseline requires a chunk corpus at {args.chunks}.")
+    if args.baseline and args.results is not None:
+        parser.error("--baseline requires live evaluation without --results.")
+    if args.baseline and not args.chunks.is_file():
+        parser.error(f"--baseline requires a chunk corpus at {args.chunks}.")
+    if args.results is None and args.top_k < 1:
+        parser.error("--top-k must be positive.")
+    if args.ir_k_values is not None and any(k < 1 for k in args.ir_k_values):
+        parser.error("--ir-k-values must contain positive integers.")
+    if args.results is None:
+        if args.ir_k_values is not None and max(args.ir_k_values) > args.top_k:
+            parser.error("--top-k must be at least the largest --ir-k-values cutoff.")
+        args.ir_k_values = args.ir_k_values or [k for k in DEFAULT_K_VALUES if k <= args.top_k]
+    else:
+        args.ir_k_values = args.ir_k_values or list(DEFAULT_K_VALUES)
+    args.ir_k_values = sorted(set(args.ir_k_values))
+    return args
 
 
 def _print_summary(summary: EvaluationSummary, show_breakdown: bool) -> None:
@@ -226,36 +285,82 @@ def _load_flat_dataset(path: Path) -> list[dict[str, Any]]:
     return records
 
 
-def _build_answer_fn(args: argparse.Namespace):
+def _build_hybrid_baseline(args: argparse.Namespace):
+    from vacxis_capstone_fa26.cli import retrieval_config
+    from vacxis_capstone_fa26.retrieval.hybrid_baseline import HybridBaselineRetriever
+
+    return HybridBaselineRetriever.from_parquet(
+        args.chunks, config=retrieval_config(args),
+        candidate_k=args.baseline_candidate_k, rrf_k=args.baseline_rrf_k,
+    )
+
+
+def _build_advanced_retriever(args: argparse.Namespace):
+    from vacxis_capstone_fa26.cli import retrieval_config
+    from vacxis_capstone_fa26.llm import validate_config
+    from vacxis_capstone_fa26.query import QueryPlanner
+    from vacxis_capstone_fa26.retrieval.advanced import AdvancedRAGRetriever
+
+    model = validate_config(args.planner_model, planner=True)
+    planner = QueryPlanner(model=model, timeout=args.planner_timeout)
+    return AdvancedRAGRetriever(
+        _build_hybrid_baseline(args), planner, config=retrieval_config(args),
+        candidate_k=args.advanced_candidate_k, rrf_k=args.advanced_rrf_k,
+        owns_retriever=True,
+    )
+
+
+def _attach_advanced_traces(summary: EvaluationSummary, traces: dict[str, Any]) -> None:
+    if not traces:
+        return
+    for row in summary.per_query_results:
+        if row["query_id"] in traces:
+            row.setdefault("metadata", {})["retrieval_trace"] = traces[row["query_id"]]
+    statuses: dict[str, int] = {}
+    for trace in traces.values():
+        status = trace["planner_status"]
+        statuses[status] = statuses.get(status, 0) + 1
+    summary.metadata["planner_status_counts"] = statuses
+    if any("fallback" in status for status in statuses):
+        logger.warning("Advanced planner fallbacks: %s", statuses)
+
+
+def _build_answer_fn(args: argparse.Namespace, chunk_texts: dict[str, str]):
     """Build a live-pipeline answer callback (lazy-imports heavy deps).
 
     Returns ``(pipeline, answer_fn)``; the caller must keep ``pipeline`` open
     (context manager) for the entire evaluation and close it after.
     """
-    from argparse import Namespace as _NS
-
     from vacxis_capstone_fa26.cli import retrieval_config
     from vacxis_capstone_fa26.generation.generator import MedicalGenerator
     from vacxis_capstone_fa26.generation.pipeline import VacxisRAGPipeline
     from vacxis_capstone_fa26.generation.schemas import GenerationConfig
 
-    ns = _NS(
-        collection_name=args.collection_name,
-        qdrant_host=args.qdrant_host,
-        qdrant_port=args.qdrant_port,
-        model_path=args.model_path,
-        reranker_path=args.reranker_path,
-        top_k=args.top_k,
-        skip_rerank=args.skip_rerank,
-    )
-    ret_config = retrieval_config(ns)
     gen_config = GenerationConfig(timeout=args.timeout)
     generator = MedicalGenerator(config=gen_config)
-    pipeline = VacxisRAGPipeline(retrieval_config=ret_config, generator=generator)
+    if args.baseline:
+        from vacxis_capstone_fa26.retrieval.bm25 import BM25Retriever
+
+        retriever = BM25Retriever(chunk_texts)
+        pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
+    elif args.advanced_rag:
+        retriever = _build_advanced_retriever(args)
+        pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
+    elif args.hybrid_baseline:
+        retriever = _build_hybrid_baseline(args)
+        pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
+    else:
+        pipeline = VacxisRAGPipeline(retrieval_config=retrieval_config(args), generator=generator)
+
+    traces: dict[str, Any] = {}
 
     def answer_fn(query: str, golden: dict) -> dict:
-        return pipeline.answer(query=query, top_k=ns.top_k, skip_rerank=ns.skip_rerank).to_dict()
+        chunks = retriever.retrieve(query, top_k=args.top_k) if (args.baseline or args.hybrid_baseline or args.advanced_rag) else None
+        if args.advanced_rag:
+            traces[golden["query_id"]] = dict(retriever.last_trace)
+        return pipeline.answer(query=query, top_k=args.top_k, override_chunks=chunks).to_dict()
 
+    answer_fn.retrieval_traces = traces
     return pipeline, answer_fn
 
 
@@ -266,9 +371,12 @@ def _evaluate_live(
     chunk_texts: dict[str, str],
 ) -> EvaluationSummary:
     """Run the RAG pipeline per golden, then score the live answers with DeepEval."""
-    pipeline, answer_fn = _build_answer_fn(args)
+    pipeline, answer_fn = _build_answer_fn(args, chunk_texts)
     with pipeline:
-        return evaluator.evaluate_live(dataset_items, answer_fn, chunk_texts=chunk_texts)
+        summary = evaluator.evaluate_live(dataset_items, answer_fn, chunk_texts=chunk_texts)
+    _record_retrieval_run(summary, args)
+    _attach_advanced_traces(summary, answer_fn.retrieval_traces)
+    return summary
 
 
 def _evaluate_live_retrieval(
@@ -277,36 +385,43 @@ def _evaluate_live_retrieval(
     args: argparse.Namespace,
 ) -> EvaluationSummary:
     """Run live retrieval over goldens and evaluate deterministic IR metrics."""
-    from argparse import Namespace as _NS
-    from vacxis_capstone_fa26.cli import retrieval_config
-    from vacxis_capstone_fa26.retrieval.retriever import VacxisRetriever
+    from contextlib import ExitStack
 
-    ns = _NS(
-        collection_name=args.collection_name,
-        qdrant_host=args.qdrant_host,
-        qdrant_port=args.qdrant_port,
-        model_path=args.model_path,
-        reranker_path=args.reranker_path,
-        top_k=args.top_k,
-        skip_rerank=args.skip_rerank,
-    )
-    ret_config = retrieval_config(ns)
-    retriever = VacxisRetriever(config=ret_config)
     results: list[dict[str, Any]] = []
-    for item in dataset_items:
-        record = datasets.to_record(item)
-        chunks = retriever.retrieve(query=record.query, top_k=ns.top_k, skip_rerank=ns.skip_rerank)
-        results.append(
-            {
-                "QUERY_ID": record.query_id,
-                "GENERATED_ANSWER": {
-                    "retrieved_chunk_ids": [c.chunk_id for c in chunks],
-                    "answer": "",
-                    "is_refusal": False,
-                },
-            }
-        )
-    return evaluator.evaluate_retrieval(dataset_items, results)
+    traces: dict[str, Any] = {}
+    with ExitStack() as resources:
+        if args.baseline:
+            from vacxis_capstone_fa26.retrieval.bm25 import BM25Retriever
+
+            retriever = BM25Retriever(load_chunk_texts(args.chunks))
+        elif args.advanced_rag:
+            retriever = resources.enter_context(_build_advanced_retriever(args))
+        elif args.hybrid_baseline:
+            retriever = resources.enter_context(_build_hybrid_baseline(args))
+        else:
+            from vacxis_capstone_fa26.cli import retrieval_config
+            from vacxis_capstone_fa26.retrieval.retriever import VacxisRetriever
+
+            retriever = resources.enter_context(VacxisRetriever(config=retrieval_config(args)))
+
+        for item in dataset_items:
+            record = to_record(item)
+            chunks = retriever.retrieve(query=record.query, top_k=args.top_k)
+            if args.advanced_rag:
+                traces[record.query_id] = dict(retriever.last_trace)
+            results.append(
+                {
+                    "QUERY_ID": record.query_id,
+                    "GENERATED_ANSWER": {
+                        "retrieved_chunk_ids": [get_chunk_field(c, "chunk_id", "") for c in chunks],
+                        "answer": "",
+                        "is_refusal": False,
+                    },
+                }
+            )
+    summary = evaluator.evaluate_retrieval(dataset_items, results)
+    _attach_advanced_traces(summary, traces)
+    return summary
 
 
 def _apply_judge_timeout(args: argparse.Namespace) -> None:
@@ -343,6 +458,7 @@ def main() -> None:
             threshold=args.threshold,
             enable_geval=False,
             enable_ir_metrics=True,
+            ir_k_values=args.ir_k_values,
         )
         if args.results is not None:
             results = json.loads(args.results.read_text(encoding="utf-8"))
@@ -351,6 +467,7 @@ def main() -> None:
                 sys.exit(1)
             dataset = _load_dataset_items(args.dataset) if args.dataset is not None else results
             summary = evaluator.evaluate_retrieval(dataset, results)
+            _record_retrieval_run(summary, args)
             _print_summary(summary, args.breakdown)
             _maybe_export(summary, args)
 
@@ -370,6 +487,7 @@ def main() -> None:
         )
         logger.info("Running live retrieval evaluation over %d main goldens", len(main_dataset))
         summary = _evaluate_live_retrieval(evaluator, main_dataset, args)
+        _record_retrieval_run(summary, args)
         _print_summary(summary, args.breakdown)
         _maybe_export(summary, args)
         return
@@ -394,6 +512,7 @@ def main() -> None:
         threshold=args.threshold,
         enable_geval=not args.skip_geval,
         enable_ir_metrics=not args.skip_ir,
+        ir_k_values=args.ir_k_values,
     )
 
     if args.results is not None:
@@ -401,6 +520,41 @@ def main() -> None:
         return
 
     _run_live(evaluator, args, chunk_texts)
+
+
+def _record_retrieval_run(summary: EvaluationSummary, args: argparse.Namespace) -> None:
+    """Keep the scoring inputs and live retriever settings with exported results."""
+    run: dict[str, Any] = {
+        "mode": "precomputed" if args.results is not None else "live",
+        "dataset": str(args.dataset or (args.results if args.results is not None else _MAIN_DATASET)),
+        "results": str(args.results) if args.results is not None else None,
+    }
+    if args.results is None:
+        name = "advanced_bm25_dense" if args.advanced_rag else ("bm25" if args.baseline else ("bm25_dense_rrf" if args.hybrid_baseline else "hybrid"))
+        run.update({"retriever": name,
+                    "top_k": args.top_k, "chunks": str(args.chunks)})
+        if args.advanced_rag:
+            from vacxis_capstone_fa26.llm import resolve_model
+
+            run.update({"planner_model": resolve_model(args.planner_model, planner=True),
+                        "planner_timeout": args.planner_timeout,
+                        "max_search_queries": 3, "candidate_k": args.advanced_candidate_k,
+                        "rrf_k": args.advanced_rrf_k,
+                        "branch_candidate_k": args.baseline_candidate_k,
+                        "branch_rrf_k": args.baseline_rrf_k,
+                        "collection_name": args.collection_name, "model_path": args.model_path,
+                        "reranker_path": args.reranker_path, "skip_rerank": args.skip_rerank})
+        elif args.hybrid_baseline:
+            run.update({"candidate_k": args.baseline_candidate_k, "rrf_k": args.baseline_rrf_k,
+                        "dense_only": True, "skip_rerank": True,
+                        "collection_name": args.collection_name, "model_path": args.model_path})
+        elif not args.baseline:
+            run.update({"collection_name": args.collection_name,
+                        "model_path": args.model_path, "reranker_path": args.reranker_path,
+                        "skip_rerank": args.skip_rerank})
+    summary.metadata["run"] = run
+    for warning in summary.metadata.get("warnings", []):
+        logger.warning("%s", warning)
 
 
 def _run_live(
@@ -423,6 +577,7 @@ def _run_live(
     if unanswerable and not args.skip_unanswerable:
         logger.info("Running live RAG pipeline over %d unanswerable goldens", len(unanswerable))
         unsummary = _evaluate_live(evaluator, unanswerable, args, chunk_texts)
+        unsummary.metadata["run"]["dataset"] = str(args.unanswerable)
         print("\n--- Unanswerable evaluation ---")
         _print_summary(unsummary, args.breakdown)
         _maybe_export(unsummary, args, suffix="_unanswerable")
