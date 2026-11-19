@@ -102,30 +102,34 @@ def test_hybrid_cli_selection_and_incompatible_results(monkeypatch, tmp_path):
             parse_args()
 
 
-def test_hybrid_generation_and_retrieval_evaluation_share_factory(monkeypatch, tmp_path):
+@pytest.mark.parametrize("flag,factory_name", [("--hybrid-baseline", "_build_hybrid_baseline"), ("--advanced-rag", "_build_advanced_retriever")])
+def test_hybrid_generation_and_retrieval_evaluation_share_factory(monkeypatch, tmp_path, flag, factory_name):
     from vacxis_capstone_fa26.evaluation import cli
     from vacxis_capstone_fa26.generation import generator
 
     chunks = tmp_path / "chunks.parquet"
     chunks.touch()
-    monkeypatch.setattr("sys.argv", ["vacxis-eval", "--hybrid-baseline", "--chunks", str(chunks)])
+    monkeypatch.setattr("sys.argv", ["vacxis-eval", flag, "--chunks", str(chunks)])
     args = cli.parse_args()
     retriever = Mock()
     retriever.__enter__ = Mock(return_value=retriever)
     retriever.__exit__ = Mock(return_value=False)
     ranked = [{"chunk_id": "c1", "text": "context", "doc_title": "Title"}]
     retriever.retrieve.return_value = ranked
+    retriever.last_trace = {"planner_status": "original_only", "search_queries": ["question"]}
     factory = Mock(return_value=retriever)
-    monkeypatch.setattr(cli, "_build_hybrid_baseline", factory)
+    monkeypatch.setattr(cli, factory_name, factory)
     gen = Mock()
     gen.generate.return_value.to_dict.return_value = {"answer": "answer", "retrieved_chunk_ids": ["c1"]}
     monkeypatch.setattr(generator, "MedicalGenerator", Mock(return_value=gen))
     pipeline, answer_fn = cli._build_answer_fn(args, {})
     with pipeline:
-        assert answer_fn("question", {})["retrieved_chunk_ids"] == ["c1"]
+        assert answer_fn("question", {"query_id": "Q1"})["retrieved_chunk_ids"] == ["c1"]
     gen.generate.assert_called_once_with(query="question", chunks=ranked)
     gen.close.assert_called_once()
     evaluator = Mock()
+    from vacxis_capstone_fa26.evaluation.schemas import EvaluationSummary
+    evaluator.evaluate_retrieval.return_value = EvaluationSummary(per_query_results=[{"query_id": "Q1", "metadata": {}}])
     dataset = [{"QUERY_ID": "Q1", "QUERY": "question"}]
     cli._evaluate_live_retrieval(evaluator, dataset, args)
     evaluated = evaluator.evaluate_retrieval.call_args.args[1]

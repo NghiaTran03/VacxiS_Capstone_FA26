@@ -88,3 +88,45 @@ Both commands use the corrected default dataset. Set `--chunks`,
 Reports identify this variant as `bm25_dense_rrf`. Live performance and quality
 must be verified on the retrieval machine; mocked offline tests do not establish
 retrieval quality.
+
+## Separate advanced RAG experiment
+
+`--advanced-rag` adds query planning and cross-encoder reranking to BM25+dense
+retrieval. It always searches the original question and adds up to two distinct
+planner searches. Each search uses the separate BM25+dense baseline. RRF fuses
+the query rankings into a bounded pool, then the existing BGE reranker ranks
+that pool against the original question. The standard generator also receives
+the original question. This experiment does not change the main pipeline.
+
+Defaults: 50 candidates per search and merged pool (`--advanced-candidate-k`),
+query-fusion RRF constant 60 (`--advanced-rrf-k`), and final top-k 5. The inner
+BM25/dense branch settings remain `--baseline-candidate-k 50` and
+`--baseline-rrf-k 60`. Depths expand when final top-k is larger. Use
+`--skip-rerank` for an advanced-pipeline ablation.
+
+This mode calls an LLM planner even with `--retrieval-only`. Configure
+`OPENROUTER_API_KEY` and `VACXIS_QUERY_PLANNER_MODEL`, or pass `--planner-model`.
+Planner timeout defaults to 20 seconds (`--planner-timeout`, maximum 120).
+If the planner requests clarification or its request/response fails, evaluation
+uses the original search. Store/model failures propagate instead of becoming
+empty rankings. JSON reports preserve per-query searches, planner/fallback
+status, pool sizes and final IDs under `metadata.retrieval_trace`; the summary
+includes `planner_status_counts`. Run settings identify `advanced_bm25_dense`.
+No gold reference answers or source IDs are sent to the planner or retriever.
+
+Run on the machine with models, Qdrant, and planner credentials:
+
+```bash
+uv run vacxis-eval --advanced-rag --retrieval-only --top-k 10 \
+  --out-json evaluation/advanced_k10.json --out-md evaluation/advanced_k10.md
+uv run vacxis-eval --advanced-rag --top-k 4 --ir-k-values 1 3 4 \
+  --skip-unanswerable \
+  --out-json evaluation/advanced_rag_k4.json --out-md evaluation/advanced_rag_k4.md
+```
+
+The second command also needs the standard generation/judge configuration.
+Compare the same dataset, corpus, and final top-k across variants. Query
+expansion increases model calls and search cost; its quality improvement is
+an experimental hypothesis until these live evaluations are run. The known
+question/reference inconsistencies in the corrected gold dataset still need
+human review before treating every miss as a retrieval failure.

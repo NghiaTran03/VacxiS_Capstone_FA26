@@ -131,6 +131,15 @@ def parse_args() -> argparse.Namespace:
         "--hybrid-baseline", action="store_true",
         help="Use BM25 + BGE-M3 dense RRF retrieval without learned sparse search or reranking",
     )
+    baselines.add_argument(
+        "--advanced-rag", action="store_true",
+        help="Multi-query BM25+dense fusion with original-query reranking; uses an LLM planner",
+    )
+    parser.add_argument("--planner-model", default=None, help="Defaults to VACXIS_QUERY_PLANNER_MODEL")
+    parser.add_argument("--planner-timeout", type=float, default=20.0)
+    parser.add_argument("--advanced-candidate-k", type=int, default=50,
+                        help="Candidates per search and merged reranking pool for --advanced-rag")
+    parser.add_argument("--advanced-rrf-k", type=int, default=60)
     parser.add_argument("--baseline-candidate-k", type=int, default=50,
                         help="Candidates per BM25/dense branch for --hybrid-baseline")
     parser.add_argument("--baseline-rrf-k", type=int, default=60,
@@ -162,6 +171,14 @@ def parse_args() -> argparse.Namespace:
         "judge models do not cancel in-flight cases mid-run",
     )
     args = parser.parse_args()
+    if args.advanced_rag and args.results is not None:
+        parser.error("--advanced-rag requires live evaluation without --results.")
+    if args.advanced_rag and not args.chunks.is_file():
+        parser.error(f"--advanced-rag requires a chunk corpus at {args.chunks}.")
+    if args.advanced_candidate_k < 1 or args.advanced_rrf_k < 1:
+        parser.error("Advanced candidate count and RRF constant must be positive.")
+    if not 0 < args.planner_timeout <= 120:
+        parser.error("--planner-timeout must be in (0, 120] seconds.")
     if args.hybrid_baseline and args.results is not None:
         parser.error("--hybrid-baseline requires live evaluation without --results.")
     if args.baseline_candidate_k < 1 or args.baseline_rrf_k < 1:
@@ -278,6 +295,36 @@ def _build_hybrid_baseline(args: argparse.Namespace):
     )
 
 
+def _build_advanced_retriever(args: argparse.Namespace):
+    from vacxis_capstone_fa26.cli import retrieval_config
+    from vacxis_capstone_fa26.llm import validate_config
+    from vacxis_capstone_fa26.query import QueryPlanner
+    from vacxis_capstone_fa26.retrieval.advanced import AdvancedRAGRetriever
+
+    model = validate_config(args.planner_model, planner=True)
+    planner = QueryPlanner(model=model, timeout=args.planner_timeout)
+    return AdvancedRAGRetriever(
+        _build_hybrid_baseline(args), planner, config=retrieval_config(args),
+        candidate_k=args.advanced_candidate_k, rrf_k=args.advanced_rrf_k,
+        owns_retriever=True,
+    )
+
+
+def _attach_advanced_traces(summary: EvaluationSummary, traces: dict[str, Any]) -> None:
+    if not traces:
+        return
+    for row in summary.per_query_results:
+        if row["query_id"] in traces:
+            row.setdefault("metadata", {})["retrieval_trace"] = traces[row["query_id"]]
+    statuses: dict[str, int] = {}
+    for trace in traces.values():
+        status = trace["planner_status"]
+        statuses[status] = statuses.get(status, 0) + 1
+    summary.metadata["planner_status_counts"] = statuses
+    if any("fallback" in status for status in statuses):
+        logger.warning("Advanced planner fallbacks: %s", statuses)
+
+
 def _build_answer_fn(args: argparse.Namespace, chunk_texts: dict[str, str]):
     """Build a live-pipeline answer callback (lazy-imports heavy deps).
 
@@ -296,16 +343,24 @@ def _build_answer_fn(args: argparse.Namespace, chunk_texts: dict[str, str]):
 
         retriever = BM25Retriever(chunk_texts)
         pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
+    elif args.advanced_rag:
+        retriever = _build_advanced_retriever(args)
+        pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
     elif args.hybrid_baseline:
         retriever = _build_hybrid_baseline(args)
         pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
     else:
         pipeline = VacxisRAGPipeline(retrieval_config=retrieval_config(args), generator=generator)
 
+    traces: dict[str, Any] = {}
+
     def answer_fn(query: str, golden: dict) -> dict:
-        chunks = retriever.retrieve(query, top_k=args.top_k) if (args.baseline or args.hybrid_baseline) else None
+        chunks = retriever.retrieve(query, top_k=args.top_k) if (args.baseline or args.hybrid_baseline or args.advanced_rag) else None
+        if args.advanced_rag:
+            traces[golden["query_id"]] = dict(retriever.last_trace)
         return pipeline.answer(query=query, top_k=args.top_k, override_chunks=chunks).to_dict()
 
+    answer_fn.retrieval_traces = traces
     return pipeline, answer_fn
 
 
@@ -320,6 +375,7 @@ def _evaluate_live(
     with pipeline:
         summary = evaluator.evaluate_live(dataset_items, answer_fn, chunk_texts=chunk_texts)
     _record_retrieval_run(summary, args)
+    _attach_advanced_traces(summary, answer_fn.retrieval_traces)
     return summary
 
 
@@ -332,11 +388,14 @@ def _evaluate_live_retrieval(
     from contextlib import ExitStack
 
     results: list[dict[str, Any]] = []
+    traces: dict[str, Any] = {}
     with ExitStack() as resources:
         if args.baseline:
             from vacxis_capstone_fa26.retrieval.bm25 import BM25Retriever
 
             retriever = BM25Retriever(load_chunk_texts(args.chunks))
+        elif args.advanced_rag:
+            retriever = resources.enter_context(_build_advanced_retriever(args))
         elif args.hybrid_baseline:
             retriever = resources.enter_context(_build_hybrid_baseline(args))
         else:
@@ -348,6 +407,8 @@ def _evaluate_live_retrieval(
         for item in dataset_items:
             record = to_record(item)
             chunks = retriever.retrieve(query=record.query, top_k=args.top_k)
+            if args.advanced_rag:
+                traces[record.query_id] = dict(retriever.last_trace)
             results.append(
                 {
                     "QUERY_ID": record.query_id,
@@ -358,7 +419,9 @@ def _evaluate_live_retrieval(
                     },
                 }
             )
-    return evaluator.evaluate_retrieval(dataset_items, results)
+    summary = evaluator.evaluate_retrieval(dataset_items, results)
+    _attach_advanced_traces(summary, traces)
+    return summary
 
 
 def _apply_judge_timeout(args: argparse.Namespace) -> None:
@@ -467,9 +530,21 @@ def _record_retrieval_run(summary: EvaluationSummary, args: argparse.Namespace) 
         "results": str(args.results) if args.results is not None else None,
     }
     if args.results is None:
-        run.update({"retriever": "bm25" if args.baseline else ("bm25_dense_rrf" if args.hybrid_baseline else "hybrid"),
+        name = "advanced_bm25_dense" if args.advanced_rag else ("bm25" if args.baseline else ("bm25_dense_rrf" if args.hybrid_baseline else "hybrid"))
+        run.update({"retriever": name,
                     "top_k": args.top_k, "chunks": str(args.chunks)})
-        if args.hybrid_baseline:
+        if args.advanced_rag:
+            from vacxis_capstone_fa26.llm import resolve_model
+
+            run.update({"planner_model": resolve_model(args.planner_model, planner=True),
+                        "planner_timeout": args.planner_timeout,
+                        "max_search_queries": 3, "candidate_k": args.advanced_candidate_k,
+                        "rrf_k": args.advanced_rrf_k,
+                        "branch_candidate_k": args.baseline_candidate_k,
+                        "branch_rrf_k": args.baseline_rrf_k,
+                        "collection_name": args.collection_name, "model_path": args.model_path,
+                        "reranker_path": args.reranker_path, "skip_rerank": args.skip_rerank})
+        elif args.hybrid_baseline:
             run.update({"candidate_k": args.baseline_candidate_k, "rrf_k": args.baseline_rrf_k,
                         "dense_only": True, "skip_rerank": True,
                         "collection_name": args.collection_name, "model_path": args.model_path})
