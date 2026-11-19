@@ -681,3 +681,60 @@ def test_cli_retrieval_only_flag():
         assert args.skip_ir is False
     finally:
         sys.argv = old_argv
+
+
+def test_retrieval_report_preserves_rankings_and_excludes_unlabeled_queries():
+    evaluator = VacxisRAGEvaluator(ir_k_values=(1, 3, 5))
+    dataset = [
+        {"QUERY_ID": "Q1", "QUERY": "q1", "relevant_chunk_ids": ["c1"]},
+        {"QUERY_ID": "Q2", "QUERY": "q2"},
+    ]
+    results = [
+        {"QUERY_ID": "Q2", "retrieved_chunk_ids": []},
+        {"QUERY_ID": "Q1", "retrieved_chunk_ids": ["c1", " c1 ", " ", "other"]},
+    ]
+    summary = evaluator.evaluate_retrieval(dataset, results)
+    assert summary.metric_aggregates["Hit@1"].count == 1
+    assert summary.metric_aggregates["Hit@1"].pass_rate == 1.0
+    assert summary.metadata["scored_queries"] == 1
+    assert summary.metadata["unscored_queries"] == 1
+    assert summary.metadata["short_rankings_by_cutoff"] == {"1": 1, "3": 2, "5": 2}
+    assert summary.per_query_results[0]["metadata"]["ir_scored"] is False
+    metadata = summary.per_query_results[1]["metadata"]
+    assert metadata["retrieved_chunk_ids"] == ["c1", " c1 ", " ", "other"]
+    assert metadata["relevant_chunk_ids"] == ["c1"]
+    assert "excluded without relevance labels: 1" in summary.render_markdown()
+    assert "shorter than the metric cutoff" in summary.render_markdown()
+
+
+def test_cli_live_ir_cutoffs_respect_retrieval_depth(monkeypatch):
+    from vacxis_capstone_fa26.evaluation.cli import parse_args
+
+    monkeypatch.setattr("sys.argv", ["vacxis-eval", "--retrieval-only"])
+    assert parse_args().ir_k_values == [1, 3, 5]
+    monkeypatch.setattr("sys.argv", ["vacxis-eval", "--retrieval-only", "--top-k", "10"])
+    assert parse_args().ir_k_values == [1, 3, 5, 10]
+    monkeypatch.setattr("sys.argv", ["vacxis-eval", "--ir-k-values", "1", "10"])
+    with pytest.raises(SystemExit):
+        parse_args()
+    monkeypatch.setattr("sys.argv", ["vacxis-eval", "--results", "results.json"])
+    assert parse_args().ir_k_values == [1, 3, 5, 10]
+
+
+@pytest.mark.parametrize("cutoffs", [(), (0,), (-1,), (1.5,), (True,)])
+def test_retrieval_rejects_invalid_cutoffs(cutoffs):
+    with pytest.raises(ValueError, match="positive integers"):
+        VacxisRAGEvaluator().evaluate_retrieval([], [], k_values=cutoffs)
+
+
+def test_cli_default_dataset_matches_saved_generation_goldens():
+    from vacxis_capstone_fa26.evaluation.cli import _MAIN_DATASET
+
+    corrected = json.loads((PROJECT_ROOT / _MAIN_DATASET).read_text())["goldens"]
+    saved = json.loads((PROJECT_ROOT / "evaluation/eval_dataset_300_generation_results.json").read_text())
+    by_id = {item["additional_metadata"]["query_id"]: item for item in saved}
+    assert len(corrected) == len(by_id) == 300
+    for item in corrected:
+        result = by_id[item["additional_metadata"]["query_id"]]
+        assert item["input"] == result["input"]
+        assert item["additional_metadata"]["source_chunk_ids"] == result["additional_metadata"]["source_chunk_ids"]

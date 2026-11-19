@@ -16,6 +16,7 @@ from vacxis_capstone_fa26.evaluation import (
     resolve_judge_model,
 )
 from vacxis_capstone_fa26.evaluation.datasets import to_record
+from vacxis_capstone_fa26.evaluation.ir_metrics import DEFAULT_K_VALUES
 from vacxis_capstone_fa26.evaluation.schemas import EvaluationSummary
 from vacxis_capstone_fa26.generation.prompts import get_chunk_field
 from vacxis_capstone_fa26.generation.schemas import GenerationConfig
@@ -29,7 +30,7 @@ logger = logging.getLogger("vacxis.evaluation.cli")
 
 _DEFAULT_UNANSWERABLE = Path("test_dataset.json")
 _DEFAULT_CHUNKS = Path("chunks_storage/chunks.parquet")
-_MAIN_DATASET = Path("evaluation/eval_dataset_300_final.json")
+_MAIN_DATASET = Path("evaluation/eval_dataset_300_final_fixed.json")
 
 
 def parse_args() -> argparse.Namespace:
@@ -131,6 +132,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model-path", type=str, default="models/bge-m3")
     parser.add_argument("--reranker-path", type=str, default="models/bge-reranker")
     parser.add_argument("--top-k", type=int, default=5)
+    parser.add_argument(
+        "--ir-k-values", type=int, nargs="+", default=None, metavar="K",
+        help="IR cutoffs; defaults to 1, 3, 5, 10, capped at --top-k in live mode",
+    )
     parser.add_argument("--skip-rerank", action="store_true")
     parser.add_argument(
         "--timeout",
@@ -154,6 +159,15 @@ def parse_args() -> argparse.Namespace:
         parser.error(f"--baseline requires a chunk corpus at {args.chunks}.")
     if args.results is None and args.top_k < 1:
         parser.error("--top-k must be positive.")
+    if args.ir_k_values is not None and any(k < 1 for k in args.ir_k_values):
+        parser.error("--ir-k-values must contain positive integers.")
+    if args.results is None:
+        if args.ir_k_values is not None and max(args.ir_k_values) > args.top_k:
+            parser.error("--top-k must be at least the largest --ir-k-values cutoff.")
+        args.ir_k_values = args.ir_k_values or [k for k in DEFAULT_K_VALUES if k <= args.top_k]
+    else:
+        args.ir_k_values = args.ir_k_values or list(DEFAULT_K_VALUES)
+    args.ir_k_values = sorted(set(args.ir_k_values))
     return args
 
 
@@ -349,6 +363,7 @@ def main() -> None:
             threshold=args.threshold,
             enable_geval=False,
             enable_ir_metrics=True,
+            ir_k_values=args.ir_k_values,
         )
         if args.results is not None:
             results = json.loads(args.results.read_text(encoding="utf-8"))
@@ -357,6 +372,7 @@ def main() -> None:
                 sys.exit(1)
             dataset = _load_dataset_items(args.dataset) if args.dataset is not None else results
             summary = evaluator.evaluate_retrieval(dataset, results)
+            _record_retrieval_run(summary, args)
             _print_summary(summary, args.breakdown)
             _maybe_export(summary, args)
 
@@ -376,6 +392,7 @@ def main() -> None:
         )
         logger.info("Running live retrieval evaluation over %d main goldens", len(main_dataset))
         summary = _evaluate_live_retrieval(evaluator, main_dataset, args)
+        _record_retrieval_run(summary, args)
         _print_summary(summary, args.breakdown)
         _maybe_export(summary, args)
         return
@@ -400,6 +417,7 @@ def main() -> None:
         threshold=args.threshold,
         enable_geval=not args.skip_geval,
         enable_ir_metrics=not args.skip_ir,
+        ir_k_values=args.ir_k_values,
     )
 
     if args.results is not None:
@@ -407,6 +425,25 @@ def main() -> None:
         return
 
     _run_live(evaluator, args, chunk_texts)
+
+
+def _record_retrieval_run(summary: EvaluationSummary, args: argparse.Namespace) -> None:
+    """Keep the scoring inputs and live retriever settings with exported results."""
+    run: dict[str, Any] = {
+        "mode": "precomputed" if args.results is not None else "live",
+        "dataset": str(args.dataset or (args.results if args.results is not None else _MAIN_DATASET)),
+        "results": str(args.results) if args.results is not None else None,
+    }
+    if args.results is None:
+        run.update({"retriever": "bm25" if args.baseline else "hybrid",
+                    "top_k": args.top_k, "chunks": str(args.chunks)})
+        if not args.baseline:
+            run.update({"collection_name": args.collection_name,
+                        "model_path": args.model_path, "reranker_path": args.reranker_path,
+                        "skip_rerank": args.skip_rerank})
+    summary.metadata["run"] = run
+    for warning in summary.metadata.get("warnings", []):
+        logger.warning("%s", warning)
 
 
 def _run_live(

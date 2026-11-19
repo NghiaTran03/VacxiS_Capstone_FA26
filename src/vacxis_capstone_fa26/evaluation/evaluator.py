@@ -303,6 +303,9 @@ class VacxisRAGEvaluator:
     ) -> EvaluationSummary:
         """Evaluate deterministic IR metrics without invoking any LLM judge."""
         k_vals = tuple(k_values) if k_values is not None else self.ir_k_values
+        if not k_vals or any(type(k) is not int or k < 1 for k in k_vals):
+            raise ValueError("IR cutoffs must be positive integers.")
+        k_vals = tuple(sorted(set(k_vals)))
         aligned = align_results(dataset_items, generation_results)
         goldens = [datasets.to_record(item) for item in aligned]
         case_infos: list[_CaseInfo] = []
@@ -350,6 +353,9 @@ class VacxisRAGEvaluator:
                         "query_style": record.query_style,
                         "difficulty": record.difficulty,
                         "query_type": record.query_type,
+                        "retrieved_chunk_ids": info.retrieved_chunk_ids,
+                        "relevant_chunk_ids": record.relevant_chunk_ids,
+                        "ir_scored": bool(record.relevant_chunk_ids),
                     },
                 )
             )
@@ -364,6 +370,27 @@ class VacxisRAGEvaluator:
             per_query_results=[q.to_dict() for q in per_query],
             metadata={"threshold": self.threshold, "k_values": list(k_vals)},
         )
+        scored_count = sum(bool(record.relevant_chunk_ids) for record in goldens)
+        ranking_lengths = [
+            len({cid.strip() for cid in info.retrieved_chunk_ids if cid.strip()})
+            for info in case_infos
+        ]
+        short_counts = {
+            str(k): sum(length < k for length in ranking_lengths)
+            for k in k_vals
+        }
+        warnings = []
+        if scored_count < len(goldens):
+            warnings.append(f"{len(goldens) - scored_count} queries have no relevance labels and are excluded from IR averages.")
+        if any(short_counts.values()):
+            warnings.append("Some ranked lists are shorter than the metric cutoff; missing ranks count as nonrelevant. Check retrieval depth before comparing runs.")
+        summary.metadata.update({
+            "scored_queries": scored_count,
+            "unscored_queries": len(goldens) - scored_count,
+            "short_rankings_by_cutoff": short_counts,
+            "relevance": "Binary relevance against labeled chunk IDs; unlabeled alternatives count as nonrelevant.",
+            "warnings": warnings,
+        })
         summary.by_answerability = _group_breakdown(per_query, "answerability", ir_metric_names)
         summary.by_complexity = _group_breakdown(per_query, "complexity", ir_metric_names)
         summary.by_query_style = _group_breakdown(per_query, "query_style", ir_metric_names)
@@ -569,7 +596,7 @@ def _aggregate_stats(
             min=min(values),
             max=max(values),
             count=len(values),
-            pass_rate=passed / len(per_query) if per_query else 0.0,
+            pass_rate=passed / len(values),
         )
     return aggregates
 
