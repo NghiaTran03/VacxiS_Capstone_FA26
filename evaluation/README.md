@@ -48,47 +48,6 @@ and MRR/NDCG for rank quality. Precision can be low when only one or two chunks
 are labeled relevant. The generic 0.5 pass threshold is not an accuracy target:
 with at most two gold chunks per query, Precision@5 cannot exceed 0.4.
 
-## Separate BM25 + dense hybrid baseline
-
-`--hybrid-baseline` combines BM25 over `--chunks` with BGE-M3 dense search
-against the existing Qdrant collection. Equal-weight RRF merges the rankings
-by chunk ID. It does not use BGE learned sparse search or cross-encoder
-reranking. This differs from the main hybrid pipeline's dense + learned sparse
-retrieval. The generator and evaluation metrics remain shared.
-
-Each branch retrieves 50 candidates by default (`--baseline-candidate-k`),
-RRF uses a smoothing constant of 60 (`--baseline-rrf-k`), and final top-k is 5.
-Candidate depth expands when final top-k exceeds the requested candidate depth.
-Corpus text and document metadata are retained for generation. The corpus and
-Qdrant collection must describe the same chunks; mismatched returned IDs fail
-rather than silently mixing corpora. `--skip-rerank` is redundant for this
-baseline, which always disables reranking. `--baseline` still selects BM25 only;
-it cannot be combined with `--hybrid-baseline`.
-
-Run on the machine with models and Qdrant, first without generation:
-
-```bash
-uv run vacxis-eval --hybrid-baseline --retrieval-only --top-k 10 \
-  --out-json evaluation/bm25_dense_k10.json \
-  --out-md evaluation/bm25_dense_k10.md
-```
-
-Full RAG evaluation uses the same retriever plus the standard generator and
-configured DeepEval judge (requires generation/judge credentials):
-
-```bash
-uv run vacxis-eval --hybrid-baseline --top-k 4 --ir-k-values 1 3 4 \
-  --skip-unanswerable \
-  --out-json evaluation/bm25_dense_rag_k4.json \
-  --out-md evaluation/bm25_dense_rag_k4.md
-```
-
-Both commands use the corrected default dataset. Set `--chunks`,
-`--collection-name`, `--qdrant-host`, and `--model-path` for a different store.
-Reports identify this variant as `bm25_dense_rrf`. Live performance and quality
-must be verified on the retrieval machine; mocked offline tests do not establish
-retrieval quality.
-
 ## Advanced RAG
 
 `--advanced-rag` uses the following single-query embedding pipeline:
