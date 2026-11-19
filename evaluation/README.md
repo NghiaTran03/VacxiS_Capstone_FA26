@@ -93,3 +93,59 @@ Compare variants with the same dataset, corpus, and final top-k. Offline tests
 verify the pipeline contract; retrieval quality requires a live evaluation.
 The known question/reference inconsistencies in the corrected gold dataset
 still need human review before treating every miss as a retrieval failure.
+
+## Resumable generation and evaluation
+
+Generate saved answers using `vacxis-generation --baseline` (naive BM25),
+`--advanced-rag` (dense-only), or neither flag (hybrid). All three support
+`--input-file`, `--out-file`, `--resume`, and `--top-k 5`. Each completed answer
+is saved atomically. Keep the accompanying `.manifest.json` file: resume rejects
+changed inputs or experiment settings. Use a new output path when changing the
+model, dataset, retrieval settings, or corpus. Corpus contents and live Qdrant
+state must remain unchanged between attempts; they are not snapshotted.
+
+Both CLIs accept `--retries 5 --retry-initial 1 --retry-max 60` for bounded
+exponential backoff with jitter on transient API errors. Retries are additional
+attempts. Authentication and permission failures stop immediately. Generation
+accepts `--timeout 480`. Evaluation accepts `--judge-request-timeout 360`,
+`--schema-retries 3`, and `--judge-timeout 3600` (DeepEval task budget).
+
+For explicit evaluation recovery, use `vacxis-eval --results OUTPUT.json
+--checkpoint REPORT.checkpoint.json --resume --skip-unanswerable`. The checkpoint
+contains a fingerprint and a partial `report`, saved after each fully scored
+query. Failed or interrupted queries are retried on restart; completed queries
+are reused independently of DeepEval's cache. Reports include completion and
+coverage metadata. Resume rejects changed answers, contexts, dataset, judge,
+threshold, or metric selection. Final `--out-json` and `--out-md` reports are
+written after the full run. The checkpoint is single-writer; do not run multiple
+processes against the same output path. IR-only scoring needs no API retries:
+rerun it against saved answers.
+
+### Environment and response diagnostics
+
+Set `OPENROUTER_API_KEY` and `VACXIS_GENERATION_MODEL` in your shell.
+`VACXIS_LLM_BASE_URL` defaults to `https://openrouter.ai/api/v1`.
+Set `VACXIS_EVALUATION_MODEL` to choose the judge independently; otherwise it
+falls back to the generation model. The CLIs do not automatically load `.env`.
+Retry and timeout controls are CLI flags rather than environment variables.
+
+Validation errors include the failure reason, finish reason, content type and
+length, reasoning length (when provided), response ID, model, and completion
+token count. To include bounded content, refusal, and reasoning excerpts, set
+`VACXIS_LLM_ERROR_PREVIEW_CHARS=1000` (default 0; capped at 4000 per field).
+The configured API key is redacted before excerpts are truncated. Excerpts can
+contain dataset or model text and appear wherever exception messages are saved.
+
+### Unanswerable dataset
+
+Generate actual outputs for `test_dataset.json` using `--dataset-format legacy`
+and a separate output file per baseline, then evaluate those files with
+`--dataset test_dataset.json --results OUTPUT.json --skip-ir
+--skip-unanswerable --checkpoint CHECKPOINT.json --resume`. The final flag
+`--skip-unanswerable` disables only the separate auxiliary evaluation pass;
+it does not remove unanswerable rows from the chosen dataset. Do not use
+`--use-ground-truth-chunks`: retrieval should still run for unanswerable queries.
+IR metrics are undefined for queries without relevant-chunk labels; inspect
+refusal correctness, answer relevancy, faithfulness, and correctness instead.
+Contextual metrics need cautious interpretation when the expected answer is a
+refusal and the dataset provides no positive retrieval evidence.
