@@ -122,10 +122,19 @@ def parse_args() -> argparse.Namespace:
         help="Print breakdowns by stratification axis",
     )
     # Live-mode pipeline arguments (used when --results is absent).
-    parser.add_argument(
+    baselines = parser.add_mutually_exclusive_group()
+    baselines.add_argument(
         "--baseline", action="store_true",
         help="Use BM25 over --chunks for live retrieval and keep the standard generator",
     )
+    baselines.add_argument(
+        "--hybrid-baseline", action="store_true",
+        help="Use BM25 + BGE-M3 dense RRF retrieval without learned sparse search or reranking",
+    )
+    parser.add_argument("--baseline-candidate-k", type=int, default=50,
+                        help="Candidates per BM25/dense branch for --hybrid-baseline")
+    parser.add_argument("--baseline-rrf-k", type=int, default=60,
+                        help="RRF smoothing constant for --hybrid-baseline")
     parser.add_argument("--collection-name", type=str, default="VacxiS_Capstone_FA26")
     parser.add_argument("--qdrant-host", type=str, default="localhost")
     parser.add_argument("--qdrant-port", type=int, default=6333)
@@ -153,6 +162,12 @@ def parse_args() -> argparse.Namespace:
         "judge models do not cancel in-flight cases mid-run",
     )
     args = parser.parse_args()
+    if args.hybrid_baseline and args.results is not None:
+        parser.error("--hybrid-baseline requires live evaluation without --results.")
+    if args.baseline_candidate_k < 1 or args.baseline_rrf_k < 1:
+        parser.error("Baseline candidate count and RRF constant must be positive.")
+    if args.hybrid_baseline and not args.chunks.is_file():
+        parser.error(f"--hybrid-baseline requires a chunk corpus at {args.chunks}.")
     if args.baseline and args.results is not None:
         parser.error("--baseline requires live evaluation without --results.")
     if args.baseline and not args.chunks.is_file():
@@ -253,6 +268,16 @@ def _load_flat_dataset(path: Path) -> list[dict[str, Any]]:
     return records
 
 
+def _build_hybrid_baseline(args: argparse.Namespace):
+    from vacxis_capstone_fa26.cli import retrieval_config
+    from vacxis_capstone_fa26.retrieval.hybrid_baseline import HybridBaselineRetriever
+
+    return HybridBaselineRetriever.from_parquet(
+        args.chunks, config=retrieval_config(args),
+        candidate_k=args.baseline_candidate_k, rrf_k=args.baseline_rrf_k,
+    )
+
+
 def _build_answer_fn(args: argparse.Namespace, chunk_texts: dict[str, str]):
     """Build a live-pipeline answer callback (lazy-imports heavy deps).
 
@@ -271,11 +296,14 @@ def _build_answer_fn(args: argparse.Namespace, chunk_texts: dict[str, str]):
 
         retriever = BM25Retriever(chunk_texts)
         pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
+    elif args.hybrid_baseline:
+        retriever = _build_hybrid_baseline(args)
+        pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
     else:
         pipeline = VacxisRAGPipeline(retrieval_config=retrieval_config(args), generator=generator)
 
     def answer_fn(query: str, golden: dict) -> dict:
-        chunks = retriever.retrieve(query, top_k=args.top_k) if args.baseline else None
+        chunks = retriever.retrieve(query, top_k=args.top_k) if (args.baseline or args.hybrid_baseline) else None
         return pipeline.answer(query=query, top_k=args.top_k, override_chunks=chunks).to_dict()
 
     return pipeline, answer_fn
@@ -290,7 +318,9 @@ def _evaluate_live(
     """Run the RAG pipeline per golden, then score the live answers with DeepEval."""
     pipeline, answer_fn = _build_answer_fn(args, chunk_texts)
     with pipeline:
-        return evaluator.evaluate_live(dataset_items, answer_fn, chunk_texts=chunk_texts)
+        summary = evaluator.evaluate_live(dataset_items, answer_fn, chunk_texts=chunk_texts)
+    _record_retrieval_run(summary, args)
+    return summary
 
 
 def _evaluate_live_retrieval(
@@ -307,6 +337,8 @@ def _evaluate_live_retrieval(
             from vacxis_capstone_fa26.retrieval.bm25 import BM25Retriever
 
             retriever = BM25Retriever(load_chunk_texts(args.chunks))
+        elif args.hybrid_baseline:
+            retriever = resources.enter_context(_build_hybrid_baseline(args))
         else:
             from vacxis_capstone_fa26.cli import retrieval_config
             from vacxis_capstone_fa26.retrieval.retriever import VacxisRetriever
@@ -435,9 +467,13 @@ def _record_retrieval_run(summary: EvaluationSummary, args: argparse.Namespace) 
         "results": str(args.results) if args.results is not None else None,
     }
     if args.results is None:
-        run.update({"retriever": "bm25" if args.baseline else "hybrid",
+        run.update({"retriever": "bm25" if args.baseline else ("bm25_dense_rrf" if args.hybrid_baseline else "hybrid"),
                     "top_k": args.top_k, "chunks": str(args.chunks)})
-        if not args.baseline:
+        if args.hybrid_baseline:
+            run.update({"candidate_k": args.baseline_candidate_k, "rrf_k": args.baseline_rrf_k,
+                        "dense_only": True, "skip_rerank": True,
+                        "collection_name": args.collection_name, "model_path": args.model_path})
+        elif not args.baseline:
             run.update({"collection_name": args.collection_name,
                         "model_path": args.model_path, "reranker_path": args.reranker_path,
                         "skip_rerank": args.skip_rerank})
@@ -466,6 +502,7 @@ def _run_live(
     if unanswerable and not args.skip_unanswerable:
         logger.info("Running live RAG pipeline over %d unanswerable goldens", len(unanswerable))
         unsummary = _evaluate_live(evaluator, unanswerable, args, chunk_texts)
+        unsummary.metadata["run"]["dataset"] = str(args.unanswerable)
         print("\n--- Unanswerable evaluation ---")
         _print_summary(unsummary, args.breakdown)
         _maybe_export(unsummary, args, suffix="_unanswerable")
