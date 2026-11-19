@@ -104,3 +104,20 @@ def test_fresh_failed_run_cannot_resume_old_answers(monkeypatch, tmp_path):
     with pytest.raises(RuntimeError):
         cli.main()
     assert json.loads(output.read_text()) == []
+
+
+def test_call_delay_does_not_invalidate_existing_manifest(monkeypatch, tmp_path):
+    from vacxis_capstone_fa26.generation import cli
+    dataset = tmp_path / 'dataset.json'
+    dataset.write_text(json.dumps({'goldens': [
+        {'input': 'question', 'additional_metadata': {'query_id': '1'}}
+    ]}))
+    output = tmp_path / 'answers.json'
+    argv = ['vacxis-generation', '--dry-run', '--use-ground-truth-chunks',
+            '--input-file', str(dataset), '--out-file', str(output)]
+    monkeypatch.setattr('sys.argv', argv)
+    cli.main()
+    # A pre-pacing manifest has the same signature: the new flag is excluded.
+    monkeypatch.setattr('sys.argv', argv + ['--resume', '--llm-call-delay', '10'])
+    cli.main()
+    assert len(json.loads(output.read_text())) == 1

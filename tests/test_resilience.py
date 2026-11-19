@@ -44,3 +44,63 @@ def test_atomic_checkpoint(tmp_path):
     atomic_json(target, {'complete': True})
     assert 'true' in target.read_text()
     assert not target.with_suffix('.json.tmp').exists()
+
+
+@pytest.fixture
+def paced_clock(monkeypatch):
+    from vacxis_capstone_fa26 import resilience
+    clock = [0.0]
+    monkeypatch.setattr(resilience, '_request_pacer', resilience._RequestPacer())
+    monkeypatch.setattr(resilience.time, 'monotonic', lambda: clock[0])
+    monkeypatch.setattr(resilience.time, 'sleep', lambda seconds: clock.__setitem__(0, clock[0] + seconds))
+    return clock
+
+
+def test_spacing_shared_across_policies_and_retries(paced_clock):
+    error = APIConnectionError(request=httpx.Request('POST', 'https://example.com'))
+    starts = []
+    def call():
+        starts.append(paced_clock[0])
+        if len(starts) == 2:
+            raise error
+        return 'ok'
+    assert RetryPolicy(call_delay=3).run(call) == 'ok'
+    assert RetryPolicy(1, 0, 0, call_delay=3).run(call) == 'ok'
+    assert starts == [0, 3, 6]
+
+
+def test_async_concurrent_requests_are_spaced(paced_clock, monkeypatch):
+    from vacxis_capstone_fa26 import resilience
+    original_sleep = asyncio.sleep
+    async def sleep(seconds):
+        paced_clock[0] += seconds
+        await original_sleep(0)
+    monkeypatch.setattr(resilience.asyncio, 'sleep', sleep)
+    starts = []
+    async def call():
+        starts.append(paced_clock[0])
+        return 'ok'
+    async def run():
+        return await asyncio.gather(*(RetryPolicy(call_delay=2).arun(call) for _ in range(3)))
+    assert asyncio.run(run()) == ['ok'] * 3
+    assert len(starts) == 3
+    assert all(b - a >= 2 for a, b in zip(starts, starts[1:]))
+
+
+def test_sync_and_async_share_pacing(paced_clock, monkeypatch):
+    from vacxis_capstone_fa26 import resilience
+    async def sleep(seconds):
+        paced_clock[0] += seconds
+    monkeypatch.setattr(resilience.asyncio, 'sleep', sleep)
+    starts = []
+    RetryPolicy(call_delay=2).run(lambda: starts.append(paced_clock[0]))
+    async def call():
+        starts.append(paced_clock[0])
+    asyncio.run(RetryPolicy(call_delay=2).arun(call))
+    assert starts == [0, 2]
+
+
+@pytest.mark.parametrize('delay', [-1, float('nan'), float('inf')])
+def test_invalid_call_delay(delay):
+    with pytest.raises(ValueError):
+        RetryPolicy(call_delay=delay)
