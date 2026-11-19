@@ -738,3 +738,45 @@ def test_cli_default_dataset_matches_saved_generation_goldens():
         result = by_id[item["additional_metadata"]["query_id"]]
         assert item["input"] == result["input"]
         assert item["additional_metadata"]["source_chunk_ids"] == result["additional_metadata"]["source_chunk_ids"]
+
+
+def test_explicit_report_checkpoint_survives_failure(tmp_path, monkeypatch):
+    evaluator = _make_evaluator()
+    dataset = [
+        {'QUERY_ID': str(i), 'QUERY': f'q{i}', 'REFERENCE_ANSWER': 'expected'}
+        for i in range(2)
+    ]
+    results = [
+        {'QUERY_ID': str(i), 'GENERATED_ANSWER': {'answer': 'answer', 'retrieved_chunk_ids': []}}
+        for i in range(2)
+    ]
+    names = [metric.__name__ for metric in evaluator.build_metrics()]
+    calls = []
+    def run(cases, **kwargs):
+        calls.append(cases[0].input)
+        if len(calls) == 2:
+            raise RuntimeError('connection lost')
+        return _fake_result(1, names)
+    monkeypatch.setattr(evaluator, '_run_deepeval', run)
+    path = tmp_path / 'checkpoint.json'
+    with pytest.raises(RuntimeError, match='connection lost'):
+        evaluator.evaluate_results(dataset, results, checkpoint_path=path)
+    assert len(json.loads(path.read_text())['report']['per_query_results']) == 1
+    summary = evaluator.evaluate_results(dataset, results, checkpoint_path=path, resume=True)
+    assert calls == ['q0', 'q1', 'q1']
+    assert summary.num_queries == 2
+    assert summary.metadata['complete'] is True
+    results[0]['GENERATED_ANSWER']['answer'] = 'changed'
+    with pytest.raises(ValueError, match='settings changed'):
+        evaluator.evaluate_results(dataset, results, checkpoint_path=path, resume=True)
+
+
+def test_explicit_checkpoint_rejects_missing_metrics(tmp_path, monkeypatch):
+    evaluator = _make_evaluator()
+    dataset = [{'QUERY_ID': '1', 'QUERY': 'q', 'REFERENCE_ANSWER': 'a'}]
+    results = [{'QUERY_ID': '1', 'GENERATED_ANSWER': {'answer': 'a'}}]
+    monkeypatch.setattr(evaluator, '_run_deepeval', lambda *a, **kw: _fake_result(1, []))
+    path = tmp_path / 'report.json'
+    with pytest.raises(ValueError, match='Incomplete metric'):
+        evaluator.evaluate_results(dataset, results, checkpoint_path=path)
+    assert json.loads(path.read_text())['report']['per_query_results'] == []
