@@ -6,6 +6,9 @@ import os
 from typing import Any, Protocol
 
 
+from vacxis_capstone_fa26.resilience import RetryPolicy
+
+
 class ChunkLike(Protocol):
     """Protocol for chunk objects passed into generator."""
 
@@ -27,6 +30,7 @@ class GenerationConfig:
     max_tokens: int | None = None
     enforce_citations: bool = True
     include_metadata: bool = True
+    retry_policy: RetryPolicy = field(default_factory=RetryPolicy)
     timeout: float = 120.0
     system_prompt_override: str | None = None
     dry_run: bool = False
