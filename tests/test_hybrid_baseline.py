@@ -102,7 +102,10 @@ def test_hybrid_cli_selection_and_incompatible_results(monkeypatch, tmp_path):
             parse_args()
 
 
-@pytest.mark.parametrize("flag,factory_name", [("--hybrid-baseline", "_build_hybrid_baseline"), ("--advanced-rag", "_build_advanced_retriever")])
+@pytest.mark.parametrize("flag,factory_name", [
+    ("--hybrid-baseline", "_build_hybrid_baseline"),
+    ("--advanced-rag", "_build_advanced_retriever"),
+])
 def test_hybrid_generation_and_retrieval_evaluation_share_factory(monkeypatch, tmp_path, flag, factory_name):
     from vacxis_capstone_fa26.evaluation import cli
     from vacxis_capstone_fa26.generation import generator
@@ -116,7 +119,7 @@ def test_hybrid_generation_and_retrieval_evaluation_share_factory(monkeypatch, t
     retriever.__exit__ = Mock(return_value=False)
     ranked = [{"chunk_id": "c1", "text": "context", "doc_title": "Title"}]
     retriever.retrieve.return_value = ranked
-    retriever.last_trace = {"planner_status": "original_only", "search_queries": ["question"]}
+    retriever.last_trace = {"search_queries": ["question"], "retrieved_chunk_ids": ["c1"]}
     factory = Mock(return_value=retriever)
     monkeypatch.setattr(cli, factory_name, factory)
     gen = Mock()

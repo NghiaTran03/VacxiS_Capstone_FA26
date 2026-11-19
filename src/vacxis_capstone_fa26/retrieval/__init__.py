@@ -3,7 +3,7 @@ from importlib import import_module
 
 _EXPORTS = {
     "HybridSearcher": ".hybrid_searcher", "convert_sparse_to_qdrant": ".hybrid_searcher",
-    "BGEReranker": ".reranker", "VacxisRetriever": ".retriever",
+    "BGEReranker": ".reranker", "VacxisRetriever": ".retriever", "DenseRetriever": ".dense",
     "RetrievalConfig": ".schemas", "RetrievedChunk": ".schemas",
 }
 __all__ = list(_EXPORTS)

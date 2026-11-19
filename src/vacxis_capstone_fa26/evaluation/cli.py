@@ -133,13 +133,8 @@ def parse_args() -> argparse.Namespace:
     )
     baselines.add_argument(
         "--advanced-rag", action="store_true",
-        help="Multi-query BM25+dense fusion with original-query reranking; uses an LLM planner",
+        help="Original query -> BGE-M3 dense embedding -> Qdrant top-k -> standard generator",
     )
-    parser.add_argument("--planner-model", default=None, help="Defaults to VACXIS_QUERY_PLANNER_MODEL")
-    parser.add_argument("--planner-timeout", type=float, default=20.0)
-    parser.add_argument("--advanced-candidate-k", type=int, default=50,
-                        help="Candidates per search and merged reranking pool for --advanced-rag")
-    parser.add_argument("--advanced-rrf-k", type=int, default=60)
     parser.add_argument("--baseline-candidate-k", type=int, default=50,
                         help="Candidates per BM25/dense branch for --hybrid-baseline")
     parser.add_argument("--baseline-rrf-k", type=int, default=60,
@@ -173,12 +168,8 @@ def parse_args() -> argparse.Namespace:
     args = parser.parse_args()
     if args.advanced_rag and args.results is not None:
         parser.error("--advanced-rag requires live evaluation without --results.")
-    if args.advanced_rag and not args.chunks.is_file():
-        parser.error(f"--advanced-rag requires a chunk corpus at {args.chunks}.")
-    if args.advanced_candidate_k < 1 or args.advanced_rrf_k < 1:
-        parser.error("Advanced candidate count and RRF constant must be positive.")
-    if not 0 < args.planner_timeout <= 120:
-        parser.error("--planner-timeout must be in (0, 120] seconds.")
+    if args.advanced_rag and not args.retrieval_only and not args.chunks.is_file():
+        parser.error(f"Full --advanced-rag evaluation requires a chunk corpus at {args.chunks}.")
     if args.hybrid_baseline and args.results is not None:
         parser.error("--hybrid-baseline requires live evaluation without --results.")
     if args.baseline_candidate_k < 1 or args.baseline_rrf_k < 1:
@@ -297,32 +288,17 @@ def _build_hybrid_baseline(args: argparse.Namespace):
 
 def _build_advanced_retriever(args: argparse.Namespace):
     from vacxis_capstone_fa26.cli import retrieval_config
-    from vacxis_capstone_fa26.llm import validate_config
-    from vacxis_capstone_fa26.query import QueryPlanner
-    from vacxis_capstone_fa26.retrieval.advanced import AdvancedRAGRetriever
+    from vacxis_capstone_fa26.retrieval.dense import DenseRetriever
 
-    model = validate_config(args.planner_model, planner=True)
-    planner = QueryPlanner(model=model, timeout=args.planner_timeout)
-    return AdvancedRAGRetriever(
-        _build_hybrid_baseline(args), planner, config=retrieval_config(args),
-        candidate_k=args.advanced_candidate_k, rrf_k=args.advanced_rrf_k,
-        owns_retriever=True,
-    )
+    return DenseRetriever(config=retrieval_config(args))
 
 
-def _attach_advanced_traces(summary: EvaluationSummary, traces: dict[str, Any]) -> None:
+def _attach_retrieval_traces(summary: EvaluationSummary, traces: dict[str, Any]) -> None:
     if not traces:
         return
     for row in summary.per_query_results:
         if row["query_id"] in traces:
             row.setdefault("metadata", {})["retrieval_trace"] = traces[row["query_id"]]
-    statuses: dict[str, int] = {}
-    for trace in traces.values():
-        status = trace["planner_status"]
-        statuses[status] = statuses.get(status, 0) + 1
-    summary.metadata["planner_status_counts"] = statuses
-    if any("fallback" in status for status in statuses):
-        logger.warning("Advanced planner fallbacks: %s", statuses)
 
 
 def _build_answer_fn(args: argparse.Namespace, chunk_texts: dict[str, str]):
@@ -375,7 +351,7 @@ def _evaluate_live(
     with pipeline:
         summary = evaluator.evaluate_live(dataset_items, answer_fn, chunk_texts=chunk_texts)
     _record_retrieval_run(summary, args)
-    _attach_advanced_traces(summary, answer_fn.retrieval_traces)
+    _attach_retrieval_traces(summary, answer_fn.retrieval_traces)
     return summary
 
 
@@ -420,7 +396,7 @@ def _evaluate_live_retrieval(
                 }
             )
     summary = evaluator.evaluate_retrieval(dataset_items, results)
-    _attach_advanced_traces(summary, traces)
+    _attach_retrieval_traces(summary, traces)
     return summary
 
 
@@ -530,20 +506,12 @@ def _record_retrieval_run(summary: EvaluationSummary, args: argparse.Namespace) 
         "results": str(args.results) if args.results is not None else None,
     }
     if args.results is None:
-        name = "advanced_bm25_dense" if args.advanced_rag else ("bm25" if args.baseline else ("bm25_dense_rrf" if args.hybrid_baseline else "hybrid"))
+        name = "advanced_dense" if args.advanced_rag else ("bm25" if args.baseline else ("bm25_dense_rrf" if args.hybrid_baseline else "hybrid"))
         run.update({"retriever": name,
                     "top_k": args.top_k, "chunks": str(args.chunks)})
         if args.advanced_rag:
-            from vacxis_capstone_fa26.llm import resolve_model
-
-            run.update({"planner_model": resolve_model(args.planner_model, planner=True),
-                        "planner_timeout": args.planner_timeout,
-                        "max_search_queries": 3, "candidate_k": args.advanced_candidate_k,
-                        "rrf_k": args.advanced_rrf_k,
-                        "branch_candidate_k": args.baseline_candidate_k,
-                        "branch_rrf_k": args.baseline_rrf_k,
-                        "collection_name": args.collection_name, "model_path": args.model_path,
-                        "reranker_path": args.reranker_path, "skip_rerank": args.skip_rerank})
+            run.update({"dense_only": True, "skip_rerank": True,
+                        "collection_name": args.collection_name, "model_path": args.model_path})
         elif args.hybrid_baseline:
             run.update({"candidate_k": args.baseline_candidate_k, "rrf_k": args.baseline_rrf_k,
                         "dense_only": True, "skip_rerank": True,
