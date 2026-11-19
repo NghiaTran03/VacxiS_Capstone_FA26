@@ -82,17 +82,44 @@ Dùng `--port` để đổi cổng và `--chunks` để chọn tệp Parquet dù
 
 ```python
 from vacxis_capstone_fa26.generation import VacxisRAGPipeline
-from vacxis_capstone_fa26.query import Clarification, ClarifyPlan, QueryPlanner
+from vacxis_capstone_fa26.query import (
+    Clarification, ClarifyPlan, ConversationMemoryConfig, ConversationMessage, QueryPlanner,
+)
 
-with VacxisRAGPipeline(query_planner=QueryPlanner()) as pipeline:
-    result = pipeline.run_turn("Bé 14 tháng tiêm loại này được không?")
+planner = QueryPlanner(memory_config=ConversationMemoryConfig(max_messages=12, max_characters=12_000))
+history = [
+    ConversationMessage("user", "Bé 14 tháng, tôi đang hỏi về Verorab."),
+    ConversationMessage("assistant", "Bạn muốn biết thông tin gì về Verorab?"),
+]
+with VacxisRAGPipeline(query_planner=planner) as pipeline:
+    result = pipeline.run_turn("Bé tiêm loại này được không?", history=history, use_memory=True)
     if isinstance(result, ClarifyPlan):
-        # Send result.clarification_question to the user and retain the original query.
-        # On the next request, supply the actual user answer in clarifications.
-        pass
+        # Retain this history snapshot and original query for the clarification reply.
+        result = pipeline.run_turn(
+            "Bé tiêm loại này được không?",
+            history=history,
+            clarifications=[Clarification(result.clarification_question, "Verorab")],
+        )
+    if not isinstance(result, ClarifyPlan):
+        print(result.query_context)
 ```
 
-Lượt tiếp theo gọi `run_turn(original_query, clarifications=[Clarification(question, user_answer)])`. Khi trả `ClarifyPlan`, pipeline không gọi retrieval/generation. Web UI gửi lại câu hỏi gốc cùng các lượt làm rõ của lần tra cứu hiện tại.
+`run_turn()` bật memory mặc định nhưng không lưu trạng thái hội thoại trong pipeline hoặc planner. Caller truyền `history` theo thứ tự thời gian và chỉ chứa các tin nhắn trước câu hỏi hiện tại. `ConversationMessage` bất biến, chỉ nhận role `user`/`assistant` và nội dung không rỗng. Dùng `use_memory=False` để bỏ lịch sử; các câu trả lời trong `clarifications` vẫn được sử dụng.
+
+Giới hạn mặc định là 12 tin nhắn và 12.000 ký tự nội dung; cả hai phải là số nguyên dương. Planner chọn một đoạn cuối liên tiếp, giữ nguyên từng tin nhắn, dừng khi tin nhắn tiếp theo vượt giới hạn và loại tin assistant đầu đoạn thiếu lượt user tương ứng. Không cắt nhỏ tin nhắn hoặc bỏ qua tin lớn để lấy ngữ cảnh cũ hơn. Khi thiếu tham chiếu, planner cần hỏi làm rõ.
+
+Một lần gọi planner giải quyết tham chiếu, làm rõ và mở rộng truy vấn. `RetrievePlan.resolved_query` là câu hỏi độc lập dùng cho cả retrieval và generation; `search_queries` gồm câu này và tối đa hai mở rộng không trùng. Constructor hai đối số cũ vẫn dùng được, mặc định `resolved_query=original_query`. Kết quả `GeneratedAnswer.query` giữ câu hỏi gốc. `query_context` chỉ xuất hiện trong `to_dict()` khi có dữ liệu, chứa câu hỏi đã giải quyết, truy vấn thực tế, trạng thái memory, số tin đã cấp/đã dùng, việc giảm lịch sử, giới hạn, model và thời gian planner; không chứa transcript hội thoại. `answer()`, `answer_batch()` và CLI một lượt vẫn giữ hành vi cũ.
+
+Khi trả `ClarifyPlan`, pipeline không gọi retrieval/generation. Lượt tiếp theo truyền lại câu hỏi gốc, cùng snapshot lịch sử trước câu hỏi và các `Clarification(question, user_answer)` tích lũy. Web UI tự thực hiện việc này, bật memory theo cuộc trò chuyện đang chọn và lưu bằng browser storage hiện có. Hội thoại mới có ngữ cảnh rỗng. Bản ghi pending cũ thiếu snapshot dùng lịch sử rỗng và giữ nguyên câu hỏi/câu trả lời làm rõ. Lỗi tra cứu không ghi lượt gửi thất bại hay câu trả lời dở vào lịch sử; có thể gửi lại từ ô nhập.
+
+Memory chỉ hỗ trợ hiểu câu hỏi; các câu trả lời trước không phải bằng chứng. Mỗi lượt trả lời đều lấy tài liệu mới. Phiên bản này chưa có hồ sơ dài hạn, tóm tắt, vector memory hoặc runner benchmark nhiều lượt.
+
+Khi thực nghiệm:
+
+- So sánh kiến trúc một lượt: tắt memory xuyên suốt bằng `use_memory=False` khi dùng `run_turn()`; CLI hiện tại không dùng planner/memory.
+- So sánh kiến trúc nhiều lượt: dùng cùng cấu hình memory cho mọi kiến trúc.
+- Đo riêng tác động memory: cố định hybrid baseline, so sánh memory tắt/bật.
+- Giữ model planner, chính sách mở rộng, corpus và cấu hình retrieval cố định trong từng phép so sánh.
 
 ## Kiểm thử
 
@@ -100,11 +127,22 @@ Lượt tiếp theo gọi `run_turn(original_query, clarifications=[Clarificatio
 # Mặc định: toàn bộ test offline, gồm SDK HTTP giả lập và Qdrant in-memory
 uv run pytest
 
+# Lightweight mocked memory regression checks; no retrieval/model stack required
+uv run pytest tests/query/test_planner.py tests/query/test_rag_turn.py tests/query/test_memory.py
+uv run --extra web pytest tests/test_web_memory.py
+
 # Chạy riêng test dịch vụ thật; cần cấu hình/model/Qdrant tương ứng
 uv run --env-file .env pytest -m integration
 ```
 
 Test offline không cần key thật, tải model hoặc dịch vụ ngoài. Các test dịch vụ thật là opt-in và có thể phát sinh chi phí OpenRouter. Evaluation yêu cầu ID duy nhất, bộ ID dataset/results trùng khớp; kết quả retrieval rỗng vẫn được tính điểm.
+
+Test memory dùng mock để kiểm tra hợp đồng và luồng gọi; chưa chứng minh chất lượng giải quyết ngữ cảnh của planner thật. Chạy các test phụ thuộc retrieval/model trên máy có đủ môi trường:
+
+```bash
+uv run --extra retrieval --extra web --env-file .env pytest
+uv run --extra retrieval --extra web --env-file .env pytest -m integration
+```
 
 ## Testdata Structured Outputs
 

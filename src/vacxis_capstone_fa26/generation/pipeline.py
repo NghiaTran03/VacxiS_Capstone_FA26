@@ -2,14 +2,19 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import asdict, replace
 from itertools import zip_longest
+from time import perf_counter
 from types import TracebackType
 from typing import Any, Sequence
 
 from vacxis_capstone_fa26.generation.generator import MedicalGenerator
 from vacxis_capstone_fa26.generation.prompts import get_chunk_field
 from vacxis_capstone_fa26.generation.schemas import GeneratedAnswer, GenerationConfig
-from vacxis_capstone_fa26.query import Clarification, ClarifyPlan, QueryPlanner
+from vacxis_capstone_fa26.query import (
+    Clarification, ClarifyPlan, ConversationMemoryConfig, ConversationMessage, QueryPlanner,
+)
+from vacxis_capstone_fa26.query.memory import limit_history
 
 
 class VacxisRAGPipeline:
@@ -57,6 +62,8 @@ class VacxisRAGPipeline:
         original_query: str,
         *,
         clarifications: Sequence[Clarification] = (),
+        history: Sequence[ConversationMessage] = (),
+        use_memory: bool = True,
         top_k: int | None = None,
         skip_rerank: bool | None = None,
         on_progress: Callable[[str, int | None], None] | None = None,
@@ -66,10 +73,18 @@ class VacxisRAGPipeline:
             raise ValueError("run_turn requires a query planner.")
         if top_k is not None and (type(top_k) is not int or top_k < 1):
             raise ValueError("top_k must be a positive integer.")
+        if type(use_memory) is not bool:
+            raise TypeError("use_memory must be a boolean.")
+        memory_config = getattr(self.query_planner, "memory_config", None)
+        if not isinstance(memory_config, ConversationMemoryConfig):
+            memory_config = ConversationMemoryConfig()
+        selected = limit_history(history, memory_config) if use_memory else ()
 
         if on_progress is not None:
             on_progress("planning", None)
-        plan = self.query_planner.plan(original_query, clarifications)
+        started = perf_counter()
+        plan = self.query_planner.plan(original_query, clarifications, history=selected)
+        planner_latency = perf_counter() - started
         if isinstance(plan, ClarifyPlan):
             return plan
 
@@ -80,7 +95,7 @@ class VacxisRAGPipeline:
 
         if len(plan.search_queries) == 1:
             chunks = self.retriever.retrieve(
-                query=plan.original_query, top_k=top_k, skip_rerank=skip_rerank, **retrieval_options,
+                query=plan.resolved_query, top_k=top_k, skip_rerank=skip_rerank, **retrieval_options,
             )
         else:
             limit = top_k if top_k is not None else self.retriever.config.top_k
@@ -91,16 +106,20 @@ class VacxisRAGPipeline:
                 raise ValueError("Expected one retrieval group per search query.")
             chunks = self._merge_query_results(groups, limit)
 
-        generation_query = plan.original_query
-        if clarifications:
-            clarification_text = "\n".join(
-                f"Câu hỏi làm rõ: {turn.question}\nNgười dùng trả lời: {turn.answer}"
-                for turn in clarifications
-            )
-            generation_query = f"{generation_query}\n\n{clarification_text}"
         if on_progress is not None:
             on_progress("generating", len(chunks))
-        return self.generator.generate(query=generation_query, chunks=chunks)
+        answer = self.generator.generate(query=plan.resolved_query, chunks=chunks)
+        return replace(answer, query=original_query, query_context={
+            "resolved_query": plan.resolved_query,
+            "search_queries": [plan.resolved_query] if len(plan.search_queries) == 1 else list(plan.search_queries),
+            "use_memory": use_memory,
+            "history_messages_supplied": len(history),
+            "history_messages_included": len(selected),
+            "history_reduced": use_memory and len(selected) < len(history),
+            "memory_limits": asdict(memory_config),
+            "planner_model": self.query_planner.model,
+            "planner_latency_seconds": planner_latency,
+        })
 
     @staticmethod
     def _merge_query_results(groups: Sequence[Sequence[Any]], limit: int) -> list[Any]:

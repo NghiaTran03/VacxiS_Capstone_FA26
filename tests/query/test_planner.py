@@ -14,22 +14,22 @@ def response(content, finish_reason="stop"):
     )])
 
 
-def test_original_is_verbatim_first_and_deduplicated():
+def test_resolved_is_first_and_deduplicated():
     original = "  Tôi không bị dị ứng trứng, có thể tiêm Verorab không?  "
     rewrite = "Hướng dẫn tiêm Verorab trong trường hợp không bị dị ứng trứng."
     complete = Mock(return_value=response(json.dumps({
-        "action": "retrieve", "additional_queries": [original.strip(), rewrite],
+        "action": "retrieve", "resolved_query": rewrite, "additional_queries": [rewrite, rewrite],
     })))
 
     assert QueryPlanner("fixture", completion=complete).plan(original) == RetrievePlan(
-        original, (original, rewrite),
+        original, (rewrite,), rewrite,
     )
     complete.assert_called_once()
     request = complete.call_args.kwargs
     assert "num_retries" not in request
     assert request["response_format"] == {"type": "json_object"}
     assert json.loads(request["messages"][1]["content"]) == {
-        "original_query": original, "clarifications": [],
+        "original_query": original, "clarifications": [], "history": [],
     }
 
 
@@ -42,29 +42,32 @@ def test_original_is_verbatim_first_and_deduplicated():
     "Verorab (0,5 ml) có tiêm được không và có phản ứng phụ nào?",
 ])
 def test_retrieve_without_variants_keeps_query(original):
-    complete = Mock(return_value=response('{"action":"retrieve","additional_queries":[]}'))
+    complete = Mock(return_value=response(json.dumps({
+        "action": "retrieve", "resolved_query": original, "additional_queries": [],
+    })))
     assert QueryPlanner("fixture", completion=complete).plan(original) == RetrievePlan(original, (original,))
     complete.assert_called_once()
 
 
-def test_clarification_then_retrieval_with_original_and_resolved_query():
+def test_clarification_then_retrieval_with_resolved_query():
     original = "Bé 14 tháng tiêm loại này được không?"
     question = "Bạn đang hỏi về vắc xin nào cho bé 14 tháng?"
     resolved = "Hướng dẫn sử dụng Verorab cho trẻ 14 tháng."
     complete = Mock(side_effect=[
         response(json.dumps({"action": "clarify", "clarification_question": question})),
-        response(json.dumps({"action": "retrieve", "additional_queries": [resolved]})),
+        response(json.dumps({"action": "retrieve", "resolved_query": resolved, "additional_queries": []})),
     ])
     planner = QueryPlanner("fixture", completion=complete)
 
     assert planner.plan(original) == ClarifyPlan(question)
     assert planner.plan(original, (Clarification(question, "Verorab"),)) == RetrievePlan(
-        original, (original, resolved),
+        original, (resolved,), resolved,
     )
     assert complete.call_count == 2
     assert json.loads(complete.call_args.kwargs["messages"][1]["content"]) == {
         "original_query": original,
         "clarifications": [{"question": question, "answer": "Verorab"}],
+        "history": [],
     }
 
 
@@ -73,11 +76,15 @@ def test_clarification_then_retrieval_with_original_and_resolved_query():
     response("[]"),
     response('{"action":"clarify","clarification_question":" "}'),
     response('{"action":"clarify","clarification_question":"Tên?","additional_queries":[]}'),
-    response('{"action":"retrieve","additional_queries":[" "]}'),
-    response('{"action":"retrieve","additional_queries":[12]}'),
-    response('{"action":"retrieve","additional_queries":["a","b","c"]}'),
+    response('{"action":"retrieve","resolved_query":"Q","additional_queries":[" "]}'),
+    response('{"action":"retrieve","resolved_query":"Q","additional_queries":[12]}'),
+    response('{"action":"retrieve","resolved_query":"Q","additional_queries":["a","b","c"]}'),
+    response('{"action":"retrieve","additional_queries":[]}'),
+    response('{"action":"retrieve","resolved_query":" ","additional_queries":[]}'),
+    response('{"action":"retrieve","resolved_query":12,"additional_queries":[]}'),
     response('{"action":"retrieve","additional_queries":[],"original_query":"changed"}'),
-    response('{"action":"retrieve","additional_queries":[]}', finish_reason="length"),
+    response('{"action":"retrieve","resolved_query":"Q","additional_queries":[]}', finish_reason="length"),
+    response('{"action":"retrieve","resolved_query":"Q","additional_queries":[]}', finish_reason="content_filter"),
     SimpleNamespace(choices=[]),
     SimpleNamespace(choices={}),
 ])
