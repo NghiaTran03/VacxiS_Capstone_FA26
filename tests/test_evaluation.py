@@ -918,3 +918,135 @@ def test_cli_lightrag_flags_and_metadata(monkeypatch):
     )
     with pytest.raises(SystemExit):
         cli.parse_args()
+
+
+def test_ir_metrics_alias_matching_preserves_ranks_and_bounds():
+    from vacxis_capstone_fa26.evaluation.ir_metrics import compute_query_ir_metrics
+
+    # Non-primary sub-chunk c_0028 was merged into primary c_0026 at rank 2
+    retrieved = ["c_0003", "c_0026", "c_0040"]
+    relevant = ["c_0003", "c_0028"]
+    aliases = {"c_0026": ["c_0026", "c_0027", "c_0028"]}
+
+    strict_scores = compute_query_ir_metrics(retrieved, relevant, k_values=(1, 2, 3))
+    assert strict_scores["Recall@2"] == 0.5
+    assert strict_scores["Precision@2"] == 0.5
+
+    alias_scores = compute_query_ir_metrics(
+        retrieved, relevant, k_values=(1, 2, 3), chunk_aliases=aliases
+    )
+    assert alias_scores["Hit@1"] == 1.0
+    assert alias_scores["Hit@2"] == 1.0
+    assert alias_scores["Recall@2"] == 1.0
+    assert alias_scores["Precision@2"] == 1.0
+    assert alias_scores["MRR@2"] == 1.0
+    assert alias_scores["NDCG@2"] == pytest.approx(1.0)
+    assert alias_scores["MAP@2"] == pytest.approx(1.0)
+
+    # Single merged chunk covering two relevant labels at rank 1 stays bounded <= 1.0
+    multi_scores = compute_query_ir_metrics(
+        ["c_0026", "other"],
+        ["c_0027", "c_0028"],
+        k_values=(1, 2),
+        chunk_aliases=aliases,
+    )
+    assert multi_scores["Hit@1"] == 1.0
+    assert multi_scores["Recall@1"] == 1.0
+    assert multi_scores["Precision@1"] == 1.0
+    assert multi_scores["Precision@2"] == 0.5
+    assert multi_scores["NDCG@1"] == pytest.approx(1.0)
+    assert multi_scores["NDCG@2"] == pytest.approx(1.0)
+    assert multi_scores["MAP@2"] == pytest.approx(1.0)
+
+    # Two slots sharing the same alias cannot double-count Precision/NDCG/MAP
+    dup_alias_scores = compute_query_ir_metrics(
+        ["slot_a", "slot_b"],
+        ["target_1"],
+        k_values=(2,),
+        chunk_aliases={"slot_a": ["slot_a", "target_1"], "slot_b": ["slot_b", "target_1"]},
+    )
+    assert dup_alias_scores["Precision@2"] == 0.5
+    assert dup_alias_scores["Recall@2"] == 1.0
+    assert dup_alias_scores["NDCG@2"] == pytest.approx(1.0)
+    assert dup_alias_scores["MAP@2"] == pytest.approx(1.0)
+
+
+def test_merged_chunk_aliases_flow_through_generation_and_evaluator():
+    from vacxis_capstone_fa26.generation.schemas import GeneratedAnswer, extract_chunk_aliases
+    from vacxis_capstone_fa26.retrieval.schemas import RetrievedChunk
+
+    merged_chunk = RetrievedChunk(
+        chunk_id="doc_c_0026",
+        doc_id="doc",
+        doc_title="Menactra",
+        category="DOSAGE",
+        parent_header="LIỀU",
+        header="Bảng 1",
+        content_type="table",
+        text="Merged table text",
+        score=0.9,
+        rrf_score=0.03,
+        metadata={"has_table": True, "merged_chunk_ids": ["doc_c_0026", "doc_c_0027", "doc_c_0028"]},
+    )
+    normal_chunk = RetrievedChunk(
+        chunk_id="doc_c_0003",
+        doc_id="doc",
+        doc_title="Menactra",
+        category="INDICATION",
+        parent_header="CHỈ ĐỊNH",
+        header="Mở đầu",
+        content_type="text",
+        text="Normal text",
+        score=0.8,
+        rrf_score=0.02,
+        metadata={"has_table": False},
+    )
+
+    assert extract_chunk_aliases([normal_chunk]) == {}
+    assert extract_chunk_aliases([merged_chunk, normal_chunk]) == {
+        "doc_c_0026": ["doc_c_0026", "doc_c_0027", "doc_c_0028"]
+    }
+
+    ans_plain = GeneratedAnswer(query="q", answer="a", retrieved_chunks=[normal_chunk])
+    assert "retrieved_chunk_aliases" not in ans_plain.to_dict()
+
+    ans_merged = GeneratedAnswer(
+        query="q", answer="a", retrieved_chunks=[normal_chunk, merged_chunk]
+    )
+    ans_dict = ans_merged.to_dict()
+    assert ans_dict["retrieved_chunk_aliases"] == {
+        "doc_c_0026": ["doc_c_0026", "doc_c_0027", "doc_c_0028"]
+    }
+
+    fields = answer_fields({"GENERATED_ANSWER": ans_dict})
+    assert fields["retrieved_chunk_aliases"] == {
+        "doc_c_0026": ["doc_c_0026", "doc_c_0027", "doc_c_0028"]
+    }
+
+    dataset = [
+        {
+            "QUERY_ID": "eval_0110",
+            "QUERY": "Liều tiêm Menactra?",
+            "ANSWERABILITY": "ANSWERABLE",
+            "additional_metadata": {"source_chunk_ids": ["doc_c_0003", "doc_c_0028"]},
+        }
+    ]
+    results = [{"QUERY_ID": "eval_0110", "GENERATED_ANSWER": ans_dict}]
+
+    evaluator = _make_evaluator(enable_geval=False)
+    ir_summary = evaluator.evaluate_retrieval(dataset, results, k_values=(1, 2))
+    assert ir_summary.overall_metrics["Hit@2"] == 1.0
+    assert ir_summary.overall_metrics["Recall@2"] == 1.0
+    assert ir_summary.overall_metrics["Precision@2"] == 1.0
+    assert ir_summary.overall_metrics["NDCG@2"] == pytest.approx(1.0)
+    assert "merged_chunk_ids" in ir_summary.metadata["relevance"]
+    assert ir_summary.per_query_results[0]["metadata"]["retrieved_chunk_aliases"] == {
+        "doc_c_0026": ["doc_c_0026", "doc_c_0027", "doc_c_0028"]
+    }
+
+    # Full evaluate_results also passes chunk_aliases into IR scoring
+    metric_names = [m.__name__ for m in evaluator.build_metrics()]
+    evaluator._run_deepeval = lambda cases, **kw: _fake_result(len(cases), metric_names)
+    full_summary = evaluator.evaluate_results(dataset, results, chunk_texts={})
+    assert full_summary.overall_metrics["Recall@3"] == 1.0
+    assert full_summary.overall_metrics["NDCG@3"] == pytest.approx(1.0)

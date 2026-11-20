@@ -1,6 +1,7 @@
 """Schema definitions for generation pipeline."""
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
 import os
 from typing import Any, Protocol
@@ -54,6 +55,37 @@ def _extract_chunk_text(c: Any) -> str:
     return ""
 
 
+def extract_chunk_aliases(chunks: Sequence[Any]) -> dict[str, list[str]]:
+    """Extract primary chunk_id -> merged_chunk_ids aliases for merged table chunks.
+
+    Only records chunks whose ``merged_chunk_ids`` contains at least one source ID
+    distinct from its primary ``chunk_id``, keeping outputs empty for unmerged chunks.
+    """
+    aliases: dict[str, list[str]] = {}
+    for chunk in chunks:
+        cid = _extract_chunk_id(chunk).strip()
+        if not cid:
+            continue
+        meta = chunk.get("metadata") if isinstance(chunk, dict) else getattr(chunk, "metadata", None)
+        raw_merged = meta.get("merged_chunk_ids") if isinstance(meta, dict) else None
+        if raw_merged is None and isinstance(chunk, dict):
+            raw_merged = chunk.get("merged_chunk_ids")
+        if not isinstance(raw_merged, (list, tuple)):
+            continue
+        cleaned: list[str] = []
+        seen: set[str] = set()
+        for item in raw_merged:
+            item_str = str(item).strip()
+            if item_str and item_str not in seen:
+                seen.add(item_str)
+                cleaned.append(item_str)
+        if cid not in seen:
+            cleaned.insert(0, cid)
+        if any(item != cid for item in cleaned):
+            aliases[cid] = cleaned
+    return aliases
+
+
 @dataclass
 class GeneratedAnswer:
     """Represents an answer synthesized by the generator."""
@@ -90,6 +122,9 @@ class GeneratedAnswer:
             "latency_seconds": round(self.latency_seconds, 4),
             "usage": self.usage,
         }
+        aliases = extract_chunk_aliases(self.retrieved_chunks)
+        if aliases:
+            result["retrieved_chunk_aliases"] = aliases
         if self.query_context:
             result["query_context"] = self.query_context
         return result

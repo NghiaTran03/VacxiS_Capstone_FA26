@@ -122,11 +122,13 @@ class _CaseInfo:
         is_refusal: bool,
         retrieval_context: list[str],
         retrieved_chunk_ids: list[str] | None = None,
+        retrieved_chunk_aliases: dict[str, list[str]] | None = None,
     ) -> None:
         self.actual_output = actual_output
         self.is_refusal = is_refusal
         self.retrieval_context = retrieval_context
         self.retrieved_chunk_ids = retrieved_chunk_ids or []
+        self.retrieved_chunk_aliases = retrieved_chunk_aliases or {}
 
 
 class VacxisRAGEvaluator:
@@ -209,6 +211,7 @@ class VacxisRAGEvaluator:
                 answer_payload, chunk_texts
             ),
             retrieved_chunk_ids=fields.get("retrieved_chunk_ids", []),
+            retrieved_chunk_aliases=fields.get("retrieved_chunk_aliases"),
         )
 
     def _build_test_case(
@@ -342,6 +345,7 @@ class VacxisRAGEvaluator:
                     _filter_document_chunk_ids(info.retrieved_chunk_ids),
                     record.relevant_chunk_ids,
                     k_values=k_vals,
+                    chunk_aliases=info.retrieved_chunk_aliases or None,
                 )
                 scores.update(ir_scores)
                 for ir_name, ir_score in ir_scores.items():
@@ -351,6 +355,18 @@ class VacxisRAGEvaluator:
                         "reason": f"Deterministic IR metric {ir_name}",
                         "error": None,
                     }
+            query_meta: dict[str, Any] = {
+                "answerability": record.answerability,
+                "complexity": record.complexity,
+                "query_style": record.query_style,
+                "difficulty": record.difficulty,
+                "query_type": record.query_type,
+                "retrieved_chunk_ids": info.retrieved_chunk_ids,
+                "relevant_chunk_ids": record.relevant_chunk_ids,
+                "ir_scored": bool(record.relevant_chunk_ids),
+            }
+            if info.retrieved_chunk_aliases:
+                query_meta["retrieved_chunk_aliases"] = info.retrieved_chunk_aliases
             per_query.append(
                 QueryEvalResult(
                     query_id=record.query_id,
@@ -362,16 +378,7 @@ class VacxisRAGEvaluator:
                     answerability=record.answerability,
                     metric_scores=scores,
                     metric_results=details,
-                    metadata={
-                        "answerability": record.answerability,
-                        "complexity": record.complexity,
-                        "query_style": record.query_style,
-                        "difficulty": record.difficulty,
-                        "query_type": record.query_type,
-                        "retrieved_chunk_ids": info.retrieved_chunk_ids,
-                        "relevant_chunk_ids": record.relevant_chunk_ids,
-                        "ir_scored": bool(record.relevant_chunk_ids),
-                    },
+                    metadata=query_meta,
                 )
             )
 
@@ -399,11 +406,17 @@ class VacxisRAGEvaluator:
             warnings.append(f"{len(goldens) - scored_count} queries have no relevance labels and are excluded from IR averages.")
         if any(short_counts.values()):
             warnings.append("Some ranked lists are shorter than the metric cutoff; missing ranks count as nonrelevant. Check retrieval depth before comparing runs.")
+        used_aliases = any(bool(info.retrieved_chunk_aliases) for info in case_infos)
+        relevance_note = (
+            "Binary relevance against labeled chunk IDs with rank-preserving merged_chunk_ids alias matching; unlabeled alternatives count as nonrelevant."
+            if used_aliases
+            else "Binary relevance against labeled chunk IDs; unlabeled alternatives count as nonrelevant."
+        )
         summary.metadata.update({
             "scored_queries": scored_count,
             "unscored_queries": len(goldens) - scored_count,
             "short_rankings_by_cutoff": short_counts,
-            "relevance": "Binary relevance against labeled chunk IDs; unlabeled alternatives count as nonrelevant.",
+            "relevance": relevance_note,
             "warnings": warnings,
         })
         summary.by_answerability = _group_breakdown(per_query, "answerability", ir_metric_names)
@@ -514,6 +527,7 @@ class VacxisRAGEvaluator:
                     _filter_document_chunk_ids(info.retrieved_chunk_ids),
                     record.relevant_chunk_ids,
                     k_values=self.ir_k_values,
+                    chunk_aliases=info.retrieved_chunk_aliases or None,
                 )
                 scores.update(ir_scores)
                 for ir_name, ir_score in ir_scores.items():

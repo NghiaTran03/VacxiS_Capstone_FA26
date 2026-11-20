@@ -221,4 +221,16 @@ def answer_fields(answer: dict[str, Any]) -> dict[str, Any]:
         fields["retrieved_contexts"] = [
             t.strip() for t in raw_contexts if isinstance(t, str) and t.strip()
         ]
+    raw_aliases = payload.get("retrieved_chunk_aliases")
+    if isinstance(raw_aliases, dict):
+        normalized_aliases: dict[str, list[str]] = {}
+        for key, vals in raw_aliases.items():
+            key_str = str(key).strip()
+            if not key_str or not isinstance(vals, (list, tuple)):
+                continue
+            cleaned_vals = [str(v).strip() for v in vals if str(v).strip()]
+            if cleaned_vals:
+                normalized_aliases[key_str] = cleaned_vals
+        if normalized_aliases:
+            fields["retrieved_chunk_aliases"] = normalized_aliases
     return fields

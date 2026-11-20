@@ -19,7 +19,7 @@ from vacxis_capstone_fa26.evaluation.datasets import to_record
 from vacxis_capstone_fa26.evaluation.ir_metrics import DEFAULT_K_VALUES
 from vacxis_capstone_fa26.evaluation.schemas import EvaluationSummary
 from vacxis_capstone_fa26.generation.prompts import get_chunk_field
-from vacxis_capstone_fa26.generation.schemas import GenerationConfig
+from vacxis_capstone_fa26.generation.schemas import GenerationConfig, extract_chunk_aliases
 
 logging.basicConfig(
     level=logging.INFO,
@@ -401,14 +401,18 @@ def _evaluate_live_retrieval(
             chunks = retriever.retrieve(query=record.query, top_k=args.top_k)
             if eff_mode == "advanced" and hasattr(retriever, "last_trace"):
                 traces[record.query_id] = dict(retriever.last_trace)
+            generated_answer: dict[str, Any] = {
+                "retrieved_chunk_ids": [get_chunk_field(c, "chunk_id", "") for c in chunks],
+                "answer": "",
+                "is_refusal": False,
+            }
+            aliases = extract_chunk_aliases(chunks)
+            if aliases:
+                generated_answer["retrieved_chunk_aliases"] = aliases
             results.append(
                 {
                     "QUERY_ID": record.query_id,
-                    "GENERATED_ANSWER": {
-                        "retrieved_chunk_ids": [get_chunk_field(c, "chunk_id", "") for c in chunks],
-                        "answer": "",
-                        "is_refusal": False,
-                    },
+                    "GENERATED_ANSWER": generated_answer,
                 }
             )
     summary = evaluator.evaluate_retrieval(dataset_items, results)
