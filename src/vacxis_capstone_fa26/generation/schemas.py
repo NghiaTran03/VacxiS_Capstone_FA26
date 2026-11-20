@@ -42,6 +42,18 @@ def _extract_chunk_id(c: Any) -> str:
     return str(c)
 
 
+def _extract_chunk_text(c: Any) -> str:
+    """Safely extract nonblank chunk text from an object or dictionary."""
+    if isinstance(c, dict):
+        text = c.get("text")
+        if text is None:
+            text = c.get("TEXT")
+        return str(text).strip() if text is not None else ""
+    if hasattr(c, "text") and c.text is not None:
+        return str(c.text).strip()
+    return ""
+
+
 @dataclass
 class GeneratedAnswer:
     """Represents an answer synthesized by the generator."""
@@ -60,6 +72,11 @@ class GeneratedAnswer:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert answer object to serializable dictionary."""
+        retrieved_contexts = [
+            text
+            for c in self.retrieved_chunks
+            if (text := _extract_chunk_text(c))
+        ]
         result = {
             "query": self.query,
             "answer": self.answer,
@@ -67,6 +84,7 @@ class GeneratedAnswer:
             "invalid_citations": self.invalid_citations,
             "cited_chunk_ids": [_extract_chunk_id(c) for c in self.cited_chunks],
             "retrieved_chunk_ids": [_extract_chunk_id(c) for c in self.retrieved_chunks],
+            "retrieved_contexts": retrieved_contexts,
             "is_refusal": self.is_refusal,
             "model": self.model,
             "latency_seconds": round(self.latency_seconds, 4),

@@ -8,8 +8,11 @@ import sys
 
 from . import workflow
 from .generation.schemas import GenerationConfig
+from .indexing.table_pipeline import DEFAULT_TABLE_CACHE_PATH, VALID_TABLE_STRATEGIES
 from .llm import LLMError
 from .retrieval.schemas import RetrievalConfig
+
+_RETRIEVER_MODES = ("naive", "advanced", "hybrid", "lightrag", "hybrid_lightrag")
 
 
 def add_retrieval_arguments(parser: argparse.ArgumentParser) -> None:
@@ -22,15 +25,36 @@ def add_retrieval_arguments(parser: argparse.ArgumentParser) -> None:
     ):
         parser.add_argument("--" + flag, default=default)
     parser.add_argument("--qdrant-port", type=int, default=RetrievalConfig.qdrant_port)
+    parser.add_argument(
+        "--retriever-mode",
+        choices=_RETRIEVER_MODES,
+        default=RetrievalConfig.mode,
+        help="Retriever backend mode",
+    )
+    parser.add_argument(
+        "--merge-table-chunks",
+        action="store_true",
+        default=RetrievalConfig.merge_table_chunks,
+        help="Merge split table chunks sharing (doc_id, header) before reranking",
+    )
 
 
 def retrieval_config(args: argparse.Namespace) -> RetrievalConfig:
     """Translate shared CLI arguments into retrieval settings."""
+    mode = getattr(args, "retriever_mode", None) or RetrievalConfig.mode
     return RetrievalConfig(
-        collection_name=args.collection_name, qdrant_host=args.qdrant_host,
-        qdrant_port=args.qdrant_port, embed_model_path=args.model_path,
-        reranker_model_path=args.reranker_path, top_k=args.top_k,
+        collection_name=args.collection_name,
+        qdrant_host=args.qdrant_host,
+        qdrant_port=args.qdrant_port,
+        embed_model_path=args.model_path,
+        reranker_model_path=args.reranker_path,
+        top_k=args.top_k,
         skip_rerank=args.skip_rerank,
+        mode=mode,
+        merge_table_chunks=bool(
+            getattr(args, "merge_table_chunks", RetrievalConfig.merge_table_chunks)
+        ),
+        chunks_parquet_path=getattr(args, "chunks", RetrievalConfig.chunks_parquet_path),
     )
 
 
@@ -47,6 +71,24 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             sub.add_argument("--chunks", type=Path, default=Path("chunks_storage/chunks.parquet"))
             sub.add_argument("--mapping", type=Path)
             sub.add_argument("--recreate", action="store_true")
+            sub.add_argument(
+                "--table-strategy",
+                choices=VALID_TABLE_STRATEGIES,
+                default="raw",
+                help="Table preprocessing strategy during Qdrant indexing",
+            )
+            sub.add_argument(
+                "--table-cache",
+                type=Path,
+                default=DEFAULT_TABLE_CACHE_PATH,
+                help="Path to JSON cache of table prose summaries",
+            )
+            sub.add_argument(
+                "--table-summary-model",
+                type=str,
+                default=None,
+                help="Model key for table summary cache lookup (defaults to LIGHTRAG_LLM)",
+            )
         if name != "prepare":
             sub.add_argument("--model", help="Override VACXIS_GENERATION_MODEL")
             sub.add_argument("--dry-run", action="store_true", help="Use offline extractive generation")
@@ -80,7 +122,9 @@ def main(argv: list[str] | None = None) -> int:
     for flag, field in (("chunks", "chunks_path"), ("mapping", "mapping_path"),
                         ("dataset", "dataset_path"), ("results", "results_path"),
                         ("report_json", "report_json"), ("report_md", "report_md"),
-                        ("recreate", "recreate")):
+                        ("recreate", "recreate"), ("table_strategy", "table_strategy"),
+                        ("table_cache", "table_cache_path"),
+                        ("table_summary_model", "table_summary_model")):
         if hasattr(args, flag):
             options[field] = getattr(args, flag)
     try:

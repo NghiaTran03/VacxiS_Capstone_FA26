@@ -738,3 +738,85 @@ def test_cli_default_dataset_matches_saved_generation_goldens():
         result = by_id[item["additional_metadata"]["query_id"]]
         assert item["input"] == result["input"]
         assert item["additional_metadata"]["source_chunk_ids"] == result["additional_metadata"]["source_chunk_ids"]
+
+
+def test_retrieval_context_from_answer_prefers_retrieved_contexts_with_fallback():
+    chunk_texts = {"c1": "raw parquet chunk text"}
+    dual_text = "Prose summary\n\n[BẢNG DỮ LIỆU GỐC]\n<table><tr><td>0.5 ml</td></tr></table>"
+
+    # Prefers explicit retrieved_contexts over raw chunk_texts
+    assert retrieval_context_from_answer(
+        {"retrieved_chunk_ids": ["c1"], "retrieved_contexts": [dual_text]},
+        chunk_texts,
+    ) == [dual_text]
+
+    # Falls back to chunk_texts when retrieved_contexts is absent or empty
+    assert retrieval_context_from_answer(
+        {"retrieved_chunk_ids": ["c1"], "retrieved_contexts": []},
+        chunk_texts,
+    ) == ["raw parquet chunk text"]
+
+
+def test_answer_fields_and_evaluator_preserve_retrieved_contexts():
+    fields = answer_fields(
+        {
+            "GENERATED_ANSWER": {
+                "answer": "Tiêm 0.5 ml.",
+                "is_refusal": False,
+                "retrieved_chunk_ids": ["c1"],
+                "retrieved_contexts": ["Dual context text", "   "],
+            }
+        }
+    )
+    assert fields["retrieved_contexts"] == ["Dual context text"]
+
+    evaluator = _make_evaluator(enable_geval=False)
+    info = evaluator._case_info(fields, {"c1": "raw text"})
+    assert info.retrieval_context == ["Dual context text"]
+
+
+def test_generated_answer_to_dict_includes_retrieved_contexts():
+    from vacxis_capstone_fa26.generation.schemas import GeneratedAnswer
+
+    ans = GeneratedAnswer(
+        query="q",
+        answer="a",
+        retrieved_chunks=[
+            {"chunk_id": "c1", "text": "  Context 1  "},
+            {"chunk_id": "c2", "TEXT": "Context 2"},
+        ],
+    )
+    data = ans.to_dict()
+    assert data["retrieved_chunk_ids"] == ["c1", "c2"]
+    assert data["retrieved_contexts"] == ["Context 1", "Context 2"]
+
+
+def test_cli_retriever_mode_and_merge_table_chunks_metadata(monkeypatch, tmp_path):
+    from vacxis_capstone_fa26.evaluation import cli
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["vacxis-eval", "--retrieval-only", "--merge-table-chunks", "--collection-name", "col_dual"],
+    )
+    args = cli.parse_args()
+    assert args.merge_table_chunks is True
+    assert args.retriever_mode is None
+
+    summary = EvaluationSummary()
+    cli._record_retrieval_run(summary, args)
+    run = summary.metadata["run"]
+    assert run["retriever"] == "hybrid"
+    assert run["retriever_mode"] == "hybrid"
+    assert run["merge_table_chunks"] is True
+    assert run["collection_name"] == "col_dual"
+
+    # Mutually exclusive checks
+    for bad_args in (
+        ["vacxis-eval", "--baseline", "--retriever-mode", "hybrid"],
+        ["vacxis-eval", "--advanced-rag", "--retriever-mode", "advanced"],
+        ["vacxis-eval", "--retriever-mode", "hybrid", "--results", "saved.json"],
+        ["vacxis-eval", "--retriever-mode", "naive", "--chunks", str(tmp_path / "missing.parquet")],
+    ):
+        monkeypatch.setattr("sys.argv", bad_args)
+        with pytest.raises(SystemExit):
+            cli.parse_args()

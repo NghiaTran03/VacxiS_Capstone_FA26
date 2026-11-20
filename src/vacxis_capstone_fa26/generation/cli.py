@@ -302,9 +302,10 @@ def main() -> None:
 
         else:
             try:
-                from vacxis_capstone_fa26.retrieval.retriever import (
-                    VacxisRetriever,
-                )
+                from vacxis_capstone_fa26.retrieval.factory import build_retriever
+
+                ret_config = retrieval_config(args)
+                retriever_instance = build_retriever(ret_config)
             except ImportError as exc:
                 logger.error(
                     "Retrieval module requires PyTorch/CUDA dependencies (%s).",
@@ -312,9 +313,7 @@ def main() -> None:
                 )
                 sys.exit(1)
 
-            ret_config = retrieval_config(args)
-
-            with VacxisRetriever(config=ret_config) as retriever:
+            with retriever_instance as retriever:
                 pipeline = VacxisRAGPipeline(
                     retriever=retriever,
                     generator=generator,
@@ -363,14 +362,15 @@ def main() -> None:
 
     query = args.query
     try:
-        from vacxis_capstone_fa26.retrieval.retriever import VacxisRetriever
+        from vacxis_capstone_fa26.retrieval.factory import build_retriever
+
+        ret_config = retrieval_config(args)
+        retriever_instance = build_retriever(ret_config)
     except ImportError as exc:
         logger.error("Retrieval module requires PyTorch/CUDA dependencies (%s).", exc)
         sys.exit(1)
 
-    ret_config = retrieval_config(args)
-
-    with VacxisRetriever(config=ret_config) as retriever:
+    with retriever_instance as retriever:
         pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
         answer_obj = pipeline.answer(query=query.strip(), top_k=args.top_k, skip_rerank=args.skip_rerank)
 

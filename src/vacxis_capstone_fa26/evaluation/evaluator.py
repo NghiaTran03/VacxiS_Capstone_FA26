@@ -187,11 +187,16 @@ class VacxisRAGEvaluator:
 
     def _case_info(self, fields: dict[str, Any], chunk_texts: dict[str, str]) -> _CaseInfo:
         """Derive answer, refusal flag, and hydrated context for one result."""
+        answer_payload: dict[str, Any] = {
+            "retrieved_chunk_ids": fields.get("retrieved_chunk_ids", []),
+        }
+        if "retrieved_contexts" in fields:
+            answer_payload["retrieved_contexts"] = fields["retrieved_contexts"]
         return _CaseInfo(
             actual_output=fields["actual_output"],
             is_refusal=fields["is_refusal"],
             retrieval_context=datasets.retrieval_context_from_answer(
-                {"retrieved_chunk_ids": fields["retrieved_chunk_ids"]}, chunk_texts
+                answer_payload, chunk_texts
             ),
             retrieved_chunk_ids=fields.get("retrieved_chunk_ids", []),
         )

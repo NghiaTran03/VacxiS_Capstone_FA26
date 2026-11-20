@@ -131,6 +131,18 @@ def parse_args() -> argparse.Namespace:
         "--advanced-rag", action="store_true",
         help="Original query -> BGE-M3 dense embedding -> Qdrant top-k -> standard generator",
     )
+    parser.add_argument(
+        "--retriever-mode",
+        choices=("naive", "advanced", "hybrid", "lightrag", "hybrid_lightrag"),
+        default=None,
+        help="Explicit retriever backend mode for live evaluation (default: hybrid)",
+    )
+    parser.add_argument(
+        "--merge-table-chunks",
+        action="store_true",
+        default=False,
+        help="Merge split table chunks sharing (doc_id, header) before reranking",
+    )
     parser.add_argument("--collection-name", type=str, default="VacxiS_Capstone_FA26")
     parser.add_argument("--qdrant-host", type=str, default="localhost")
     parser.add_argument("--qdrant-port", type=int, default=6333)
@@ -158,6 +170,10 @@ def parse_args() -> argparse.Namespace:
         "judge models do not cancel in-flight cases mid-run",
     )
     args = parser.parse_args()
+    if args.retriever_mode is not None and (args.baseline or args.advanced_rag):
+        parser.error("--retriever-mode cannot be combined with --baseline or --advanced-rag.")
+    if args.retriever_mode is not None and args.results is not None:
+        parser.error("--retriever-mode requires live evaluation without --results.")
     if args.advanced_rag and args.results is not None:
         parser.error("--advanced-rag requires live evaluation without --results.")
     if args.advanced_rag and not args.retrieval_only and not args.chunks.is_file():
@@ -166,6 +182,8 @@ def parse_args() -> argparse.Namespace:
         parser.error("--baseline requires live evaluation without --results.")
     if args.baseline and not args.chunks.is_file():
         parser.error(f"--baseline requires a chunk corpus at {args.chunks}.")
+    if args.retriever_mode == "naive" and not args.chunks.is_file():
+        parser.error(f"--retriever-mode naive requires a chunk corpus at {args.chunks}.")
     if args.results is None and args.top_k < 1:
         parser.error("--top-k must be positive.")
     if args.ir_k_values is not None and any(k < 1 for k in args.ir_k_values):
@@ -262,6 +280,15 @@ def _load_flat_dataset(path: Path) -> list[dict[str, Any]]:
     return records
 
 
+def _effective_retriever_mode(args: argparse.Namespace) -> str:
+    """Resolve the active retriever mode from mutually exclusive CLI flags."""
+    if getattr(args, "baseline", False):
+        return "naive"
+    if getattr(args, "advanced_rag", False):
+        return "advanced"
+    return getattr(args, "retriever_mode", None) or "hybrid"
+
+
 def _build_advanced_retriever(args: argparse.Namespace):
     from vacxis_capstone_fa26.cli import retrieval_config
     from vacxis_capstone_fa26.retrieval.dense import DenseRetriever
@@ -287,9 +314,11 @@ def _build_answer_fn(args: argparse.Namespace, chunk_texts: dict[str, str]):
     from vacxis_capstone_fa26.generation.generator import MedicalGenerator
     from vacxis_capstone_fa26.generation.pipeline import VacxisRAGPipeline
     from vacxis_capstone_fa26.generation.schemas import GenerationConfig
+    from vacxis_capstone_fa26.retrieval.factory import build_retriever
 
     gen_config = GenerationConfig(timeout=args.timeout)
     generator = MedicalGenerator(config=gen_config)
+    eff_mode = _effective_retriever_mode(args)
     if args.baseline:
         from vacxis_capstone_fa26.retrieval.bm25 import BM25Retriever
 
@@ -299,15 +328,23 @@ def _build_answer_fn(args: argparse.Namespace, chunk_texts: dict[str, str]):
         retriever = _build_advanced_retriever(args)
         pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
     else:
-        pipeline = VacxisRAGPipeline(retrieval_config=retrieval_config(args), generator=generator)
+        ret_cfg = retrieval_config(args)
+        ret_cfg.mode = eff_mode
+        if eff_mode == "naive":
+            retriever = build_retriever(ret_cfg, chunk_texts=chunk_texts)
+        else:
+            retriever = build_retriever(ret_cfg)
+        pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
 
     traces: dict[str, Any] = {}
 
     def answer_fn(query: str, golden: dict) -> dict:
-        chunks = retriever.retrieve(query, top_k=args.top_k) if (args.baseline or args.advanced_rag) else None
-        if args.advanced_rag:
-            traces[golden["query_id"]] = dict(retriever.last_trace)
-        return pipeline.answer(query=query, top_k=args.top_k, override_chunks=chunks).to_dict()
+        if args.baseline or eff_mode == "advanced":
+            chunks = retriever.retrieve(query, top_k=args.top_k)
+            if eff_mode == "advanced" and hasattr(retriever, "last_trace"):
+                traces[golden["query_id"]] = dict(retriever.last_trace)
+            return pipeline.answer(query=query, top_k=args.top_k, override_chunks=chunks).to_dict()
+        return pipeline.answer(query=query, top_k=args.top_k).to_dict()
 
     answer_fn.retrieval_traces = traces
     return pipeline, answer_fn
@@ -338,6 +375,7 @@ def _evaluate_live_retrieval(
 
     results: list[dict[str, Any]] = []
     traces: dict[str, Any] = {}
+    eff_mode = _effective_retriever_mode(args)
     with ExitStack() as resources:
         if args.baseline:
             from vacxis_capstone_fa26.retrieval.bm25 import BM25Retriever
@@ -347,14 +385,16 @@ def _evaluate_live_retrieval(
             retriever = resources.enter_context(_build_advanced_retriever(args))
         else:
             from vacxis_capstone_fa26.cli import retrieval_config
-            from vacxis_capstone_fa26.retrieval.retriever import VacxisRetriever
+            from vacxis_capstone_fa26.retrieval.factory import build_retriever
 
-            retriever = resources.enter_context(VacxisRetriever(config=retrieval_config(args)))
+            ret_cfg = retrieval_config(args)
+            ret_cfg.mode = eff_mode
+            retriever = resources.enter_context(build_retriever(ret_cfg))
 
         for item in dataset_items:
             record = to_record(item)
             chunks = retriever.retrieve(query=record.query, top_k=args.top_k)
-            if args.advanced_rag:
+            if eff_mode == "advanced" and hasattr(retriever, "last_trace"):
                 traces[record.query_id] = dict(retriever.last_trace)
             results.append(
                 {
@@ -477,16 +517,30 @@ def _record_retrieval_run(summary: EvaluationSummary, args: argparse.Namespace) 
         "results": str(args.results) if args.results is not None else None,
     }
     if args.results is None:
-        name = "advanced_dense" if args.advanced_rag else ("bm25" if args.baseline else "hybrid")
-        run.update({"retriever": name,
-                    "top_k": args.top_k, "chunks": str(args.chunks)})
-        if args.advanced_rag:
-            run.update({"dense_only": True, "skip_rerank": True,
-                        "collection_name": args.collection_name, "model_path": args.model_path})
-        elif not args.baseline:
-            run.update({"collection_name": args.collection_name,
-                        "model_path": args.model_path, "reranker_path": args.reranker_path,
-                        "skip_rerank": args.skip_rerank})
+        eff_mode = _effective_retriever_mode(args)
+        name_map = {"advanced": "advanced_dense", "naive": "bm25"}
+        name = name_map.get(eff_mode, eff_mode)
+        run.update({
+            "retriever": name,
+            "retriever_mode": eff_mode,
+            "top_k": args.top_k,
+            "chunks": str(args.chunks),
+        })
+        if eff_mode == "advanced":
+            run.update({
+                "dense_only": True,
+                "skip_rerank": True,
+                "collection_name": args.collection_name,
+                "model_path": args.model_path,
+            })
+        elif eff_mode != "naive":
+            run.update({
+                "collection_name": args.collection_name,
+                "model_path": args.model_path,
+                "reranker_path": args.reranker_path,
+                "skip_rerank": args.skip_rerank,
+                "merge_table_chunks": bool(getattr(args, "merge_table_chunks", False)),
+            })
     summary.metadata["run"] = run
     for warning in summary.metadata.get("warnings", []):
         logger.warning("%s", warning)

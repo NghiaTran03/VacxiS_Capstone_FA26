@@ -4,7 +4,11 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
+
+RetrieverMode = Literal["naive", "advanced", "hybrid", "lightrag", "hybrid_lightrag"]
+LightRAGQueryMode = Literal["local", "global", "hybrid", "mix", "naive"]
+LightRAGFusionMode = Literal["context_append", "rrf_rerank"]
 
 
 @dataclass
@@ -45,3 +49,17 @@ class RetrievalConfig:
     rrf_top_k: int = 30
     top_k: int = 5
     skip_rerank: bool = False
+    mode: RetrieverMode = "hybrid"
+    merge_table_chunks: bool = False
+
+    # LightRAG Knowledge Graph settings (wired in Wave 2)
+    lightrag_working_dir: str | Path = "lightrag_storage"
+    lightrag_workspace: str = "vacxis"
+    lightrag_mode: LightRAGQueryMode = "hybrid"
+    lightrag_top_k: int = 20
+    lightrag_chunk_top_k: int = 5
+    lightrag_max_entity_tokens: int = 1500
+    lightrag_max_relation_tokens: int = 1500
+    lightrag_include_chunks: bool = True
+    lightrag_fusion: LightRAGFusionMode = "context_append"
+    chunks_parquet_path: str | Path = "chunks_storage/chunks.parquet"
