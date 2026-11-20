@@ -19,11 +19,13 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-# Ensure LightRAG repository is discoverable
+# Ensure LightRAG repository and sibling scripts are discoverable
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+SCRIPTS_DIR = Path(__file__).resolve().parent
 LIGHTRAG_REPO_DIR = PROJECT_ROOT / "LightRAG"
-if LIGHTRAG_REPO_DIR.exists() and str(LIGHTRAG_REPO_DIR) not in sys.path:
-    sys.path.insert(0, str(LIGHTRAG_REPO_DIR))
+for _path in (SCRIPTS_DIR, LIGHTRAG_REPO_DIR):
+    if _path.exists() and str(_path) not in sys.path:
+        sys.path.insert(0, str(_path))
 
 import numpy as np
 import pyarrow.compute as pc
@@ -175,6 +177,54 @@ def prepare_prompt_directory(entity_prompt_path: Path) -> Path:
     return target_path
 
 
+def is_local_bge_m3_model(embed_model: str) -> bool:
+    """Return True when the configured LightRAG embedding model maps to local BGE-M3."""
+    return embed_model.strip().lower() in {"baai/bge-m3", "bge-m3", "models/bge-m3"}
+
+
+def build_embedding_config(
+    embed_model: str,
+    *,
+    embed_model_path: str | Path,
+    base_url: str,
+    api_key: str,
+    embed_dim: int,
+) -> tuple[str, Any]:
+    """Build (canonical_model_name, async_embed_callable) for LightRAG EmbeddingFunc.
+
+    Uses local ``models/bge-m3`` via ``LocalBGEM3Embedder`` when ``embed_model``
+    targets BGE-M3 so LightRAG shares the exact same embedding weights as the
+    main pipeline without external API calls.
+    """
+    if is_local_bge_m3_model(embed_model):
+        from reembed_lightrag_qdrant import LocalBGEM3Embedder
+
+        local_embedder = LocalBGEM3Embedder(
+            model_path=embed_model_path,
+            batch_size=32,
+            max_length=8192,
+        )
+        return "baai/bge-m3", local_embedder
+
+    from lightrag.llm.openai import openai_embed
+
+    async def remote_embed_func(
+        texts: list[str], *args: Any, **kwargs: Any
+    ) -> np.ndarray:
+        return await openai_embed.func(
+            texts=texts,
+            model=embed_model,
+            base_url=base_url,
+            api_key=api_key,
+            embedding_dim=embed_dim,
+            max_token_size=8192,
+            *args,
+            **kwargs,
+        )
+
+    return embed_model, remote_embed_func
+
+
 async def probe_embedding_dimension(
     base_url: str,
     api_key: str,
@@ -294,6 +344,8 @@ async def run_pipeline(args: argparse.Namespace) -> None:
     env_dim = os.getenv("LIGHTRAG_EMBED_DIM")
     if env_dim and env_dim.strip().isdigit():
         embed_dim = int(env_dim.strip())
+    elif is_local_bge_m3_model(embed_model):
+        embed_dim = 1024
     else:
         print("Probing embedding model dimension...")
         embed_dim = await probe_embedding_dimension(
@@ -303,7 +355,7 @@ async def run_pipeline(args: argparse.Namespace) -> None:
         )
 
     from lightrag import LightRAG
-    from lightrag.llm.openai import openai_complete_if_cache, openai_embed
+    from lightrag.llm.openai import openai_complete_if_cache
     from lightrag.utils import EmbeddingFunc
 
     async def custom_llm_model_func(
@@ -328,25 +380,25 @@ async def run_pipeline(args: argparse.Namespace) -> None:
             **call_kwargs,
         )
 
-    async def custom_embed_func(
-        texts: list[str], *args: Any, **kwargs: Any
-    ) -> np.ndarray:
-        return await openai_embed.func(
-            texts=texts,
-            model=embed_model,
-            base_url=base_url,
-            api_key=api_key,
-            embedding_dim=embed_dim,
-            max_token_size=8192,
-            *args,
-            **kwargs,
-        )
+    canonical_embed_model, custom_embed_func = build_embedding_config(
+        embed_model,
+        embed_model_path=args.embed_model_path,
+        base_url=base_url,
+        api_key=api_key,
+        embed_dim=embed_dim,
+    )
+    use_local_bge_m3 = is_local_bge_m3_model(embed_model)
+    embed_source = args.embed_model_path if use_local_bge_m3 else base_url
+    print(
+        f"[OK] LightRAG embedding configured: model_name='{canonical_embed_model}', "
+        f"local_bge_m3={use_local_bge_m3} ({embed_source})"
+    )
 
     embedding_wrapper = EmbeddingFunc(
         embedding_dim=embed_dim,
         max_token_size=8192,
         func=custom_embed_func,
-        model_name=embed_model,
+        model_name=canonical_embed_model,
         send_dimensions=False,
     )
 
@@ -540,6 +592,12 @@ def parse_arguments() -> argparse.Namespace:
         type=str,
         default=None,
         help="Path to doc_id checkpoint JSON (defaults to <working_dir>/ingested_docs_<workspace>.json).",
+    )
+    parser.add_argument(
+        "--embed-model-path",
+        type=str,
+        default=str(PROJECT_ROOT / "models" / "bge-m3"),
+        help="Local BGE-M3 directory used when LIGHTRAG_EMBED_MODEL targets bge-m3.",
     )
     return parser.parse_args()
 
