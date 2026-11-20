@@ -298,7 +298,7 @@ def main() -> None:
 
         manifest = out_path.with_suffix(out_path.suffix + ".manifest.json")
         settings = vars(args).copy()
-        for key in ("resume", "out_file", "retries", "retry_initial", "retry_max", "timeout"):
+        for key in ("resume", "out_file", "retries", "retry_initial", "retry_max", "timeout", "llm_call_delay"):
             settings.pop(key, None)
         signature = fingerprint({"items": [item.original for item in items], "settings": settings,
                                  "generation": {k: v for k, v in asdict(gen_config).items() if k not in ("retry_policy", "timeout")}})

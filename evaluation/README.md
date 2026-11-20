@@ -149,3 +149,21 @@ IR metrics are undefined for queries without relevant-chunk labels; inspect
 refusal correctness, answer relevancy, faithfulness, and correctness instead.
 Contextual metrics need cautious interpretation when the expected answer is a
 refusal and the dataset provides no positive retrieval evidence.
+
+### Spacing LLM calls to reduce rate limits
+
+Add `--llm-call-delay 5` to either `vacxis-generation` or `vacxis-eval` to
+require at least five seconds between request starts within that process.
+The default is 0 (no added spacing). Generation calls, DeepEval judge calls,
+schema-correction calls, and transport retries all use the spacing policy.
+Concurrent async judge calls share the same pacing gate; waits do not block
+the event loop. Retry backoff still applies, and pacing waits only for any
+remaining gap. The first request can start immediately.
+
+You can add or change this flag while resuming an existing checkpoint; it does
+not change the experiment fingerprint. For example, rerun your existing
+`--resume` command with `--llm-call-delay 10 --retry-initial 5 --retry-max 120`.
+This spaces request starts, rather than waiting ten seconds after each response.
+Separate processes do not share this limit; run one baseline at a time if they
+use the same provider quota. Spacing helps request-rate limits but cannot
+resolve exhausted credits or token quotas on its own.
