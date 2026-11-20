@@ -26,7 +26,11 @@ def chat_response(content="Answer [c1].", finish_reason="stop"):
 def router(monkeypatch):
     """Exercise the real OpenAI SDK against an in-process HTTP transport."""
     requests, clients = [], []
-    result = {"status": 200, "body": chat_response()}
+    result = {
+        "status": 200,
+        "body": chat_response(),
+        "base_url": "https://openrouter.ai/api/v1",
+    }
     monkeypatch.setenv("OPENROUTER_API_KEY", "fixture-secret")
     monkeypatch.setenv("VACXIS_GENERATION_MODEL", "fixture/generation")
     monkeypatch.setenv("VACXIS_QUERY_PLANNER_MODEL", "fixture/planner")
@@ -36,7 +40,7 @@ def router(monkeypatch):
         return httpx.Response(result["status"], json=result["body"])
 
     def factory(**kwargs):
-        assert kwargs["base_url"] == "https://openrouter.ai/api/v1"
+        assert kwargs["base_url"] == result["base_url"]
         assert kwargs["max_retries"] == 0
         client = httpx.Client(transport=httpx.MockTransport(handle))
         clients.append(client)
@@ -69,6 +73,14 @@ def test_generator_max_tokens_override(router):
     )
     body = json.loads(requests[0].content)
     assert body["max_tokens"] == 2048
+
+
+def test_generator_uses_generation_specific_endpoint(router, monkeypatch):
+    result, requests, _ = router
+    monkeypatch.setenv("VACXIS_GENERATION_BASE_URL", "https://generation.example/v1/")
+    result["base_url"] = "https://generation.example/v1"
+    MedicalGenerator().generate("Question", [{"chunk_id": "c1", "text": "Evidence"}])
+    assert str(requests[0].url) == "https://generation.example/v1/chat/completions"
 
 
 @pytest.mark.parametrize("field", ["OPENROUTER_API_KEY", "VACXIS_GENERATION_MODEL"])

@@ -93,11 +93,12 @@ def validate_response(response: Any) -> Any:
 
 
 def completion(*, model: str, messages: list[dict[str, str]], timeout: float = 30.0,
+               base_url: str | None = None,
                extra_body: dict[str, Any] | None = None, retry_policy=None, **kwargs: Any) -> Any:
     """Make one bounded SDK request and close the client on every exit path."""
     resolved = validate_config(model)
     try:
-        with OpenAI(base_url=BASE_URL, api_key=os.getenv("OPENROUTER_API_KEY"),
+        with OpenAI(base_url=(base_url or BASE_URL).rstrip("/"), api_key=os.getenv("OPENROUTER_API_KEY"),
                     timeout=timeout, max_retries=0) as client:
             from .resilience import RetryPolicy
             response = (retry_policy or RetryPolicy()).run(lambda: client.chat.completions.create(
