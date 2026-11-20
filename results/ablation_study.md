@@ -9,33 +9,34 @@ Báo cáo tổng hợp kết quả đánh giá Information Retrieval (IR) trên 
 | **M2 (Hybrid)** | `eval_ir_m2_hybrid.json` | `VacxiS_Capstone_FA26` | Strict ID | Hybrid (Dense + Sparse + Rerank) trên chunk gốc |
 | **M3b (Strict ID)** | `eval_ir_m3b_table_dual_before_preserving.json` | `VacxiS_Capstone_FA26_table_dual` | Strict ID | Hybrid + Table-Aware (`summarize_dual`), trước khi sửa logic khớp `merged_chunk_ids` |
 | **M3b (Alias-Aware)** | `eval_ir_m3b_table_dual.json` | `VacxiS_Capstone_FA26_table_dual` | Rank-preserving `merged_chunk_ids` | Hybrid + Table-Aware (`summarize_dual`), tính đúng các sub-chunk đã gộp bảng |
+| **M4 (LightRAG RRF)** | `eval_ir_m4_hybrid_lightrag_rrf.json` | `VacxiS_Capstone_FA26_table_dual` + KG | Rank-preserving `merged_chunk_ids` | Hybrid + Table-Aware + LightRAG (`hybrid` + `rrf_rerank`) |
 
-> Ghi chú: Hiện trong thư mục gốc mới có 3 file `eval_ir_*.json` trên (chưa có file kết quả cho M0/M1/M4 LightRAG).
+> Ghi chú: Các file hiện có gồm M2, M3b (Strict/Alias) và M4 (`hybrid_lightrag` + `rrf_rerank`). Chưa có file riêng cho M0/M1.
 
 ---
 
 ## 2. Tổng hợp Overall IR Metrics (300 câu hỏi)
 
-| Metric | M2 (Hybrid) | M3b (Strict ID) | M3b (Alias-Aware) | Delta (M3b Alias vs M2) |
-| :--- | :---: | :---: | :---: | :---: |
-| **Hit@1** | 0.4233 | 0.4567 | **0.4933** | **+0.0700 (+7.00%)** |
-| **Recall@1** | 0.3517 | 0.3850 | **0.4217** | **+0.0700 (+7.00%)** |
-| **Precision@1** | 0.4233 | 0.4567 | **0.4933** | **+0.0700 (+7.00%)** |
-| **MRR@1** | 0.4233 | 0.4567 | **0.4933** | **+0.0700 (+7.00%)** |
-| **NDCG@1** | 0.4233 | 0.4567 | **0.4933** | **+0.0700 (+7.00%)** |
-| **MAP@1** | 0.3517 | 0.3850 | **0.4217** | **+0.0700 (+7.00%)** |
-| **Hit@3** | 0.6767 | 0.6667 | **0.7300** | **+0.0533 (+5.33%)** |
-| **Recall@3** | 0.6167 | 0.6050 | **0.6683** | **+0.0516 (+5.16%)** |
-| **Precision@3** | 0.2500 | 0.2444 | **0.2678** | **+0.0178 (+1.78%)** |
-| **MRR@3** | 0.5383 | 0.5511 | **0.5989** | **+0.0606 (+6.06%)** |
-| **NDCG@3** | 0.5317 | 0.5372 | **0.5897** | **+0.0580 (+5.80%)** |
-| **MAP@3** | 0.4844 | 0.4956 | **0.5444** | **+0.0600 (+6.00%)** |
-| **Hit@5** | 0.7433 | 0.7233 | **0.7833** | **+0.0400 (+4.00%)** |
-| **Recall@5** | 0.6817 | 0.6533 | **0.7167** | **+0.0350 (+3.50%)** |
-| **Precision@5** | 0.1680 | 0.1613 | **0.1753** | **+0.0073 (+0.73%)** |
-| **MRR@5** | 0.5532 | 0.5643 | **0.6114** | **+0.0582 (+5.82%)** |
-| **NDCG@5** | 0.5607 | 0.5597 | **0.6122** | **+0.0515 (+5.15%)** |
-| **MAP@5** | 0.5019 | 0.5089 | **0.5581** | **+0.0562 (+5.62%)** |
+| Metric | M2 (Hybrid) | M3b (Strict ID) | M3b (Alias-Aware) | M4 (LightRAG RRF) | Delta (M4 vs M2) |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Hit@1** | 0.4233 | 0.4567 | **0.4933** | **0.4933** | **+0.0700 (+7.00%)** |
+| **Recall@1** | 0.3517 | 0.3850 | **0.4217** | **0.4217** | **+0.0700 (+7.00%)** |
+| **Precision@1** | 0.4233 | 0.4567 | **0.4933** | **0.4933** | **+0.0700 (+7.00%)** |
+| **MRR@1** | 0.4233 | 0.4567 | **0.4933** | **0.4933** | **+0.0700 (+7.00%)** |
+| **NDCG@1** | 0.4233 | 0.4567 | **0.4933** | **0.4933** | **+0.0700 (+7.00%)** |
+| **MAP@1** | 0.3517 | 0.3850 | **0.4217** | **0.4217** | **+0.0700 (+7.00%)** |
+| **Hit@3** | 0.6767 | 0.6667 | **0.7300** | **0.7300** | **+0.0533 (+5.33%)** |
+| **Recall@3** | 0.6167 | 0.6050 | **0.6683** | **0.6683** | **+0.0516 (+5.16%)** |
+| **Precision@3** | 0.2500 | 0.2444 | **0.2678** | **0.2678** | **+0.0178 (+1.78%)** |
+| **MRR@3** | 0.5383 | 0.5511 | **0.5989** | 0.5983 | **+0.0600 (+6.00%)** |
+| **NDCG@3** | 0.5317 | 0.5372 | **0.5897** | 0.5890 | **+0.0573 (+5.73%)** |
+| **MAP@3** | 0.4844 | 0.4956 | **0.5444** | 0.5433 | **+0.0589 (+5.89%)** |
+| **Hit@5** | 0.7433 | 0.7233 | **0.7833** | **0.7833** | **+0.0400 (+4.00%)** |
+| **Recall@5** | 0.6817 | 0.6533 | **0.7167** | **0.7167** | **+0.0350 (+3.50%)** |
+| **Precision@5** | 0.1680 | 0.1613 | **0.1753** | **0.1753** | **+0.0073 (+0.73%)** |
+| **MRR@5** | 0.5532 | 0.5643 | **0.6114** | 0.6108 | **+0.0576 (+5.76%)** |
+| **NDCG@5** | 0.5607 | 0.5597 | **0.6122** | 0.6115 | **+0.0508 (+5.08%)** |
+| **MAP@5** | 0.5019 | 0.5089 | **0.5581** | 0.5570 | **+0.0551 (+5.51%)** |
 
 ---
 
@@ -104,3 +105,4 @@ Báo cáo tổng hợp kết quả đánh giá Information Retrieval (IR) trên 
 1. **Table-Aware (`summarize_dual`) giải quyết điểm nghẽn truy xuất bảng:** Trên nhóm `TABLE_REASONING` (60 câu), `Hit@1` tăng từ `0.1167` lên `0.4667` (`+35.00%`) và `Hit@3` từ `0.4667` lên `0.7667` (`+30.00%`), kéo toàn bộ `Overall Hit@1` tăng `+7.00%` và `Overall Hit@5` tăng `+4.00%` so với M2.
 2. **Tác động của Alias-Aware Matching (`merged_chunk_ids`):** Trước khi sửa logic chấm IR (`M3b Strict ID`), nhiều bảng đã truy xuất đúng vào Top-5 nhưng bị tính miss do ID trả về là primary ID sau gộp bảng còn nhãn chỉ tới sub-chunk ID, làm `Hit@5` bị tụt giả `-2.00%` (`0.7433 -> 0.7233`). Sau khi bật rank-preserving `merged_chunk_ids` alias matching, M3b vượt M2 đồng loạt ở mọi chỉ số tổng thể (`k=1, 3, 5`).
 3. **Ổn định trên văn bản thường:** Nhóm `SINGLE_HOP` giữ nguyên `Hit@1 = 0.5133` và chỉ dao động rất nhẹ ở `@3/@5` (`-0.66%` đến `-2.00%`), trong khi `MULTI_HOP` cải thiện nhẹ ở `@3/@5` (`Hit@5 +2.23%`).
+4. **Tác động của M4 (`hybrid_lightrag` + `rrf_rerank`) ở retrieval-only:** Giữ nguyên toàn bộ `Hit@k`, `Recall@k`, `Precision@k` so với `M3b (Alias-Aware)` (`Hit@1 = 0.4933`, `Hit@5 = 0.7833`, `Recall@5 = 0.7167`), chỉ chênh lệch rất nhỏ ở thứ tự xếp hạng (`MRR@5`: `0.6108` vs `0.6114`, `NDCG@5`: `0.6115` vs `0.6122`). Điều này cho thấy giá trị chính của LightRAG nằm ở `lightrag_kg_context` trong bước **Generation / DeepEval** hơn là thay đổi Top-5 chunk-level IR.
