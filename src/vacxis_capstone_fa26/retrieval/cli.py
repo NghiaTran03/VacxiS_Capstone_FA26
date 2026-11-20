@@ -109,6 +109,9 @@ def parse_args() -> argparse.Namespace:
         default=Path(RetrievalConfig.chunks_parquet_path),
         help="Path to chunks.parquet (used by naive/BM25 and graph reverse mapping)",
     )
+    from vacxis_capstone_fa26.cli import add_lightrag_arguments
+
+    add_lightrag_arguments(parser)
     parser.add_argument(
         "--json",
         action="store_true",
@@ -147,11 +150,17 @@ def main() -> None:
         skip_rerank=args.skip_rerank,
         mode=args.retriever_mode,
         merge_table_chunks=args.merge_table_chunks,
+        lightrag_working_dir=args.lightrag_working_dir,
+        lightrag_workspace=args.lightrag_workspace,
+        lightrag_mode=args.lightrag_mode,
+        lightrag_top_k=args.lightrag_top_k,
+        lightrag_chunk_top_k=args.lightrag_chunk_top_k,
+        lightrag_fusion=args.lightrag_fusion,
         chunks_parquet_path=args.chunks,
     )
 
     with build_retriever(config) as retriever:
-        if config.mode == "hybrid":
+        if config.mode in ("hybrid", "hybrid_lightrag"):
             results = retriever.retrieve(
                 query=query,
                 top_k=args.top_k,

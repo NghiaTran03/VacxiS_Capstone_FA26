@@ -58,6 +58,16 @@ CORRECTNESS_CRITERIA = (
 )
 
 REFUSAL_CORRECTNESS = "refusal_correctness"
+_NON_DOCUMENT_CHUNK_IDS = frozenset({"lightrag_kg_context"})
+
+
+def _filter_document_chunk_ids(chunk_ids: Sequence[str]) -> list[str]:
+    """Exclude synthetic knowledge-graph context IDs from chunk-level IR scoring."""
+    return [
+        str(cid).strip()
+        for cid in chunk_ids
+        if str(cid).strip() and str(cid).strip() not in _NON_DOCUMENT_CHUNK_IDS
+    ]
 
 
 def _resolve_query_id(item: dict[str, Any]) -> str | None:
@@ -329,7 +339,7 @@ class VacxisRAGEvaluator:
             details: dict[str, dict[str, Any]] = {}
             if record.relevant_chunk_ids:
                 ir_scores = compute_query_ir_metrics(
-                    info.retrieved_chunk_ids,
+                    _filter_document_chunk_ids(info.retrieved_chunk_ids),
                     record.relevant_chunk_ids,
                     k_values=k_vals,
                 )
@@ -377,7 +387,7 @@ class VacxisRAGEvaluator:
         )
         scored_count = sum(bool(record.relevant_chunk_ids) for record in goldens)
         ranking_lengths = [
-            len({cid.strip() for cid in info.retrieved_chunk_ids if cid.strip()})
+            len(set(_filter_document_chunk_ids(info.retrieved_chunk_ids)))
             for info in case_infos
         ]
         short_counts = {
@@ -501,7 +511,7 @@ class VacxisRAGEvaluator:
             if self.enable_ir_metrics and record.relevant_chunk_ids:
                 has_ir_metrics = True
                 ir_scores = compute_query_ir_metrics(
-                    info.retrieved_chunk_ids,
+                    _filter_document_chunk_ids(info.retrieved_chunk_ids),
                     record.relevant_chunk_ids,
                     k_values=self.ir_k_values,
                 )

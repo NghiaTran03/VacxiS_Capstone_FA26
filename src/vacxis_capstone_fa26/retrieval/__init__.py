@@ -5,6 +5,11 @@ _EXPORTS = {
     "HybridSearcher": ".hybrid_searcher", "convert_sparse_to_qdrant": ".hybrid_searcher",
     "BGEReranker": ".reranker", "VacxisRetriever": ".retriever", "DenseRetriever": ".dense",
     "BM25Retriever": ".bm25", "build_retriever": ".factory",
+    "LocalBGEM3Embedder": ".lightrag_embedder",
+    "LightRAGRetriever": ".lightrag_retriever",
+    "HybridLightRAGRetriever": ".hybrid_lightrag",
+    "KG_CONTEXT_CHUNK_ID": ".lightrag_retriever",
+    "KG_CONTENT_TYPE": ".lightrag_retriever",
     "RetrievalConfig": ".schemas", "RetrievedChunk": ".schemas",
 }
 __all__ = list(_EXPORTS)

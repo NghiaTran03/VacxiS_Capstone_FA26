@@ -820,3 +820,101 @@ def test_cli_retriever_mode_and_merge_table_chunks_metadata(monkeypatch, tmp_pat
         monkeypatch.setattr("sys.argv", bad_args)
         with pytest.raises(SystemExit):
             cli.parse_args()
+
+
+def test_ir_metrics_exclude_lightrag_kg_context_while_deepeval_keeps_it():
+    evaluator = _make_evaluator(enable_geval=False)
+    dataset = [
+        {
+            "QUERY_ID": "Q1",
+            "QUERY": "Vắc-xin Gardasil 9 phòng bệnh gì?",
+            "ANSWERABILITY": "ANSWERABLE",
+            "additional_metadata": {"source_chunk_ids": ["c1", "c2"]},
+        }
+    ]
+    kg_text = "[ĐỒ THỊ TRI THỨC Y KHOA (LIGHTRAG)]\n\nThực thể liên quan:\n- Gardasil 9 (VACCINE)"
+    results = [
+        {
+            "QUERY_ID": "Q1",
+            "GENERATED_ANSWER": {
+                "answer": "Gardasil 9 phòng HPV [c1].",
+                "is_refusal": False,
+                "retrieved_chunk_ids": ["lightrag_kg_context", "c1", "c2"],
+                "retrieved_contexts": [kg_text, "Text c1", "Text c2"],
+            },
+        }
+    ]
+
+    # Retrieval-only IR scoring excludes synthetic lightrag_kg_context
+    ir_summary = evaluator.evaluate_retrieval(dataset, results, k_values=(1, 2))
+    assert ir_summary.overall_metrics["Hit@1"] == 1.0
+    assert ir_summary.overall_metrics["Precision@2"] == 1.0
+    assert ir_summary.overall_metrics["Recall@2"] == 1.0
+    assert ir_summary.metadata["short_rankings_by_cutoff"] == {"1": 0, "2": 0}
+    assert ir_summary.per_query_results[0]["metadata"]["retrieved_chunk_ids"] == [
+        "lightrag_kg_context",
+        "c1",
+        "c2",
+    ]
+
+    # Full DeepEval scoring preserves KG context in LLMTestCase.retrieval_context
+    captured_cases = []
+    metric_names = [m.__name__ for m in evaluator.build_metrics()]
+
+    def _capture(cases, **kw):
+        captured_cases.extend(cases)
+        return _fake_result(len(cases), metric_names)
+
+    evaluator._run_deepeval = _capture
+    full_summary = evaluator.evaluate_results(dataset, results, chunk_texts={})
+    assert captured_cases[0].retrieval_context == [kg_text, "Text c1", "Text c2"]
+    assert full_summary.overall_metrics["Hit@1"] == 1.0
+    assert full_summary.overall_metrics["MRR@1"] == 1.0
+
+
+def test_cli_lightrag_flags_and_metadata(monkeypatch):
+    from vacxis_capstone_fa26.evaluation import cli
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "vacxis-eval",
+            "--retrieval-only",
+            "--retriever-mode",
+            "hybrid_lightrag",
+            "--collection-name",
+            "VacxiS_Capstone_FA26_table_dual",
+            "--lightrag-mode",
+            "mix",
+            "--lightrag-fusion",
+            "rrf_rerank",
+            "--lightrag-working-dir",
+            "custom_lr_dir",
+            "--lightrag-workspace",
+            "vacxis_v2",
+            "--lightrag-top-k",
+            "15",
+            "--lightrag-chunk-top-k",
+            "6",
+        ],
+    )
+    args = cli.parse_args()
+    summary = EvaluationSummary()
+    cli._record_retrieval_run(summary, args)
+    run = summary.metadata["run"]
+    assert run["retriever"] == "hybrid_lightrag"
+    assert run["retriever_mode"] == "hybrid_lightrag"
+    assert run["collection_name"] == "VacxiS_Capstone_FA26_table_dual"
+    assert run["lightrag_mode"] == "mix"
+    assert run["lightrag_fusion"] == "rrf_rerank"
+    assert run["lightrag_working_dir"] == "custom_lr_dir"
+    assert run["lightrag_workspace"] == "vacxis_v2"
+    assert run["lightrag_top_k"] == 15
+    assert run["lightrag_chunk_top_k"] == 6
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["vacxis-eval", "--retrieval-only", "--retriever-mode", "lightrag", "--lightrag-top-k", "0"],
+    )
+    with pytest.raises(SystemExit):
+        cli.parse_args()

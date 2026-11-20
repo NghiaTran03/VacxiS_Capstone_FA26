@@ -13,6 +13,48 @@ from .llm import LLMError
 from .retrieval.schemas import RetrievalConfig
 
 _RETRIEVER_MODES = ("naive", "advanced", "hybrid", "lightrag", "hybrid_lightrag")
+_LIGHTRAG_MODES = ("local", "global", "hybrid", "mix", "naive")
+_LIGHTRAG_FUSIONS = ("context_append", "rrf_rerank")
+
+
+def add_lightrag_arguments(parser: argparse.ArgumentParser) -> None:
+    """Expose LightRAG Knowledge Graph retrieval arguments on a parser."""
+    parser.add_argument(
+        "--lightrag-mode",
+        choices=_LIGHTRAG_MODES,
+        default=RetrievalConfig.lightrag_mode,
+        help="LightRAG query mode",
+    )
+    parser.add_argument(
+        "--lightrag-fusion",
+        choices=_LIGHTRAG_FUSIONS,
+        default=RetrievalConfig.lightrag_fusion,
+        help="Fusion strategy when using hybrid_lightrag mode",
+    )
+    parser.add_argument(
+        "--lightrag-working-dir",
+        type=Path,
+        default=Path(RetrievalConfig.lightrag_working_dir),
+        help="LightRAG working directory containing KV storage",
+    )
+    parser.add_argument(
+        "--lightrag-workspace",
+        type=str,
+        default=RetrievalConfig.lightrag_workspace,
+        help="LightRAG workspace name for Qdrant and Neo4j isolation",
+    )
+    parser.add_argument(
+        "--lightrag-top-k",
+        type=int,
+        default=RetrievalConfig.lightrag_top_k,
+        help="Number of graph entities/relationships retrieved by LightRAG",
+    )
+    parser.add_argument(
+        "--lightrag-chunk-top-k",
+        type=int,
+        default=RetrievalConfig.lightrag_chunk_top_k,
+        help="Number of document chunks retrieved by LightRAG",
+    )
 
 
 def add_retrieval_arguments(parser: argparse.ArgumentParser) -> None:
@@ -37,6 +79,7 @@ def add_retrieval_arguments(parser: argparse.ArgumentParser) -> None:
         default=RetrievalConfig.merge_table_chunks,
         help="Merge split table chunks sharing (doc_id, header) before reranking",
     )
+    add_lightrag_arguments(parser)
 
 
 def retrieval_config(args: argparse.Namespace) -> RetrievalConfig:
@@ -53,6 +96,24 @@ def retrieval_config(args: argparse.Namespace) -> RetrievalConfig:
         mode=mode,
         merge_table_chunks=bool(
             getattr(args, "merge_table_chunks", RetrievalConfig.merge_table_chunks)
+        ),
+        lightrag_working_dir=getattr(
+            args, "lightrag_working_dir", RetrievalConfig.lightrag_working_dir
+        ),
+        lightrag_workspace=getattr(
+            args, "lightrag_workspace", RetrievalConfig.lightrag_workspace
+        ),
+        lightrag_mode=getattr(
+            args, "lightrag_mode", RetrievalConfig.lightrag_mode
+        ),
+        lightrag_top_k=getattr(
+            args, "lightrag_top_k", RetrievalConfig.lightrag_top_k
+        ),
+        lightrag_chunk_top_k=getattr(
+            args, "lightrag_chunk_top_k", RetrievalConfig.lightrag_chunk_top_k
+        ),
+        lightrag_fusion=getattr(
+            args, "lightrag_fusion", RetrievalConfig.lightrag_fusion
         ),
         chunks_parquet_path=getattr(args, "chunks", RetrievalConfig.chunks_parquet_path),
     )

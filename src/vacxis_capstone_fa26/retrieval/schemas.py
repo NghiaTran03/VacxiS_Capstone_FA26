@@ -52,7 +52,7 @@ class RetrievalConfig:
     mode: RetrieverMode = "hybrid"
     merge_table_chunks: bool = False
 
-    # LightRAG Knowledge Graph settings (wired in Wave 2)
+    # LightRAG Knowledge Graph settings
     lightrag_working_dir: str | Path = "lightrag_storage"
     lightrag_workspace: str = "vacxis"
     lightrag_mode: LightRAGQueryMode = "hybrid"

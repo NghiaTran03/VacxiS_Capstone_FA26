@@ -18,7 +18,8 @@ def build_retriever(
     - ``naive``: lexical BM25 over ``chunk_texts`` (or ``config.chunks_parquet_path``).
     - ``advanced``: single-query BGE-M3 dense search (``DenseRetriever``).
     - ``hybrid``: BGE-M3 dense+sparse hybrid search + RRF + BGE reranker (``VacxisRetriever``).
-    - ``lightrag`` / ``hybrid_lightrag``: reserved for Wave 2 Knowledge Graph integration.
+    - ``lightrag``: LightRAG Knowledge Graph retriever via ``aquery_data`` (``LightRAGRetriever``).
+    - ``hybrid_lightrag``: combined Hybrid + LightRAG retriever with shared BGE-M3 (``HybridLightRAGRetriever``).
     """
     cfg = config or RetrievalConfig()
     mode = cfg.mode
@@ -44,10 +45,15 @@ def build_retriever(
 
         return retriever_mod.VacxisRetriever(config=cfg, **kwargs)
 
-    if mode in ("lightrag", "hybrid_lightrag"):
-        raise NotImplementedError(
-            f"Retriever mode {mode!r} is scheduled for Wave 2 (+graph lightrag)."
-        )
+    if mode == "lightrag":
+        from vacxis_capstone_fa26.retrieval import lightrag_retriever as lightrag_mod
+
+        return lightrag_mod.LightRAGRetriever(config=cfg, **kwargs)
+
+    if mode == "hybrid_lightrag":
+        from vacxis_capstone_fa26.retrieval import hybrid_lightrag as hybrid_lr_mod
+
+        return hybrid_lr_mod.HybridLightRAGRetriever(config=cfg, **kwargs)
 
     raise ValueError(
         f"Unsupported retriever mode: {mode!r}. "

@@ -12,6 +12,8 @@ from vacxis_capstone_fa26.generation.schemas import GenerationConfig
 from vacxis_capstone_fa26.retrieval import build_retriever
 from vacxis_capstone_fa26.retrieval.bm25 import BM25Retriever
 from vacxis_capstone_fa26.retrieval.dense import DenseRetriever
+from vacxis_capstone_fa26.retrieval.hybrid_lightrag import HybridLightRAGRetriever
+from vacxis_capstone_fa26.retrieval.lightrag_retriever import LightRAGRetriever
 from vacxis_capstone_fa26.retrieval.retriever import VacxisRetriever
 from vacxis_capstone_fa26.retrieval.schemas import RetrievalConfig
 
@@ -34,11 +36,24 @@ def test_build_retriever_dispatches_supported_modes():
     assert hybrid.config.merge_table_chunks is True
     assert hybrid.config.collection_name == "col_b"
 
+    lightrag = build_retriever(
+        RetrievalConfig(mode="lightrag", lightrag_mode="local", lightrag_workspace="ws_a")
+    )
+    assert isinstance(lightrag, LightRAGRetriever)
+    assert lightrag.config.lightrag_mode == "local"
+    assert lightrag.config.lightrag_workspace == "ws_a"
 
-@pytest.mark.parametrize("mode", ["lightrag", "hybrid_lightrag"])
-def test_build_retriever_wave2_modes_raise_not_implemented(mode):
-    with pytest.raises(NotImplementedError, match="Wave 2"):
-        build_retriever(RetrievalConfig(mode=mode))  # type: ignore[arg-type]
+    hybrid_lr = build_retriever(
+        RetrievalConfig(
+            mode="hybrid_lightrag",
+            lightrag_mode="hybrid",
+            lightrag_fusion="rrf_rerank",
+            collection_name="col_dual",
+        )
+    )
+    assert isinstance(hybrid_lr, HybridLightRAGRetriever)
+    assert hybrid_lr.config.lightrag_fusion == "rrf_rerank"
+    assert hybrid_lr.config.collection_name == "col_dual"
 
 
 def test_build_retriever_rejects_unknown_mode():
