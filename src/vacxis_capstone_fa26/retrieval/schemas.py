@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+import os
 from pathlib import Path
 from typing import Any
 
@@ -33,7 +34,7 @@ class RetrievedChunk:
 class RetrievalConfig:
     """Configuration options for retrieval and reranking pipeline."""
 
-    collection_name: str = "VacxiS_Capstone_FA26"
+    collection_name: str = os.getenv("QDRANT_COLLECTION_NAME", "VacxiS_Capstone_FA26")
     qdrant_host: str = "localhost"
     qdrant_port: int = 6333
     embed_model_path: str | Path = "models/bge-m3"

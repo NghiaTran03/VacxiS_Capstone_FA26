@@ -1,14 +1,17 @@
 """End-to-end Retrieval Pipeline for VacxiS Capstone."""
 from __future__ import annotations
 
+from collections import defaultdict
 from collections.abc import Callable
+from dataclasses import replace
 import logging
-from typing import Sequence, TYPE_CHECKING
+from typing import Any, Sequence, TYPE_CHECKING
 
 import torch
 if TYPE_CHECKING:
     from FlagEmbedding import BGEM3FlagModel
 
+from vacxis_capstone_fa26.indexing.table_summarizer import merge_table_fragments
 from vacxis_capstone_fa26.retrieval.hybrid_searcher import HybridSearcher
 from vacxis_capstone_fa26.retrieval.reranker import BGEReranker
 from vacxis_capstone_fa26.retrieval.schemas import RetrievalConfig, RetrievedChunk
@@ -268,3 +271,36 @@ class VacxisRetriever:
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         self.close()
+
+
+def merge_retrieved_table_chunks(chunks: list[RetrievedChunk]) -> list[RetrievedChunk]:
+    """Merge retrieved table sub-chunks sharing (doc_id, header) and deduplicate overlap."""
+    if len(chunks) <= 1:
+        return chunks
+
+    table_groups: dict[tuple[str, str], list[RetrievedChunk]] = defaultdict(list)
+    for chunk in chunks:
+        if (chunk.metadata or {}).get("has_table"):
+            table_groups[(chunk.doc_id, chunk.header)].append(chunk)
+
+    emitted_keys: set[tuple[str, str]] = set()
+    merged: list[RetrievedChunk] = []
+    for chunk in chunks:
+        if not (chunk.metadata or {}).get("has_table"):
+            merged.append(chunk)
+            continue
+
+        key = (chunk.doc_id, chunk.header)
+        if key in emitted_keys:
+            continue
+        emitted_keys.add(key)
+
+        group = sorted(table_groups[key], key=lambda c: c.chunk_id)
+        if len(group) == 1:
+            merged.append(chunk)
+            continue
+
+        merged_text = merge_table_fragments([g.text for g in group])
+        merged.append(replace(chunk, text=merged_text))
+
+    return merged
