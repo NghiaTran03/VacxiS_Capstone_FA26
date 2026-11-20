@@ -16,6 +16,7 @@ injected answer callback.
 from __future__ import annotations
 
 import json
+import math
 import logging
 from collections.abc import Sequence
 from pathlib import Path
@@ -248,6 +249,8 @@ class VacxisRAGEvaluator:
         max_concurrent: int = 1,
         write_cache: bool = True,
         use_cache: bool = True,
+        checkpoint_path: str | Path | None = None,
+        resume: bool = False,
     ) -> EvaluationSummary:
         """Evaluate precomputed results against the golden dataset with DeepEval.
 
@@ -267,13 +270,62 @@ class VacxisRAGEvaluator:
         test_cases = [
             self._build_test_case(record, info) for record, info in zip(goldens, case_infos)
         ]
-        eval_result = self._run_deepeval(
-            test_cases,
-            max_concurrent=max_concurrent,
-            write_cache=write_cache,
-            use_cache=use_cache,
-        )
-        return self.build_summary(goldens, eval_result, case_infos)
+        if checkpoint_path is None:
+            eval_result = self._run_deepeval(
+                test_cases, max_concurrent=max_concurrent,
+                write_cache=write_cache, use_cache=use_cache,
+            )
+            return self.build_summary(goldens, eval_result, case_infos)
+
+        from vacxis_capstone_fa26.resilience import atomic_json, fingerprint
+        signature = fingerprint({
+            "dataset": list(dataset_items), "results": list(generation_results),
+            "contexts": [info.retrieval_context for info in case_infos],
+            "judge": self.judge.get_model_name(), "threshold": self.threshold,
+            "geval": self.enable_geval, "ir": self.enable_ir_metrics, "k": self.ir_k_values,
+        })
+        path = Path(checkpoint_path)
+        rows = []
+        if resume and path.exists():
+            saved = json.loads(path.read_text(encoding="utf-8"))
+            if saved.get("fingerprint") != signature:
+                raise ValueError("Evaluation checkpoint inputs or settings changed; use a new checkpoint.")
+            rows = saved["report"]["per_query_results"]
+            ids = [row["query_id"] for row in rows]
+            expected = [record.query_id for record in goldens]
+            if ids != expected[:len(ids)] or len(ids) > len(expected):
+                raise ValueError("Evaluation checkpoint query order is invalid.")
+        names = self._metric_names()
+        def report():
+            queries = [QueryEvalResult(**row) for row in rows]
+            all_names = list(dict.fromkeys(names + [name for row in rows for name in row["metric_scores"]]))
+            aggregates = _aggregate_stats(queries, all_names)
+            return EvaluationSummary(
+                num_queries=len(rows), metric_names=all_names,
+                metric_aggregates=aggregates,
+                overall_metrics={name: value.mean for name, value in aggregates.items()},
+                per_query_results=rows.copy(),
+                by_answerability=_group_breakdown(queries, "answerability", all_names),
+                by_complexity=_group_breakdown(queries, "complexity", all_names),
+                by_query_style=_group_breakdown(queries, "query_style", all_names),
+                by_difficulty=_group_breakdown(queries, "difficulty", all_names),
+                metadata={"complete": len(rows) == len(goldens), "total_queries": len(goldens)},
+            )
+        atomic_json(path, {"fingerprint": signature, "report": report().to_dict()})
+        for index in range(len(rows), len(goldens)):
+            result = self._run_deepeval([test_cases[index]], max_concurrent=1,
+                                      write_cache=write_cache, use_cache=use_cache)
+            summary = self.build_summary([goldens[index]], result, [case_infos[index]])
+            row = summary.per_query_results[0]
+            expected_metrics = {metric.__name__ for metric in self.build_metrics()}
+            if not expected_metrics.issubset(row["metric_results"]) or any(
+                value.get("error") or value.get("score") is None or not math.isfinite(value["score"])
+                for value in row["metric_results"].values()
+            ):
+                raise ValueError("Incomplete metric results cannot be checkpointed as complete.")
+            rows.append(row)
+            atomic_json(path, {"fingerprint": signature, "report": report().to_dict()})
+        return report()
 
     def evaluate_live(
         self,

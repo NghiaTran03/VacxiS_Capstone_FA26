@@ -1,6 +1,9 @@
 """CLI entrypoint for running VacxiS DeepEval evaluation metrics."""
 from __future__ import annotations
 
+from vacxis_capstone_fa26.resilience import add_retry_arguments, retry_from_args
+from vacxis_capstone_fa26.evaluation.judge import OpenRouterJudgeLLM
+
 import argparse
 import json
 import logging
@@ -172,7 +175,17 @@ def parse_args() -> argparse.Namespace:
         "When set, DeepEval's per-task budget (default 180s) is raised so slow "
         "judge models do not cancel in-flight cases mid-run",
     )
+    add_retry_arguments(parser)
+    parser.add_argument("--judge-request-timeout", type=float, default=360)
+    parser.add_argument("--schema-retries", type=int, default=3)
+    parser.add_argument("--checkpoint", type=Path, help="Explicit per-query report checkpoint (precomputed evaluation)")
+    parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
+    retry_from_args(args)
+    if args.resume and args.checkpoint is None:
+        parser.error("--resume requires --checkpoint.")
+    if args.checkpoint is not None and (args.results is None or args.retrieval_only):
+        parser.error("--checkpoint requires --results and full DeepEval evaluation.")
     if args.retriever_mode is not None and (args.baseline or args.advanced_rag):
         parser.error("--retriever-mode cannot be combined with --baseline or --advanced-rag.")
     if args.retriever_mode is not None and args.results is not None:
@@ -321,7 +334,7 @@ def _build_answer_fn(args: argparse.Namespace, chunk_texts: dict[str, str]):
     from vacxis_capstone_fa26.generation.schemas import GenerationConfig
     from vacxis_capstone_fa26.retrieval.factory import build_retriever
 
-    gen_config = GenerationConfig(timeout=args.timeout)
+    gen_config = GenerationConfig(timeout=args.timeout, retry_policy=retry_from_args(args))
     generator = MedicalGenerator(config=gen_config)
     eff_mode = _effective_retriever_mode(args)
     if args.baseline:
@@ -467,7 +480,7 @@ def main() -> None:
             _print_summary(summary, args.breakdown)
             _maybe_export(summary, args)
 
-            unanswerable = _load_flat_dataset(args.unanswerable)
+            unanswerable = [] if args.skip_unanswerable else _load_flat_dataset(args.unanswerable)
             if unanswerable and args.unanswerable != args.results and not args.skip_unanswerable:
                 stubs = _unanswerable_stubs(unanswerable)
                 unsummary = evaluator.evaluate_retrieval(unanswerable, stubs)
@@ -504,7 +517,8 @@ def main() -> None:
         logger.warning("Chunks file %s not found; retrieval context will be empty.", args.chunks)
 
     evaluator = VacxisRAGEvaluator(
-        judge_model=judge_model,
+        judge_model=OpenRouterJudgeLLM(model=judge_model, retry_policy=retry_from_args(args),
+                                       timeout=args.judge_request_timeout, schema_retries=args.schema_retries),
         threshold=args.threshold,
         enable_geval=not args.skip_geval,
         enable_ir_metrics=not args.skip_ir,
@@ -598,7 +612,7 @@ def _run_live(
     _print_summary(summary, args.breakdown)
     _maybe_export(summary, args)
 
-    unanswerable = _load_flat_dataset(args.unanswerable)
+    unanswerable = [] if args.skip_unanswerable else _load_flat_dataset(args.unanswerable)
     if unanswerable and not args.skip_unanswerable:
         logger.info("Running live RAG pipeline over %d unanswerable goldens", len(unanswerable))
         unsummary = _evaluate_live(evaluator, unanswerable, args, chunk_texts)
@@ -625,14 +639,17 @@ def _run_precomputed(
         # No explicit dataset: the results carry the golden fields, so self-align.
         dataset = results
 
-    summary = evaluator.evaluate_results(dataset, results, chunk_texts=chunk_texts)
+    summary = evaluator.evaluate_results(dataset, results, chunk_texts=chunk_texts,
+                                         checkpoint_path=args.checkpoint, resume=args.resume)
     _print_summary(summary, args.breakdown)
     _maybe_export(summary, args)
 
-    unanswerable = _load_flat_dataset(args.unanswerable)
+    unanswerable = [] if args.skip_unanswerable else _load_flat_dataset(args.unanswerable)
     if unanswerable and args.unanswerable != args.results and not args.skip_unanswerable:
         stubs = _unanswerable_stubs(unanswerable)
-        unsummary = evaluator.evaluate_results(unanswerable, stubs, chunk_texts=chunk_texts)
+        unsummary = evaluator.evaluate_results(unanswerable, stubs, chunk_texts=chunk_texts,
+            checkpoint_path=(args.checkpoint.with_stem(args.checkpoint.stem + "_unanswerable") if args.checkpoint else None),
+            resume=args.resume)
         print("\n--- Unanswerable evaluation ---")
         _print_summary(unsummary, args.breakdown)
         _maybe_export(unsummary, args, suffix="_unanswerable")
