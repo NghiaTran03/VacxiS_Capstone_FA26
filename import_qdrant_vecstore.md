@@ -26,14 +26,14 @@ curl -X POST "http://localhost:6333/collections/VacxiS_Capstone_FA26/snapshots/u
 
 # Restore LightRAG Qdrant Collections (workspace: `vacxis`)
 
-Ensure local Qdrant is running on port 6333, then upload all 3 snapshots from `lightrag_storage/snapshots/`:
+Ensure local Qdrant is running on port 6333, then upload all 3 `baai/bge-m3` snapshots from `lightrag_storage/snapshots/`:
 
 ### Linux / macOS:
 ```bash
 for col in \
-  lightrag_vdb_chunks_vietnamese_embedding_1024d \
-  lightrag_vdb_entities_vietnamese_embedding_1024d \
-  lightrag_vdb_relationships_vietnamese_embedding_1024d; do
+  lightrag_vdb_chunks_baai_bge_m3_1024d \
+  lightrag_vdb_entities_baai_bge_m3_1024d \
+  lightrag_vdb_relationships_baai_bge_m3_1024d; do
   curl -X POST "http://localhost:6333/collections/${col}/snapshots/upload?priority=snapshot" \
     -F "snapshot=@lightrag_storage/snapshots/${col}.snapshot"
 done
@@ -42,9 +42,9 @@ done
 ### Windows (PowerShell):
 ```powershell
 $cols = @(
-  "lightrag_vdb_chunks_vietnamese_embedding_1024d",
-  "lightrag_vdb_entities_vietnamese_embedding_1024d",
-  "lightrag_vdb_relationships_vietnamese_embedding_1024d"
+  "lightrag_vdb_chunks_baai_bge_m3_1024d",
+  "lightrag_vdb_entities_baai_bge_m3_1024d",
+  "lightrag_vdb_relationships_baai_bge_m3_1024d"
 )
 foreach ($col in $cols) {
   curl.exe -X POST "http://localhost:6333/collections/$col/snapshots/upload?priority=snapshot" `
@@ -54,20 +54,20 @@ foreach ($col in $cols) {
 
 ### Windows (CMD):
 ```cmd
-curl -X POST "http://localhost:6333/collections/lightrag_vdb_chunks_vietnamese_embedding_1024d/snapshots/upload?priority=snapshot" ^
-  -F "snapshot=@lightrag_storage\snapshots\lightrag_vdb_chunks_vietnamese_embedding_1024d.snapshot"
-curl -X POST "http://localhost:6333/collections/lightrag_vdb_entities_vietnamese_embedding_1024d/snapshots/upload?priority=snapshot" ^
-  -F "snapshot=@lightrag_storage\snapshots\lightrag_vdb_entities_vietnamese_embedding_1024d.snapshot"
-curl -X POST "http://localhost:6333/collections/lightrag_vdb_relationships_vietnamese_embedding_1024d/snapshots/upload?priority=snapshot" ^
-  -F "snapshot=@lightrag_storage\snapshots\lightrag_vdb_relationships_vietnamese_embedding_1024d.snapshot"
+curl -X POST "http://localhost:6333/collections/lightrag_vdb_chunks_baai_bge_m3_1024d/snapshots/upload?priority=snapshot" ^
+  -F "snapshot=@lightrag_storage\snapshots\lightrag_vdb_chunks_baai_bge_m3_1024d.snapshot"
+curl -X POST "http://localhost:6333/collections/lightrag_vdb_entities_baai_bge_m3_1024d/snapshots/upload?priority=snapshot" ^
+  -F "snapshot=@lightrag_storage\snapshots\lightrag_vdb_entities_baai_bge_m3_1024d.snapshot"
+curl -X POST "http://localhost:6333/collections/lightrag_vdb_relationships_baai_bge_m3_1024d/snapshots/upload?priority=snapshot" ^
+  -F "snapshot=@lightrag_storage\snapshots\lightrag_vdb_relationships_baai_bge_m3_1024d.snapshot"
 ```
 
 ### Verify Qdrant LightRAG Collections:
 ```bash
 for col in \
-  lightrag_vdb_chunks_vietnamese_embedding_1024d \
-  lightrag_vdb_entities_vietnamese_embedding_1024d \
-  lightrag_vdb_relationships_vietnamese_embedding_1024d; do
+  lightrag_vdb_chunks_baai_bge_m3_1024d \
+  lightrag_vdb_entities_baai_bge_m3_1024d \
+  lightrag_vdb_relationships_baai_bge_m3_1024d; do
   echo "$col:"
   curl -s "http://localhost:6333/collections/${col}"
   echo ""
@@ -75,9 +75,9 @@ done
 ```
 
 Expected counts (`status="green"`):
-- `lightrag_vdb_chunks_vietnamese_embedding_1024d`: `points_count=1492`
-- `lightrag_vdb_entities_vietnamese_embedding_1024d`: `points_count=3572`
-- `lightrag_vdb_relationships_vietnamese_embedding_1024d`: `points_count=1830`
+- `lightrag_vdb_chunks_baai_bge_m3_1024d`: `points_count=1492`
+- `lightrag_vdb_entities_baai_bge_m3_1024d`: `points_count=3572`
+- `lightrag_vdb_relationships_baai_bge_m3_1024d`: `points_count=1830`
 
 ---
 
