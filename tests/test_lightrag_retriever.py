@@ -90,6 +90,17 @@ def test_local_bge_m3_embedder_reuses_shared_model_and_validates_shape():
     embedder = LocalBGEM3Embedder(embed_model=fake, batch_size=8, max_length=256)
     assert embedder.embed_model is fake
 
+    import copy
+    from dataclasses import asdict, dataclass
+
+    @dataclass
+    class _Holder:
+        func: Any
+
+    assert copy.deepcopy(embedder) is embedder
+    assert asdict(_Holder(func=embedder))["func"] is embedder
+
+
     empty = embedder.encode_sync([])
     assert empty.shape == (0, DENSE_DIM)
     assert fake.calls == []

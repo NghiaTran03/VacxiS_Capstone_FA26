@@ -95,3 +95,15 @@ class LocalBGEM3Embedder:
     async def __call__(self, texts: list[str], *args: Any, **kwargs: Any) -> np.ndarray:
         """Async callable matching LightRAG EmbeddingFunc signature."""
         return await asyncio.to_thread(self.encode_sync, texts)
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> LocalBGEM3Embedder:
+        """Return self during ``dataclasses.asdict`` deepcopy inside ``LightRAG.__post_init__``.
+
+        ``LightRAG._build_global_config()`` calls ``dataclasses.asdict(self)`` which
+        deep-copies ``EmbeddingFunc.func`` before discarding the copy and restoring
+        ``original_embedding_func``. Returning ``self`` avoids attempting to pickle
+        ``self._lock`` (``_thread.lock``) or duplicating the ~2.2 GB ``BGEM3FlagModel``.
+        """
+        memo[id(self)] = self
+        return self
+
