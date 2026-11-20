@@ -1,0 +1,1517 @@
+{
+  "metadata": {
+    "created_at": "2026-11-20T18:03:10.084619+00:00",
+    "source": "test_dataset.json",
+    "limit": 100,
+    "total_generated": 100,
+    "distribution": {
+      "answerability": {
+        "UNANSWERABLE": 100
+      },
+      "complexity": null,
+      "query_style": null
+    }
+  },
+  "goldens": [
+    {
+      "input": "Vaxneuvance có gây sưng đỏ đuôi mắt không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc Vaxneuvance có gây sưng đỏ đuôi mắt không. Do không có dữ liệu lâm sàng hay thông tin ghi nhận về phản ứng bất lợi này trong tài liệu hướng dẫn sử dụng chính thức của vắc xin, hệ thống xin phép từ chối trả lời và không đưa ra suy đoán nhằm đảm bảo an toàn y khoa. Nếu bạn hoặc người thân đang gặp phải các triệu chứng bất thường, vui lòng liên hệ ngay với bác sĩ chuyên khoa hoặc cơ sở y tế gần nhất để được thăm khám và xử trí kịp thời.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0001",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Bé nhà em được 8 tháng, bé bị chậm tăng cân và mỗi lần ăn hay uống sữa đều khóc. Em có nên cho bé ti Pentaxim để phòng bệnh không ạ?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc cho bé 8 tháng tuổi có nên ti Pentaxim khi bé bị chậm tăng cân và khóc mỗi lần ăn uống. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0002",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Em đã hút thai cách đây 4 tuần và nồng độ beta HCG vẫn còn. Em muốn biết sau bao lâu nồng độ beta HCG của em đã trở về bình thường để có thể tiêm vaccine M-M-R II?",
+      "expected_output": "Tài liệu không cung cấp thông tin về thời gian cụ thể để nồng độ beta HCG trở về bình thường sau hút thai. Do đó, không thể xác định được thời điểm phù hợp để tiêm vaccine M-M-R II. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0004",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Trường hợp bé trai thoát vị bẹn nên mổ hở hay là nội soi?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc trường hợp bé trai thoát vị bẹn nên mổ hở hay nội soi. Do thông tin cảnh báo thận trọng cho tình huống này không được đề cập trong tài liệu hướng dẫn sử dụng chính thức, hệ thống từ chối đưa ra khuyến cáo để tránh suy diễn thiếu cơ sở. Bạn vui lòng trao đổi trực tiếp với bác sĩ tại phòng khám sàng lọc để được đánh giá nguy cơ và tư vấn phù hợp.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0005",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Tôi bị chói mắt khi đi xe máy buổi sáng, nước mắt chảy và nhìn mờ. Liệu tôi có nên tiêm vaccine Influvac Tetra không ạ?",
+      "expected_output": "Tài liệu không cung cấp thông tin liên quan đến việc chói mắt, nước mắt chảy và nhìn mờ có ảnh hưởng đến việc tiêm vắc xin Influvac Tetra hay không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0007",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Tiêm vaccine Gardasil 9 có gây ra hiện tượng quầng vú bị khô, bong da không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về hiện tượng quầng vú bị khô, bong da sau khi tiêm vaccine Gardasil 9. Do không có dữ liệu lâm sàng hay thông tin ghi nhận về phản ứng bất lợi này trong tài liệu hướng dẫn sử dụng chính thức của vắc xin, hệ thống xin phép từ chối trả lời và không đưa ra suy đoán nhằm đảm bảo an toàn y khoa. Nếu bạn hoặc người thân đang gặp phải các triệu chứng bất thường, vui lòng liên hệ ngay với bác sĩ chuyên khoa hoặc cơ sở y tế gần nhất để được thăm khám và xử trí kịp thời.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0009",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Em bị hậu môn chảy dịch có mùi hôi và rát, sau khi rửa và thấm khô bằng giấy thấy có vết dịch màu tím. Liệu có cần tiêm vaccine Gardasil 9 không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc em bị hậu môn chảy dịch có mùi hôi và rát, cũng như màu sắc của vết dịch sau khi rửa và thấm khô bằng giấy có liên quan đến việc tiêm vaccine Gardasil 9. Do đó, không thể xác định liệu em có cần tiêm vaccine Gardasil 9 hay không dựa trên thông tin được cung cấp. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0011",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Khi kết quả xét nghiệm Beta-HCG là dưới 0.10 U/L, liệu Influvac Tetra có thể sử dụng được không ạ?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc sử dụng vắc xin Influvac Tetra khi kết quả xét nghiệm Beta-HCG là dưới 0.10 U/L. Do tài liệu hướng dẫn sử dụng không quy định tình trạng này trong mục chống chỉ định hoặc cảnh báo thận trọng, hệ thống từ chối đưa ra kết luận về mức độ an toàn. Bạn nên thông báo chi tiết tiền sử bệnh và tình trạng hiện tại cho bác sĩ khám sàng lọc trước khi tiêm để được chỉ định chính xác.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0013",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Varivax có sử dụng để phòng ngừa bệnh zona ở môi không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc Varivax có sử dụng để phòng ngừa bệnh zona ở môi hay không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0014",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Em đã tiêm vaccine Gardasil 9, có nguy cơ mắc tiểu đường không với chỉ số xét nghiệm là 6,6 mol?",
+      "expected_output": "Tài liệu không cung cấp thông tin về mối liên hệ giữa việc tiêm vaccine Gardasil 9 và nguy cơ mắc tiểu đường, cũng như không đề cập đến chỉ số xét nghiệm là 6,6 mol. Do tài liệu hướng dẫn sử dụng không quy định tình trạng này trong mục chống chỉ định hoặc cảnh báo thận trọng, hệ thống từ chối đưa ra kết luận về mức độ an toàn. Bạn nên thông báo chi tiết tiền sử bệnh và tình trạng hiện tại cho bác sĩ khám sàng lọc trước khi tiêm để được chỉ định chính xác.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0015",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Con em được 2 tháng tuổi, em vừa cho con đi khám bác sĩ và được tiêm vắc xin 6 trong 1. Em có thể cho con tiêm vắc xin Pentaxim ngay sau khi đã được tiêm các vắc xin khác không ạ?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc có thể cho trẻ 2 tháng tuổi đã tiêm vắc xin 6 trong 1 tiêm vắc xin Pentaxim ngay sau đó hay không. Do tài liệu không cung cấp dữ liệu nghiên cứu về sự tương tác giữa vắc xin và các thuốc hay tình trạng này, hệ thống từ chối tư vấn dùng kết hợp hoặc xác định khoảng thời gian cách biệt an toàn. Vui lòng tham khảo ý kiến chuyên môn của bác sĩ trước khi phối hợp điều trị hoặc tiêm chủng.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0016",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Trẻ bị viêm xoang cấp mủ, nghẹt mũi dịch chảy nhiều và có mùi hôi có nên tiêm vaccine Pentaxim không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc trẻ bị viêm xoang cấp mủ, nghẹt mũi dịch chảy nhiều và có mùi hôi có nên tiêm vaccine Pentaxim hay không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0018",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Chồng tôi có kháng nguyên viêm gan B, vậy có được tiêm vaccine Gardasil không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc chồng bạn có kháng nguyên viêm gan B có được tiêm vaccine Gardasil hay không. Do tài liệu hướng dẫn sử dụng không quy định tình trạng này trong mục chống chỉ định hoặc cảnh báo thận trọng, hệ thống từ chối đưa ra kết luận về mức độ an toàn. Bạn nên thông báo chi tiết tiền sử bệnh và tình trạng hiện tại cho bác sĩ khám sàng lọc trước khi tiêm để được chỉ định chính xác.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0020",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Trẻ bị sưng khớp vành có phải là tác dụng phụ của vaccine Varivax không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc sưng khớp vành có phải là tác dụng phụ của vắc xin Varivax hay không. Do không có dữ liệu lâm sàng hay thông tin ghi nhận về phản ứng bất lợi này trong tài liệu hướng dẫn sử dụng chính thức của vắc xin, hệ thống xin phép từ chối trả lời và không đưa ra suy đoán nhằm đảm bảo an toàn y khoa. Nếu bạn hoặc người thân đang gặp phải các triệu chứng bất thường, vui lòng liên hệ ngay với bác sĩ chuyên khoa hoặc cơ sở y tế gần nhất để được thăm khám và xử trí kịp thời.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0021",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "BCG Vaccine có chỉ định phòng ngừa bệnh lao đa kháng không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc BCG Vaccine có chỉ định phòng ngừa bệnh lao đa kháng hay không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0022",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Em bị sảy thai thì bao lâu có thể tiêm vaccine Gardasil tiếp ạ? Và cần kiêng và bổ sung gì ạ?",
+      "expected_output": "Tài liệu không cung cấp thông tin về thời gian cần chờ sau khi sảy thai mới có thể tiêm vaccine Gardasil và những điều cần kiêng hoặc bổ sung. Do tài liệu không cung cấp dữ liệu nghiên cứu về sự tương tác giữa vắc xin và các thuốc hay tình trạng này, hệ thống từ chối tư vấn dùng kết hợp hoặc xác định khoảng thời gian cách biệt an toàn. Vui lòng tham khảo ý kiến chuyên môn của bác sĩ trước khi phối hợp điều trị hoặc tiêm chủng.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0023",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Nữ giới đau nửa bên đầu có phải là dấu hiệu của liều vaccine Gardasil 9 không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc đau nửa đầu là dấu hiệu của liều vaccine Gardasil 9. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0024",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Em năm nay 24 tuổi, hay bị đi tiểu nhiều mặc dù ít dùng chất kích thích như rượu, bia, cafe. Đồng thời em cũng bị xuất tinh sớm. Xin bác sĩ tư vấn về liều lượng của vaccine Pentaxim ạ?",
+      "expected_output": "Tài liệu không cung cấp thông tin về liều lượng của vaccine Pentaxim cho người lớn hay đối với tình trạng tiểu nhiều và xuất tinh sớm. Do tài liệu hướng dẫn sử dụng không có quy định cụ thể về liều lượng hay phác đồ tiêm cho trường hợp đặc thù này, hệ thống từ chối hướng dẫn chi tiết nhằm phòng tránh nguy cơ sai liều. Bạn cần tuân thủ nghiêm ngặt chỉ dẫn và phác đồ do bác sĩ tại cơ sở tiêm chủng chỉ định.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0025",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Bé đã được tiêm vaccine Vaxneuvance nhưng vẫn tiểu nhiều lần, có phải là dấu hiệu bất thường không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về các dấu hiệu bất thường liên quan đến việc tiểu nhiều sau khi tiêm vaccine Vaxneuvance. Do không có dữ liệu lâm sàng hay thông tin ghi nhận về phản ứng bất lợi này trong tài liệu hướng dẫn sử dụng chính thức của vắc xin, hệ thống xin phép từ chối trả lời và không đưa ra suy đoán nhằm đảm bảo an toàn y khoa. Nếu bạn hoặc người thân đang gặp phải các triệu chứng bất thường, vui lòng liên hệ ngay với bác sĩ chuyên khoa hoặc cơ sở y tế gần nhất để được thăm khám và xử trí kịp thời.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0026",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Nữ 17 tuổi đi ngoài ra máu có nguy cơ mắc bệnh gì khi tiêm vaccine Tetavax?",
+      "expected_output": "Tài liệu không cung cấp thông tin về nguy cơ mắc bệnh khi nữ 17 tuổi đi ngoài ra máu sau khi tiêm vaccine Tetavax. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0028",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Em bị đau dương vật theo từng cơn, xuất hiện nhiều về chiều và tối. Liệu có nên tiêm vaccine Gardasil 9 không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc đau dương vật theo từng cơn, xuất hiện nhiều về chiều và tối có ảnh hưởng đến việc tiêm vaccine Gardasil 9 hay không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0030",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Bác sĩ cho em hỏi em cao 1m74 nặng 73kg thì đã phù hợp hay thừa cân ạ?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc cân nặng và chiều cao phù hợp hay thừa cân. Do thông tin cảnh báo thận trọng cho tình huống này không được đề cập trong tài liệu hướng dẫn sử dụng chính thức, hệ thống từ chối đưa ra khuyến cáo để tránh suy diễn thiếu cơ sở. Bạn vui lòng trao đổi trực tiếp với bác sĩ tại phòng khám sàng lọc để được đánh giá nguy cơ và tư vấn phù hợp.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0031",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Người lớn bị mỏi mắt, nhức đầu và thị lực suy giảm khi nào nên tiêm vaccine Adacel?",
+      "expected_output": "Tài liệu không cung cấp thông tin về thời điểm cụ thể mà người lớn bị mỏi mắt, nhức đầu và thị lực suy giảm nên tiêm vaccine Adacel. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0032",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Khi mang thai có nên tiêm vaccine Pentaxim không nếu có triệu chứng hồi hộp, chân tay bủn rủn và mất ngủ?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc mang thai có nên tiêm vaccine Pentaxim không nếu có triệu chứng hồi hộp, chân tay bủn rủn và mất ngủ. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0034",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Em đã tiêm vaccine M-M-R II cách đây 5 năm, nay em thấy đau ngực bên trái, mức độ đau nhẹ nhưng khác so với đau khi gần đến chu kì kinh nguyệt. Bác sĩ cho em hỏi đau ngực có phải là dấu hiệu của tác dụng phụ của vaccine M-M-R II không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về mối liên hệ giữa đau ngực và tác dụng phụ của vaccine M-M-R II. Do không có dữ liệu lâm sàng hay thông tin ghi nhận về phản ứng bất lợi này trong tài liệu hướng dẫn sử dụng chính thức của vắc xin, hệ thống xin phép từ chối trả lời và không đưa ra suy đoán nhằm đảm bảo an toàn y khoa. Nếu bạn hoặc người thân đang gặp phải các triệu chứng bất thường, vui lòng liên hệ ngay với bác sĩ chuyên khoa hoặc cơ sở y tế gần nhất để được thăm khám và xử trí kịp thời.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0035",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Em bị bệnh xuất tinh sớm, có nên tiêm vaccine Gardasil 9 để cải thiện tình trạng này không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc tiêm vaccine Gardasil 9 có thể cải thiện tình trạng xuất tinh sớm. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0036",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Bé nhà mình được 7 tháng, mấy hôm vừa rồi mình có bị cúm và bé đã bị lây cúm từ mình. Bé có hơi sốt khoảng 37.1 độ, nhiều nước mũi, mệt mỏi, nhưng bú và ăn vẫn bình thường. Cho mình hỏi về liều lượng của vaccine Vaxneuvance có phù hợp cho bé không ạ?",
+      "expected_output": "Tài liệu không cung cấp thông tin về liều lượng vaccine Vaxneuvance phù hợp cho trẻ dưới 12 tháng tuổi. Do đó, không thể xác định liệu liều lượng có phù hợp cho bé nhà bạn hay không. Do tài liệu hướng dẫn sử dụng không có quy định cụ thể về liều lượng hay phác đồ tiêm cho trường hợp đặc thù này, hệ thống từ chối hướng dẫn chi tiết nhằm phòng tránh nguy cơ sai liều. Bạn cần tuân thủ nghiêm ngặt chỉ dẫn và phác đồ do bác sĩ tại cơ sở tiêm chủng chỉ định.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0038",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Tác dụng phụ của vắc-xin M-M-R II có gây viêm buồng trứng và vô sinh ở nữ không ạ?",
+      "expected_output": "Tài liệu không cung cấp thông tin về tác dụng phụ của vắc-xin M-M-R II gây viêm buồng trứng và vô sinh ở nữ. Do không có dữ liệu lâm sàng hay thông tin ghi nhận về phản ứng bất lợi này trong tài liệu hướng dẫn sử dụng chính thức của vắc xin, hệ thống xin phép từ chối trả lời và không đưa ra suy đoán nhằm đảm bảo an toàn y khoa. Nếu bạn hoặc người thân đang gặp phải các triệu chứng bất thường, vui lòng liên hệ ngay với bác sĩ chuyên khoa hoặc cơ sở y tế gần nhất để được thăm khám và xử trí kịp thời.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0040",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Tôi bị vàng da, đã đi khám xét nghiệm máu và chụp x-quang gan tất cả đều bình thường. Tôi có nên tiêm vaccine Pentaxim không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc có nên tiêm vaccine Pentaxim cho người bị vàng da và đã đi khám xét nghiệm máu, chụp x-quang gan bình thường. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0041",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Tiêm vaccine Adacel có gây ra triệu chứng đánh trống ngực kèm mệt mỏi không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc tiêm vaccine Adacel có gây ra triệu chứng đánh trống ngực kèm mệt mỏi hay không. Do không có dữ liệu lâm sàng hay thông tin ghi nhận về phản ứng bất lợi này trong tài liệu hướng dẫn sử dụng chính thức của vắc xin, hệ thống xin phép từ chối trả lời và không đưa ra suy đoán nhằm đảm bảo an toàn y khoa. Nếu bạn hoặc người thân đang gặp phải các triệu chứng bất thường, vui lòng liên hệ ngay với bác sĩ chuyên khoa hoặc cơ sở y tế gần nhất để được thăm khám và xử trí kịp thời.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0043",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Hội chứng đuôi ngựa có thuộc danh mục bệnh lý nền không và có tiêm vaccine Vaxneuvance ngừa COVID-19 được không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc hội chứng đuôi ngựa có thuộc danh mục bệnh lý nền không và có tiêm vaccine Vaxneuvance ngừa COVID-19 được không. Do tài liệu hướng dẫn sử dụng không quy định tình trạng này trong mục chống chỉ định hoặc cảnh báo thận trọng, hệ thống từ chối đưa ra kết luận về mức độ an toàn. Bạn nên thông báo chi tiết tiền sử bệnh và tình trạng hiện tại cho bác sĩ khám sàng lọc trước khi tiêm để được chỉ định chính xác.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0045",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Em đã tiêm vaccine Gardasil 9 và muốn hỏi về tình trạng của em hiện tại có liên quan đến vaccine không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về tình trạng hiện tại của em sau khi tiêm vaccine Gardasil 9. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0046",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Khi tiêm vaccine Pentaxim, người bệnh có thể gặp phải triệu chứng đau giữa ngực khi nuốt thức ăn và uống nước không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc người bệnh có thể gặp phải triệu chứng đau giữa ngực khi nuốt thức ăn và uống nước sau khi tiêm vaccine Pentaxim. Do không có dữ liệu lâm sàng hay thông tin ghi nhận về phản ứng bất lợi này trong tài liệu hướng dẫn sử dụng chính thức của vắc xin, hệ thống xin phép từ chối trả lời và không đưa ra suy đoán nhằm đảm bảo an toàn y khoa. Nếu bạn hoặc người thân đang gặp phải các triệu chứng bất thường, vui lòng liên hệ ngay với bác sĩ chuyên khoa hoặc cơ sở y tế gần nhất để được thăm khám và xử trí kịp thời.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0048",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Bác sĩ, em được tiêm vaccine Adacel nhưng trong hồ sơ bệnh án có ghi độ phân bố tiểu cầu (PDW) là 17.3, điều này có ảnh hưởng gì không ạ?",
+      "expected_output": "Tài liệu không cung cấp thông tin về mối liên hệ giữa độ phân bố tiểu cầu (PDW) và vaccine Adacel. Do tài liệu hướng dẫn sử dụng không quy định tình trạng này trong mục chống chỉ định hoặc cảnh báo thận trọng, hệ thống từ chối đưa ra kết luận về mức độ an toàn. Bạn nên thông báo chi tiết tiền sử bệnh và tình trạng hiện tại cho bác sĩ khám sàng lọc trước khi tiêm để được chỉ định chính xác.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0050",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Trong khi mang thai tuần thứ 18 và bị sốt 38 độ do cảm lạnh kèm theo ho, đau đầu, đau họng, liệu em có thể tiêm vaccine Pentaxim được không ạ?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc có thể tiêm vaccine Pentaxim cho phụ nữ mang thai tuần thứ 18 khi bị sốt 38 độ do cảm lạnh kèm theo ho, đau đầu, đau họng. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0051",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Bà xã em đang mang thai đôi nhưng chỉ có 1 thai có tim thai còn thai kia chưa có. Em muốn hỏi về vaccin Varivax có ảnh hưởng gì đến thai kỳ không ạ?",
+      "expected_output": "Tài liệu không cung cấp thông tin về ảnh hưởng của vắc xin Varivax đến thai kỳ khi chỉ có một trong hai thai có tim thai. Do tài liệu hướng dẫn sử dụng không quy định tình trạng này trong mục chống chỉ định hoặc cảnh báo thận trọng, hệ thống từ chối đưa ra kết luận về mức độ an toàn. Bạn nên thông báo chi tiết tiền sử bệnh và tình trạng hiện tại cho bác sĩ khám sàng lọc trước khi tiêm để được chỉ định chính xác.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0055",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Trẻ bị lệch vách ngăn, cuốn mũi phì đại và viêm xoang xuất tiết không khỏi có nên tiêm vaccine Pentaxim không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc trẻ bị lệch vách ngăn, cuốn mũi phì đại và viêm xoang xuất tiết không khỏi có nên tiêm vaccine Pentaxim hay không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0056",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Trẻ đã tiêm vaccine M-M-R II có nên chờ bao lâu mới làm chụp vòi trứng?",
+      "expected_output": "Tài liệu không cung cấp thông tin về thời gian chờ trước khi thực hiện chụp vòi trứng sau khi tiêm vaccine M-M-R II. Do tài liệu không cung cấp dữ liệu nghiên cứu về sự tương tác giữa vắc xin và các thuốc hay tình trạng này, hệ thống từ chối tư vấn dùng kết hợp hoặc xác định khoảng thời gian cách biệt an toàn. Vui lòng tham khảo ý kiến chuyên môn của bác sĩ trước khi phối hợp điều trị hoặc tiêm chủng.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0057",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Gardasil 9 có thể gây tăng nồng độ feritin trong máu không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc Gardasil 9 có thể gây tăng nồng độ feritin trong máu hay không. Do không có dữ liệu lâm sàng hay thông tin ghi nhận về phản ứng bất lợi này trong tài liệu hướng dẫn sử dụng chính thức của vắc xin, hệ thống xin phép từ chối trả lời và không đưa ra suy đoán nhằm đảm bảo an toàn y khoa. Nếu bạn hoặc người thân đang gặp phải các triệu chứng bất thường, vui lòng liên hệ ngay với bác sĩ chuyên khoa hoặc cơ sở y tế gần nhất để được thăm khám và xử trí kịp thời.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0058",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Em đang mang thai 28 tuần và bị viêm đường tiết niệu. Bác sĩ đã kê đơn kháng sinh. Em có thể tiêm vaccine Tetavax để phòng bệnh không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc tiêm vaccine Tetavax cho phụ nữ mang thai 28 tuần bị viêm đường tiết niệu. Do đó, không thể trả lời câu hỏi này dựa trên thông tin được cung cấp. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0061",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Trẻ em đã tiêm vaccine Pentaxim, hiện chụp X-quang phổi thấy kẽ phổi giãn, cần chăm sóc và điều trị như thế nào?",
+      "expected_output": "Tài liệu không cung cấp thông tin về cách chăm sóc và điều trị khi trẻ em tiêm vaccine Pentaxim và chụp X-quang phổi thấy kẽ phổi giãn. Do không có dữ liệu lâm sàng hay thông tin ghi nhận về phản ứng bất lợi này trong tài liệu hướng dẫn sử dụng chính thức của vắc xin, hệ thống xin phép từ chối trả lời và không đưa ra suy đoán nhằm đảm bảo an toàn y khoa. Nếu bạn hoặc người thân đang gặp phải các triệu chứng bất thường, vui lòng liên hệ ngay với bác sĩ chuyên khoa hoặc cơ sở y tế gần nhất để được thăm khám và xử trí kịp thời.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0063",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Em bị mòn cổ chân răng và sâu răng hiện tại bị ê buốt có nên tiêm vaccine Varivax không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc em bị mòn cổ chân răng và sâu răng hiện tại bị ê buốt có nên tiêm vaccine Varivax hay không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0064",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Con mình bị tiêu chảy hơn 3 ngày hôm nay. Phân con đi có màu xanh vàng, có bọt. Ngày đi 3 4 lần lúc thì sệ, lúc thì nước. Con vẫn chơi ngoan ăn ngoan, không sốt. Mình đã cho con uống Smecta+men entergermina mà tình trạng không đỡ. Vậy có thuốc nào điều trị tiêu chảy tốt hơn không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về thuốc điều trị tiêu chảy phù hợp cho trường hợp của con bạn. Do thông tin cảnh báo thận trọng cho tình huống này không được đề cập trong tài liệu hướng dẫn sử dụng chính thức, hệ thống từ chối đưa ra khuyến cáo để tránh suy diễn thiếu cơ sở. Bạn vui lòng trao đổi trực tiếp với bác sĩ tại phòng khám sàng lọc để được đánh giá nguy cơ và tư vấn phù hợp.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0066",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Bệnh nhân của tôi đã tiêm vaccine Adacel. Huyết áp tối thiểu của bệnh nhân thường là 60-68 mmHg. Liệu huyết áp này có thấp quá không và điều đó có liên quan đến vaccine Adacel không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về huyết áp tối thiểu của bệnh nhân sau khi tiêm vaccine Adacel, cũng như không có thông tin liên quan giữa huyết áp và vaccine Adacel. Do tài liệu hướng dẫn sử dụng không quy định tình trạng này trong mục chống chỉ định hoặc cảnh báo thận trọng, hệ thống từ chối đưa ra kết luận về mức độ an toàn. Bạn nên thông báo chi tiết tiền sử bệnh và tình trạng hiện tại cho bác sĩ khám sàng lọc trước khi tiêm để được chỉ định chính xác.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0069",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Trẻ em có chiều cao thấp hơn so với tuổi, liệu Pentaxim có phải là lựa chọn phù hợp để tăng cường miễn dịch?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc Pentaxim có phù hợp để tăng cường miễn dịch cho trẻ em có chiều cao thấp hơn so với tuổi hay không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0070",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Bác sĩ ạ, tôi đang băn khoăn về vaccine Pentaxim. Tôi bị đau lưng khi cúi xuống và bị tức thăn hai bên thận, có liên quan gì đến việc tôi đã từng bị thoát vị đĩa đệm không? Tôi muốn hỏi về chỉ định sử dụng vaccine này.",
+      "expected_output": "Tài liệu không cung cấp thông tin liên quan đến việc đau lưng, tức thắt lưng và bệnh thoát vị đĩa đệm có liên quan đến việc sử dụng vaccine Pentaxim hay không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0073",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Trẻ bị giãn tĩnh mạch có thể tiêm vaccine Varivax không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc trẻ bị giãn tĩnh mạch có thể tiêm vaccine Varivax hay không. Do tài liệu hướng dẫn sử dụng không quy định tình trạng này trong mục chống chỉ định hoặc cảnh báo thận trọng, hệ thống từ chối đưa ra kết luận về mức độ an toàn. Bạn nên thông báo chi tiết tiền sử bệnh và tình trạng hiện tại cho bác sĩ khám sàng lọc trước khi tiêm để được chỉ định chính xác.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0074",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Mang thai 3 tháng bị chóng mặt đau đầu nên tiêm vaccine Pentaxim không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc tiêm vaccine Pentaxim cho phụ nữ mang thai 3 tháng bị chóng mặt đau đầu. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0075",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Người 30 tuổi hút thuốc nhiều có cần tiêm vaccine Pentaxim không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc người 30 tuổi hút thuốc nhiều có cần tiêm vaccine Pentaxim hay không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0077",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Gardasil 9 có được sử dụng để điều trị ung thư buồng trứng tái phát không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc Gardasil 9 được sử dụng để điều trị ung thư buồng trứng tái phát. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0078",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Influvac Tetra có chỉ định phòng ngừa bệnh gì không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về chỉ định của vắc xin Influvac Tetra. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0079",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Varivax có chỉ định cho trẻ bị lệch cằm không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc Varivax có chỉ định cho trẻ bị lệch cằm hay không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0080",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Vaccine Influvac Tetra có tác dụng phụ thường gặp là bị tỉnh giấc vào buổi sáng và hắt xì không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc Vaccine Influvac Tetra có tác dụng phụ thường gặp là bị tỉnh giấc vào buổi sáng và hắt xì hay không. Do không có dữ liệu lâm sàng hay thông tin ghi nhận về phản ứng bất lợi này trong tài liệu hướng dẫn sử dụng chính thức của vắc xin, hệ thống xin phép từ chối trả lời và không đưa ra suy đoán nhằm đảm bảo an toàn y khoa. Nếu bạn hoặc người thân đang gặp phải các triệu chứng bất thường, vui lòng liên hệ ngay với bác sĩ chuyên khoa hoặc cơ sở y tế gần nhất để được thăm khám và xử trí kịp thời.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0082",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Bé nhà em 4 tháng tuổi chưa tiêm vaccine Rotarix. Em muốn hỏi vaccine này có chỉ định cho trẻ dưới 6 tháng tuổi không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về chỉ định của vaccine Rotarix cho trẻ dưới 6 tháng tuổi. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0083",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Tiểu ra máu sau khi tiêm vaccine Vaxneuvance có phải là tác dụng phụ không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc tiểu ra máu sau khi tiêm vaccine Vaxneuvance có phải là tác dụng phụ hay không. Do không có dữ liệu lâm sàng hay thông tin ghi nhận về phản ứng bất lợi này trong tài liệu hướng dẫn sử dụng chính thức của vắc xin, hệ thống xin phép từ chối trả lời và không đưa ra suy đoán nhằm đảm bảo an toàn y khoa. Nếu bạn hoặc người thân đang gặp phải các triệu chứng bất thường, vui lòng liên hệ ngay với bác sĩ chuyên khoa hoặc cơ sở y tế gần nhất để được thăm khám và xử trí kịp thời.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0084",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Em đã tiêm vaccine Gardasil 9 và hiện tại xét nghiệm beta-human chorionic gonadotropin (beta-hCG) là 22.71. Liệu em còn hy vọng không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về mối liên hệ giữa việc tiêm vaccine Gardasil 9 và kết quả xét nghiệm beta-human chorionic gonadotropin (beta-hCG). Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0086",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Tôi bị tiểu đường 10 năm nay, hiện đang dùng thuốc tiêm và uống, tôi không có bệnh gì khác. Tôi xin hỏi tôi có được tiêm vắc xin Prevenar 13 không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc người bệnh tiểu đường có thể tiêm vắc xin Prevenar 13 hay không. Do tài liệu hướng dẫn sử dụng không quy định tình trạng này trong mục chống chỉ định hoặc cảnh báo thận trọng, hệ thống từ chối đưa ra kết luận về mức độ an toàn. Bạn nên thông báo chi tiết tiền sử bệnh và tình trạng hiện tại cho bác sĩ khám sàng lọc trước khi tiêm để được chỉ định chính xác.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0088",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Vắc-xin Twinrix có chỉ định cho người đã cắt hạch giao cảm không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc vắc-xin Twinrix có chỉ định cho người đã cắt hạch giao cảm hay không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0089",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Sau khi tiêm vaccine Adacel, có cần kiêng ăn gì không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc cần kiêng ăn gì sau khi tiêm vaccine Adacel. Do không có dữ liệu lâm sàng hay thông tin ghi nhận về phản ứng bất lợi này trong tài liệu hướng dẫn sử dụng chính thức của vắc xin, hệ thống xin phép từ chối trả lời và không đưa ra suy đoán nhằm đảm bảo an toàn y khoa. Nếu bạn hoặc người thân đang gặp phải các triệu chứng bất thường, vui lòng liên hệ ngay với bác sĩ chuyên khoa hoặc cơ sở y tế gần nhất để được thăm khám và xử trí kịp thời.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0090",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Người quen của tôi vừa tiêm vắc xin AstraZeneca được khoảng 3 tuần thì phát hiện mang thai (trễ chu kỳ khoảng một tuần). Liệu có khả năng vắc xin này gây ảnh hưởng cho thai nhi và trẻ sau này không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về khả năng vắc xin AstraZeneca gây ảnh hưởng cho thai nhi và trẻ sau này. Do không có dữ liệu lâm sàng hay thông tin ghi nhận về phản ứng bất lợi này trong tài liệu hướng dẫn sử dụng chính thức của vắc xin, hệ thống xin phép từ chối trả lời và không đưa ra suy đoán nhằm đảm bảo an toàn y khoa. Nếu bạn hoặc người thân đang gặp phải các triệu chứng bất thường, vui lòng liên hệ ngay với bác sĩ chuyên khoa hoặc cơ sở y tế gần nhất để được thăm khám và xử trí kịp thời.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0091",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Tôi thỉnh thoảng hắt xì hơi, sổ mũi lát sau tự hết, không có bệnh nền thì có thể tiêm vaccine Vaxneuvance được không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc có thể tiêm vaccine Vaxneuvance cho những người thỉnh thoảng hắt xì hơi, sổ mũi lát sau tự hết và không có bệnh nền. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0092",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Người nam có kết quả tăng kích thước vệ tinh nhiễm sắc thể số 21 có nên tiêm vaccine Adacel không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc người nam có kết quả tăng kích thước vệ tinh nhiễm sắc thể số 21 có nên tiêm vaccine Adacel hay không. Do tài liệu hướng dẫn sử dụng không quy định tình trạng này trong mục chống chỉ định hoặc cảnh báo thận trọng, hệ thống từ chối đưa ra kết luận về mức độ an toàn. Bạn nên thông báo chi tiết tiền sử bệnh và tình trạng hiện tại cho bác sĩ khám sàng lọc trước khi tiêm để được chỉ định chính xác.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0093",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Trẻ em thường xuyên nghẹt mũi buổi tối có phải do khối nang vòm mũi không và vaccine Influvac Tetra có giúp phòng ngừa bệnh này không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về nguyên nhân gây nghẹt mũi buổi tối ở trẻ em hay vaccine Influvac Tetra có giúp phòng ngừa bệnh này hay không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0094",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Người bị rối loạn cảm xúc lưỡng cực có thể tiêm vaccine Gardasil 9 được không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc người bị rối loạn cảm xúc lưỡng cực có thể tiêm vaccine Gardasil 9 được không. Do tài liệu hướng dẫn sử dụng không quy định tình trạng này trong mục chống chỉ định hoặc cảnh báo thận trọng, hệ thống từ chối đưa ra kết luận về mức độ an toàn. Bạn nên thông báo chi tiết tiền sử bệnh và tình trạng hiện tại cho bác sĩ khám sàng lọc trước khi tiêm để được chỉ định chính xác.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0095",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Trẻ em tiêm vaccine Pentaxim có thể có hiện tượng tinh dịch giống như thạch không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về hiện tượng tinh dịch giống như thạch sau khi tiêm vaccine Pentaxim cho trẻ em. Do không có dữ liệu lâm sàng hay thông tin ghi nhận về phản ứng bất lợi này trong tài liệu hướng dẫn sử dụng chính thức của vắc xin, hệ thống xin phép từ chối trả lời và không đưa ra suy đoán nhằm đảm bảo an toàn y khoa. Nếu bạn hoặc người thân đang gặp phải các triệu chứng bất thường, vui lòng liên hệ ngay với bác sĩ chuyên khoa hoặc cơ sở y tế gần nhất để được thăm khám và xử trí kịp thời.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0096",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Trẻ bị liệt hầu họng do nhồi máu não có thể tiêm vaccine Influvac Tetra để phòng bệnh cúm không? Nếu có, liều lượng và cách tiêm như thế nào?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc trẻ bị liệt hầu họng do nhồi máu não có thể tiêm vaccine Influvac Tetra để phòng bệnh cúm hay không, cũng như liều lượng và cách tiêm. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0097",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Sau khi truyền hóa chất, người nhà tôi có thể tiêm vaccine Adacel để phòng ngừa bệnh viêm gan B không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc người nhà bạn có thể tiêm vaccine Adacel để phòng ngừa bệnh viêm gan B sau khi truyền hóa chất. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0098",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Varivax có chỉ định để phòng ngừa bệnh thủy đậu không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về chỉ định của vắc xin Varivax để phòng ngừa bệnh thủy đậu. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0099",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Trẻ đã tiêm vắc xin HAVAX lúc mới sinh có cần tiêm thêm vắc xin viêm gan B không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc trẻ đã tiêm vắc xin HAVAX lúc mới sinh có cần tiêm thêm vắc xin viêm gan B hay không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0100",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Em bị nhiễm herpes sinh dục đã 2 năm nay. Tần suất hơn 10 lần 1 năm. Em có thể tiêm vaccine Varivax để hạn chế đợt bùng phát không ạ?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc người bị nhiễm herpes sinh dục có thể tiêm vaccine Varivax để hạn chế đợt bùng phát không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0101",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Tiểu đường thai kỳ có ảnh hưởng gì đến khả năng tiêm phòng cho thai phụ? Vaccine Gardasil có an toàn không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về ảnh hưởng của tiểu đường thai kỳ đến khả năng tiêm phòng cho thai phụ cũng như tính an toàn của vaccine Gardasil. Do tài liệu hướng dẫn sử dụng không quy định tình trạng này trong mục chống chỉ định hoặc cảnh báo thận trọng, hệ thống từ chối đưa ra kết luận về mức độ an toàn. Bạn nên thông báo chi tiết tiền sử bệnh và tình trạng hiện tại cho bác sĩ khám sàng lọc trước khi tiêm để được chỉ định chính xác.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0102",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Tôi đang lo lắng về việc tiêm vaccine Gardasil 9 để phòng ngừa ung thư cổ tử cung, liệu có phải tôi đang bị viêm âm đạo không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc tiêm vaccine Gardasil 9 có liên quan đến viêm âm đạo hay không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0103",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Em đã tiêm vaccine Varivax nhưng vẫn bị thủy đậu. Em nên làm gì ạ?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc nên làm khi đã tiêm vaccine Varivax nhưng vẫn bị thủy đậu. Do tài liệu không cung cấp dữ liệu nghiên cứu về sự tương tác giữa vắc xin và các thuốc hay tình trạng này, hệ thống từ chối tư vấn dùng kết hợp hoặc xác định khoảng thời gian cách biệt an toàn. Vui lòng tham khảo ý kiến chuyên môn của bác sĩ trước khi phối hợp điều trị hoặc tiêm chủng.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0105",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Trẻ em bị thận trái có 2 quả có nên tiêm vaccine Pentaxim không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc trẻ em bị thận trái có 2 quả có nên tiêm vaccine Pentaxim hay không. Do tài liệu hướng dẫn sử dụng không quy định tình trạng này trong mục chống chỉ định hoặc cảnh báo thận trọng, hệ thống từ chối đưa ra kết luận về mức độ an toàn. Bạn nên thông báo chi tiết tiền sử bệnh và tình trạng hiện tại cho bác sĩ khám sàng lọc trước khi tiêm để được chỉ định chính xác.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0106",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Em gái của tôi 32 tuổi, thường bị trễ kinh từ 10-15 ngày và đau bụng, đau lưng khi có kinh. Tình trạng này có ảnh hưởng đến việc vô sinh không? Nếu có, vaccine Gardasil 9 có thể giúp điều trị không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc tình trạng trễ kinh và đau bụng, đau lưng khi có kinh có ảnh hưởng đến việc vô sinh hay vaccine Gardasil 9 có thể giúp điều trị không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0107",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Sau khi tiêm vaccine ComBE Five (sởi, quai bị, rubella), vợ em có bị viêm tai giữa và sốt. Em muốn hỏi tác dụng phụ này có gây vô sinh ở nữ không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về tác dụng phụ gây vô sinh ở nữ sau khi tiêm vaccine ComBE Five (sởi, quai bị, rubella). Do không có dữ liệu lâm sàng hay thông tin ghi nhận về phản ứng bất lợi này trong tài liệu hướng dẫn sử dụng chính thức của vắc xin, hệ thống xin phép từ chối trả lời và không đưa ra suy đoán nhằm đảm bảo an toàn y khoa. Nếu bạn hoặc người thân đang gặp phải các triệu chứng bất thường, vui lòng liên hệ ngay với bác sĩ chuyên khoa hoặc cơ sở y tế gần nhất để được thăm khám và xử trí kịp thời.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0110",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Em đã tiêm vaccine Vaxneuvance rồi, nhưng hôm trước em có đi net thì lỡ uống nhầm nước ngọt của người khác mà chai nước đó đã để được khá lâu và trong nước không còn gas nữa. Vậy nếu người đó bị HIV thì em có khả năng bị HIV không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về khả năng lây nhiễm HIV thông qua việc uống nước ngọt của người khác đã để được khá lâu. Do tài liệu hướng dẫn sử dụng không quy định tình trạng này trong mục chống chỉ định hoặc cảnh báo thận trọng, hệ thống từ chối đưa ra kết luận về mức độ an toàn. Bạn nên thông báo chi tiết tiền sử bệnh và tình trạng hiện tại cho bác sĩ khám sàng lọc trước khi tiêm để được chỉ định chính xác.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0112",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Bé nhà em 20 ngày tuổi quấy khóc khó ngủ, có nên tiêm vaccine Rotarix không ạ?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc bé 20 ngày tuổi quấy khóc khó ngủ có nên tiêm vaccine Rotarix hay không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0113",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Từ giờ đến lúc sinh, vợ chồng tôi cần làm gì để em bé không bị lây nhiễm virus viêm gan B và vợ tôi có nên tiêm vacxin Gardasil không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về cách để em bé không bị lây nhiễm virus viêm gan B hoặc về việc vợ tôi có nên tiêm vắc xin Gardasil không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0115",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Cháu đang là học sinh lớp 10. Gần đây mắt cháu có cảm giác khô liên tục, da mặt cũng xấu đi có thể do tình trạng thiếu hụt vitamin A trong thực đơn hằng ngày. Bác sĩ có thể tư vấn về liều lượng của vaccine Influvac Tetra để cháu có thể tiêm phòng và cải thiện tình trạng trên không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về liều lượng của vaccine Influvac Tetra cho học sinh lớp 10. Đồng thời, tài liệu không đề cập đến việc vaccine Influvac Tetra có thể cải thiện tình trạng mắt khô và da mặt xấu do thiếu vitamin A. Do tài liệu hướng dẫn sử dụng không có quy định cụ thể về liều lượng hay phác đồ tiêm cho trường hợp đặc thù này, hệ thống từ chối hướng dẫn chi tiết nhằm phòng tránh nguy cơ sai liều. Bạn cần tuân thủ nghiêm ngặt chỉ dẫn và phác đồ do bác sĩ tại cơ sở tiêm chủng chỉ định.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0116",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Suy giảm thị lực có phải là tác dụng phụ của vaccine Gardasil 9 không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc suy giảm thị lực có phải là tác dụng phụ của vaccine Gardasil 9 hay không. Do không có dữ liệu lâm sàng hay thông tin ghi nhận về phản ứng bất lợi này trong tài liệu hướng dẫn sử dụng chính thức của vắc xin, hệ thống xin phép từ chối trả lời và không đưa ra suy đoán nhằm đảm bảo an toàn y khoa. Nếu bạn hoặc người thân đang gặp phải các triệu chứng bất thường, vui lòng liên hệ ngay với bác sĩ chuyên khoa hoặc cơ sở y tế gần nhất để được thăm khám và xử trí kịp thời.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0117",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Phụ nữ đã tiêm vaccine Tetavax sau chấn thương cột sống D12 khi nào có thể mang thai?",
+      "expected_output": "Tài liệu không cung cấp thông tin về thời điểm phụ nữ có thể mang thai sau khi tiêm vaccine Tetavax khi đã có chấn thương cột sống D12. Do tài liệu hướng dẫn sử dụng không quy định tình trạng này trong mục chống chỉ định hoặc cảnh báo thận trọng, hệ thống từ chối đưa ra kết luận về mức độ an toàn. Bạn nên thông báo chi tiết tiền sử bệnh và tình trạng hiện tại cho bác sĩ khám sàng lọc trước khi tiêm để được chỉ định chính xác.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0119",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Tôi năm nay 45 tuổi, giới tính nam. Cách đây 2 năm tôi bị hội chứng thận hư và gout, hiện vẫn đang uống thuốc ngày 1 viên. Xin hỏi trường hợp của tôi có tiêm được vắc xin Vaxneuvance phòng COVID-19 không ạ?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc người có bệnh lý như hội chứng thận hư và gout có thể tiêm vắc xin Vaxneuvance phòng COVID-19 hay không. Do tài liệu hướng dẫn sử dụng không quy định tình trạng này trong mục chống chỉ định hoặc cảnh báo thận trọng, hệ thống từ chối đưa ra kết luận về mức độ an toàn. Bạn nên thông báo chi tiết tiền sử bệnh và tình trạng hiện tại cho bác sĩ khám sàng lọc trước khi tiêm để được chỉ định chính xác.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0121",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Bé bị trĩ nội độ 2-3, búi trĩ ở vị trí 3 giờ, 5 giờ, 11 giờ, liệu có nên tiêm vaccine Gardasil 9 không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc tiêm vaccine Gardasil 9 cho bé bị trĩ nội độ 2-3, búi trĩ ở vị trí 3 giờ, 5 giờ, 11 giờ. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0122",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Dạ bé nhà em được 5 tháng 21 ngày, ba hôm nay đêm nào cũng không ngủ được chỉ khóc. Em thấy nướu của bé có nhô ra hai răng cửa. Cho em hỏi vaccine Rotarix có gây ra hiện tượng bé khó ngủ không ạ?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc vaccine Rotarix có gây ra hiện tượng bé khó ngủ không. Do không có dữ liệu lâm sàng hay thông tin ghi nhận về phản ứng bất lợi này trong tài liệu hướng dẫn sử dụng chính thức của vắc xin, hệ thống xin phép từ chối trả lời và không đưa ra suy đoán nhằm đảm bảo an toàn y khoa. Nếu bạn hoặc người thân đang gặp phải các triệu chứng bất thường, vui lòng liên hệ ngay với bác sĩ chuyên khoa hoặc cơ sở y tế gần nhất để được thăm khám và xử trí kịp thời.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0123",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Varivax có nguy cơ nhỏ hơn 1/10000 không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về nguy cơ của vắc xin Varivax. Do tài liệu hướng dẫn sử dụng không quy định tình trạng này trong mục chống chỉ định hoặc cảnh báo thận trọng, hệ thống từ chối đưa ra kết luận về mức độ an toàn. Bạn nên thông báo chi tiết tiền sử bệnh và tình trạng hiện tại cho bác sĩ khám sàng lọc trước khi tiêm để được chỉ định chính xác.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0124",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Em đã tiêm vaccine Vaxneuvance cách đây 2 tuần và hiện tại em bị chậm kinh 9 ngày. Em đi siêu âm đầu dò thì thấy ra máu sau khi siêu âm và từ lúc siêu âm song là em bắt đầu cảm thấy bụng dưới đau âm ỉ và đến ngày hôm nay là em thấy máu màu nâu đen nó ra. Em có phải em bị sảy thai rồi không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về mối liên hệ giữa việc tiêm vaccine Vaxneuvance và việc sảy thai. Do đó, không thể xác định em có bị sảy thai hay không dựa trên thông tin trong các chunk. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0126",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Pentaxim có chỉ định cho bệnh nhân bị hẹp động mạch trong và ngoài sọ không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc Pentaxim có chỉ định cho bệnh nhân bị hẹp động mạch trong và ngoài sọ hay không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0127",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Trẻ bị đau trong miệng kèm theo sưng má có nên tiêm vaccine Varivax không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc trẻ bị đau trong miệng kèm theo sưng má có nên tiêm vaccine Varivax hay không. Do tài liệu hướng dẫn sử dụng không quy định tình trạng này trong mục chống chỉ định hoặc cảnh báo thận trọng, hệ thống từ chối đưa ra kết luận về mức độ an toàn. Bạn nên thông báo chi tiết tiền sử bệnh và tình trạng hiện tại cho bác sĩ khám sàng lọc trước khi tiêm để được chỉ định chính xác.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0128",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Chuẩn đoán là tăng men gan, xét nghiệm máu trên SGOT 60 và SGPT 46. Liệu việc tiêm vaccine Adacel có giúp giảm bớt tình trạng tăng men gan?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc tiêm vaccine Adacel có giúp giảm bớt tình trạng tăng men gan. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0130",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Adacel có chỉ định sử dụng cho người bị tiểu đường không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc Adacel có chỉ định sử dụng cho người bị tiểu đường hay không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0135",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Em bầu 3 tháng mà hay cúm và giờ có hiện tượng đau họng và ho nữa ạ. Giờ em phải làm thế nào ạ?",
+      "expected_output": "Tài liệu không cung cấp thông tin cụ thể về cách xử lý khi em bầu 3 tháng và bị cúm, đau họng và ho. Em nên tham khảo ý kiến bác sĩ để được tư vấn phù hợp. Do thông tin cảnh báo thận trọng cho tình huống này không được đề cập trong tài liệu hướng dẫn sử dụng chính thức, hệ thống từ chối đưa ra khuyến cáo để tránh suy diễn thiếu cơ sở. Bạn vui lòng trao đổi trực tiếp với bác sĩ tại phòng khám sàng lọc để được đánh giá nguy cơ và tư vấn phù hợp.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0137",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Sau khi tiêm vaccine Varivax, có xuất hiện sẹo lồi nhỏ ở vùng bấm khuyên tai không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc xuất hiện sẹo lồi nhỏ ở vùng bấm khuyên tai sau khi tiêm vaccine Varivax. Do không có dữ liệu lâm sàng hay thông tin ghi nhận về phản ứng bất lợi này trong tài liệu hướng dẫn sử dụng chính thức của vắc xin, hệ thống xin phép từ chối trả lời và không đưa ra suy đoán nhằm đảm bảo an toàn y khoa. Nếu bạn hoặc người thân đang gặp phải các triệu chứng bất thường, vui lòng liên hệ ngay với bác sĩ chuyên khoa hoặc cơ sở y tế gần nhất để được thăm khám và xử trí kịp thời.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0138",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Trẻ bị mất hơi, tiết nhiều nước bọt khi cố đẩy hơi để thổi sáo sau khi tiêm vaccine Pentaxim, do đâu?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc trẻ bị mất hơi, tiết nhiều nước bọt khi cố đẩy hơi để thổi sáo sau khi tiêm vaccine Pentaxim. Do không có dữ liệu lâm sàng hay thông tin ghi nhận về phản ứng bất lợi này trong tài liệu hướng dẫn sử dụng chính thức của vắc xin, hệ thống xin phép từ chối trả lời và không đưa ra suy đoán nhằm đảm bảo an toàn y khoa. Nếu bạn hoặc người thân đang gặp phải các triệu chứng bất thường, vui lòng liên hệ ngay với bác sĩ chuyên khoa hoặc cơ sở y tế gần nhất để được thăm khám và xử trí kịp thời.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0140",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Bé nhà em bị còi xương và đang tiêm DPT Vaccine. Em muốn hỏi liệu có nên dùng đồng thời DPT Vaccine và D3 cộng K2 trong thời gian bao lâu ạ?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc sử dụng đồng thời DPT Vaccine và D3 cộng K2 cũng như thời gian sử dụng. Do tài liệu không cung cấp dữ liệu nghiên cứu về sự tương tác giữa vắc xin và các thuốc hay tình trạng này, hệ thống từ chối tư vấn dùng kết hợp hoặc xác định khoảng thời gian cách biệt an toàn. Vui lòng tham khảo ý kiến chuyên môn của bác sĩ trước khi phối hợp điều trị hoặc tiêm chủng.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0141",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Em đã quan hệ tình dục không an toàn cách đây hơn 2 tháng. Hiện tại em hoang mang không biết có phải do bị viêm gan B không. Em có thể tiêm vaccine Vaxneuvance để phòng bệnh không? Nếu tiêm thì liều lượng và cách tiêm như thế nào?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc tiêm vaccine Vaxneuvance để phòng bệnh viêm gan B. Đồng thời, không có thông tin về liều lượng và cách tiêm vaccine này. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0142",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Trẻ bị thủy đậu có nên tiêm vaccine Varivax không?",
+      "expected_output": "Tài liệu không cung cấp thông tin về việc trẻ bị thủy đậu có nên tiêm vaccine Varivax không. Do tài liệu tra cứu chính thức không đề cập đến việc sử dụng vắc xin cho tình trạng hay đối tượng này, hệ thống từ chối khuyến cáo áp dụng để tránh cung cấp thông tin chưa được kiểm chứng. Bạn vui lòng tham khảo ý kiến trực tiếp của bác sĩ hoặc cán bộ y tế tại trung tâm tiêm chủng để được tư vấn phác đồ tiêm phù hợp với tình trạng sức khỏe cụ thể.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0144",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Cha mẹ cần chăm sóc và theo dõi sức khỏe cho trẻ sau khi tiêm vaccine Influvac Tetra như thế nào?",
+      "expected_output": "Tài liệu không cung cấp thông tin chi tiết về cách chăm sóc và theo dõi sức khỏe cho trẻ sau khi tiêm vaccine Influvac Tetra. Do thông tin cảnh báo thận trọng cho tình huống này không được đề cập trong tài liệu hướng dẫn sử dụng chính thức, hệ thống từ chối đưa ra khuyến cáo để tránh suy diễn thiếu cơ sở. Bạn vui lòng trao đổi trực tiếp với bác sĩ tại phòng khám sàng lọc để được đánh giá nguy cơ và tư vấn phù hợp.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0147",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Em đã tiêm vaccine Vaxneuvance cách đây 2 tháng, gần đây móng tay em ngả vàng phần giữa (chỉ 3 móng). Đó có phải là tác dụng phụ của vaccine không ạ?",
+      "expected_output": "Tài liệu không cung cấp thông tin về các tác dụng phụ có liên quan đến móng tay ngả vàng sau khi tiêm vaccine Vaxneuvance. Do không có dữ liệu lâm sàng hay thông tin ghi nhận về phản ứng bất lợi này trong tài liệu hướng dẫn sử dụng chính thức của vắc xin, hệ thống xin phép từ chối trả lời và không đưa ra suy đoán nhằm đảm bảo an toàn y khoa. Nếu bạn hoặc người thân đang gặp phải các triệu chứng bất thường, vui lòng liên hệ ngay với bác sĩ chuyên khoa hoặc cơ sở y tế gần nhất để được thăm khám và xử trí kịp thời.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0148",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    },
+    {
+      "input": "Em muốn hỏi về vaccine Gardasil 9. Em đi thử beta và siêu âm cùng ngày. Xem kết quả giúp em xem có vấn đề gì về vaccine này không ạ?",
+      "expected_output": "Tài liệu không cung cấp thông tin về vấn đề liên quan đến vaccine Gardasil 9 khi đi thử beta và siêu âm cùng ngày. Do đó, không thể xác định có vấn đề gì về vaccine này trong trường hợp của bạn. Do tài liệu hướng dẫn sử dụng không quy định tình trạng này trong mục chống chỉ định hoặc cảnh báo thận trọng, hệ thống từ chối đưa ra kết luận về mức độ an toàn. Bạn nên thông báo chi tiết tiền sử bệnh và tình trạng hiện tại cho bác sĩ khám sàng lọc trước khi tiêm để được chỉ định chính xác.",
+      "context": null,
+      "additional_metadata": {
+        "query_id": "VAX_Q_0151",
+        "answerability": "UNANSWERABLE",
+        "complexity": null,
+        "multi_hop_type": null,
+        "query_style": null,
+        "source_chunk_ids": null,
+        "doc_ids": null,
+        "doc_titles": null
+      }
+    }
+  ]
+}
