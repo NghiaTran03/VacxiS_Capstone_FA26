@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 import time
 from typing import Any, Sequence
@@ -83,6 +84,7 @@ class MedicalGenerator:
             model=self.config.model, messages=messages,
             temperature=self.config.temperature, timeout=self.config.timeout,
             retry_policy=self.config.retry_policy,
+            base_url=os.getenv("VACXIS_GENERATION_BASE_URL"),
             **kwargs,
         )
         answer_text = response.choices[0].message.content.strip()
