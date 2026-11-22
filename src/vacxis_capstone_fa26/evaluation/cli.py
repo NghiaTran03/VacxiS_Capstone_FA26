@@ -2,12 +2,9 @@
 from __future__ import annotations
 
 from vacxis_capstone_fa26.resilience import add_retry_arguments, retry_from_args
-from vacxis_capstone_fa26.evaluation.judge import OpenRouterJudgeLLM
-
 import argparse
 import json
 import logging
-import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -15,9 +12,8 @@ from typing import Any
 from vacxis_capstone_fa26.evaluation import (
     VacxisRAGEvaluator,
     load_chunk_texts,
-    require_judge_credentials,
-    resolve_judge_model,
 )
+from vacxis_capstone_fa26.evaluation.jev import require_jev_credentials, resolve_jev_model
 from vacxis_capstone_fa26.evaluation.datasets import to_record
 from vacxis_capstone_fa26.evaluation.ir_metrics import DEFAULT_K_VALUES
 from vacxis_capstone_fa26.evaluation.schemas import EvaluationSummary
@@ -63,11 +59,10 @@ def parse_args() -> argparse.Namespace:
         help="Flat dataset JSON with unanswerable queries (evaluated separately)",
     )
     parser.add_argument(
-        "--judge-model",
+        "--jev-model", "--judge-model",
         type=str,
         default=None,
-        help="DeepEval judge model. Defaults to VACXIS_EVALUATION_MODEL, then "
-        "VACXIS_GENERATION_MODEL, then gpt-oss-120b",
+        help="OpenRouter Jev model. Defaults to VACXIS_JEV_MODEL, then ~typesafe/jev-latest",
     )
     parser.add_argument(
         "--threshold",
@@ -76,9 +71,11 @@ def parse_args() -> argparse.Namespace:
         help="Passing threshold for each metric",
     )
     parser.add_argument(
+        "--skip-correctness",
         "--skip-geval",
+        dest="skip_correctness",
         action="store_true",
-        help="Skip the GEval correctness metric",
+        help="Skip the JevEval correctness metric (legacy alias: --skip-geval)",
     )
     parser.add_argument(
         "--skip-unanswerable",
@@ -88,7 +85,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--retrieval-only",
         action="store_true",
-        help="Run only deterministic IR metrics without invoking LLM judge models",
+        help="Run only deterministic IR metrics without invoking Jev",
     )
     parser.add_argument(
         "--skip-ir",
@@ -167,17 +164,7 @@ def parse_args() -> argparse.Namespace:
         help="Per-request LLM timeout in seconds for the live pipeline "
         "(default: 480)",
     )
-    parser.add_argument(
-        "--judge-timeout",
-        type=float,
-        default=None,
-        help="Per-task timeout in seconds for DeepEval's judge-metric phase. "
-        "When set, DeepEval's per-task budget (default 180s) is raised so slow "
-        "judge models do not cancel in-flight cases mid-run",
-    )
     add_retry_arguments(parser)
-    parser.add_argument("--judge-request-timeout", type=float, default=360)
-    parser.add_argument("--schema-retries", type=int, default=3)
     parser.add_argument("--checkpoint", type=Path, help="Explicit per-query report checkpoint (precomputed evaluation)")
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
@@ -433,23 +420,6 @@ def _evaluate_live_retrieval(
     return summary
 
 
-def _apply_judge_timeout(args: argparse.Namespace) -> None:
-    """Raise DeepEval's per-task judge timeout when --judge-timeout is set.
-
-    DeepEval enforces a 180s per-task budget by default; a slow judge model
-    (or heavy GEval) that exceeds it gets its in-flight cases cancelled at
-    the gather step, which is exactly what truncates a run to fewer results
-    than goldens. Setting the env var here (before ``evaluate`` runs) lets
-    ``get_settings`` pick up the override.
-    """
-    if args.judge_timeout is None:
-        return
-    os.environ["DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE"] = str(args.judge_timeout)
-    logger.info(
-        "DeepEval per-task judge timeout set to %.0fs", args.judge_timeout
-    )
-
-
 def main() -> None:
     """Run evaluation CLI entrypoint.
 
@@ -457,15 +427,14 @@ def main() -> None:
     unanswerable set, then DeepEval scores each answer. Passing ``--results``
     switches to a fast path that scores precomputed outputs without touching the
     pipeline. Passing ``--retrieval-only`` scores only deterministic IR metrics
-    without requiring judge credentials.
+    without requiring Jev credentials.
     """
     args = parse_args()
-    _apply_judge_timeout(args)
 
     if args.retrieval_only:
         evaluator = VacxisRAGEvaluator(
             threshold=args.threshold,
-            enable_geval=False,
+            enable_correctness=False,
             enable_ir_metrics=True,
             ir_k_values=args.ir_k_values,
         )
@@ -501,12 +470,12 @@ def main() -> None:
         _maybe_export(summary, args)
         return
 
-    # Fail fast when the OpenRouter key is missing (the judge needs it to run).
+    # Fail fast when the OpenRouter key required by Jev is missing.
     try:
-        require_judge_credentials(args.judge_model)
-        judge_model = resolve_judge_model(args.judge_model)
+        require_jev_credentials()
+        jev_model = resolve_jev_model(args.jev_model)
     except ValueError as exc:
-        logger.error("Judge configuration failed: %s", exc)
+        logger.error("Jev configuration failed: %s", exc)
         sys.exit(1)
 
     chunk_texts: dict[str, str] = {}
@@ -517,10 +486,9 @@ def main() -> None:
         logger.warning("Chunks file %s not found; retrieval context will be empty.", args.chunks)
 
     evaluator = VacxisRAGEvaluator(
-        judge_model=OpenRouterJudgeLLM(model=judge_model, retry_policy=retry_from_args(args),
-                                       timeout=args.judge_request_timeout, schema_retries=args.schema_retries),
+        jev_model=jev_model,
         threshold=args.threshold,
-        enable_geval=not args.skip_geval,
+        enable_correctness=not args.skip_correctness,
         enable_ir_metrics=not args.skip_ir,
         ir_k_values=args.ir_k_values,
     )

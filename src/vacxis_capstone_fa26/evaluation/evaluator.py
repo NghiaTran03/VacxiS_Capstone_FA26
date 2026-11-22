@@ -1,17 +1,16 @@
-"""DeepEval-powered evaluation orchestrator for the VacxiS RAG pipeline.
+"""Jev-powered evaluation orchestrator for the VacxiS RAG pipeline.
 
 The module scores golden questions with DeepEval's RAG metric family:
 
 * generator-side: ``AnswerRelevancyMetric``, ``FaithfulnessMetric``
 * retriever-side: ``ContextualRelevancyMetric``, ``ContextualPrecisionMetric``,
   ``ContextualRecallMetric``
-* a GEval ``Correctness`` judge comparing the answer with the reference
+* a JevEval ``Correctness`` metric comparing the answer with the reference
 * a deterministic refusal-correctness check against ANSWERABILITY
 
-All judges run through a configurable judge model (``judge.OpenRouterJudgeLLM``
-by default), so no OpenAI key is required. Evaluation can consume precomputed
-generation results (from the generation CLI) or run a live RAG pipeline via an
-injected answer callback.
+Jev answers bounded questions directly, without generating text. Evaluation
+can consume precomputed generation results (from the generation CLI) or run a
+live RAG pipeline via an injected answer callback.
 """
 from __future__ import annotations
 
@@ -31,8 +30,10 @@ from deepeval.metrics import (
     ContextualRecallMetric,
     FaithfulnessMetric,
     GEval,
+    JevEval,
 )
 from deepeval.models import DeepEvalBaseLLM
+from deepeval.metrics.jev_eval import Noul, Score
 from deepeval.test_case import LLMTestCase, SingleTurnParams
 
 from vacxis_capstone_fa26.evaluation import datasets
@@ -41,7 +42,7 @@ from vacxis_capstone_fa26.evaluation.ir_metrics import (
     DEFAULT_K_VALUES,
     compute_query_ir_metrics,
 )
-from vacxis_capstone_fa26.evaluation.judge import OpenRouterJudgeLLM
+from vacxis_capstone_fa26.evaluation.jev import configure_jev_openrouter
 from vacxis_capstone_fa26.evaluation.schemas import (
     EvaluationSummary,
     MetricAggregate,
@@ -49,14 +50,6 @@ from vacxis_capstone_fa26.evaluation.schemas import (
 )
 
 logger = logging.getLogger("vacxis.evaluation.evaluator")
-
-CORRECTNESS_CRITERIA = (
-    "Judge the medical correctness of 'actual_output' relative to "
-    "'expected_output'. Score 1.0 when the answer is medically accurate, fully "
-    "consistent with the reference, and covers the required points. Score lower "
-    "for missing facts, contradictions, or unsafe additions; a correct refusal "
-    "to answer an unanswerable question scores 1.0."
-)
 
 REFUSAL_CORRECTNESS = "refusal_correctness"
 _NON_DOCUMENT_CHUNK_IDS = frozenset({"lightrag_kg_context"})
@@ -137,58 +130,115 @@ class VacxisRAGEvaluator:
 
     def __init__(
         self,
-        judge_model: str | DeepEvalBaseLLM | None = None,
+        jev_model: str | DeepEvalBaseLLM | None = None,
         threshold: float = 0.5,
         *,
-        enable_geval: bool = True,
+        enable_correctness: bool = True,
         enable_ir_metrics: bool = True,
         ir_k_values: Sequence[int] = DEFAULT_K_VALUES,
+        judge_model: str | DeepEvalBaseLLM | None = None,
+        enable_geval: bool | None = None,
     ) -> None:
-        # Judge resolution is deferred so constructing an evaluator never raises
-        # on missing credentials; it only matters once LLM-judged metrics run.
-        self._judge_arg: str | DeepEvalBaseLLM | None = judge_model
-        self._judge: DeepEvalBaseLLM | None = None
+        self._legacy_judge = next(
+            (
+                candidate
+                for candidate in (jev_model, judge_model)
+                if isinstance(candidate, DeepEvalBaseLLM)
+            ),
+            None,
+        )
+        legacy_model = judge_model if isinstance(judge_model, str) else None
+        requested_model = jev_model if isinstance(jev_model, str) else legacy_model
+        self.jev_model = (requested_model or "").strip() or None
         self.threshold = threshold
-        self.enable_geval = enable_geval
+        self.enable_correctness = (
+            enable_correctness if enable_geval is None else enable_geval
+        )
         self.enable_ir_metrics = enable_ir_metrics
         self.ir_k_values = tuple(ir_k_values)
-
-    @property
-    def judge(self) -> DeepEvalBaseLLM:
-        """Lazily build the judge LLM on first access."""
-        if self._judge is None:
-            self._judge = (
-                self._judge_arg
-                if isinstance(self._judge_arg, DeepEvalBaseLLM)
-                else OpenRouterJudgeLLM(model=self._judge_arg)
-            )
-        return self._judge
 
     # ------------------------------------------------------------------
     # Metric and test-case construction
     # ------------------------------------------------------------------
 
     def build_metrics(self) -> list:
-        """Instantiate the configured DeepEval metric set on the judge model."""
-        model = self.judge
+        """Instantiate DeepEval metrics in Jev's direct decision mode."""
+        if self._legacy_judge is not None:
+            metrics = [
+                AnswerRelevancyMetric(model=self._legacy_judge, threshold=self.threshold),
+                FaithfulnessMetric(model=self._legacy_judge, threshold=self.threshold),
+                ContextualRelevancyMetric(model=self._legacy_judge, threshold=self.threshold),
+                ContextualPrecisionMetric(model=self._legacy_judge, threshold=self.threshold),
+                ContextualRecallMetric(model=self._legacy_judge, threshold=self.threshold),
+            ]
+            if self.enable_correctness:
+                metrics.append(
+                    GEval(
+                        name="Correctness",
+                        criteria=(
+                            "Judge the medical correctness of actual_output relative "
+                            "to expected_output. Penalize omissions, contradictions, "
+                            "and unsafe additions."
+                        ),
+                        evaluation_params=[
+                            SingleTurnParams.ACTUAL_OUTPUT,
+                            SingleTurnParams.EXPECTED_OUTPUT,
+                        ],
+                        threshold=self.threshold,
+                        model=self._legacy_judge,
+                    )
+                )
+            return metrics
+        configure_jev_openrouter()
+        jev_options = {"system_one_model": self.jev_model} if self.jev_model else {}
         metrics = [
-            AnswerRelevancyMetric(model=model, threshold=self.threshold),
-            FaithfulnessMetric(model=model, threshold=self.threshold),
-            ContextualRelevancyMetric(model=model, threshold=self.threshold),
-            ContextualPrecisionMetric(model=model, threshold=self.threshold),
-            ContextualRecallMetric(model=model, threshold=self.threshold),
+            AnswerRelevancyMetric(
+                threshold=self.threshold, eval_mode="system_one", **jev_options
+            ),
+            FaithfulnessMetric(
+                threshold=self.threshold, eval_mode="system_one", **jev_options
+            ),
+            ContextualRelevancyMetric(
+                threshold=self.threshold, eval_mode="system_one", **jev_options
+            ),
+            ContextualPrecisionMetric(
+                threshold=self.threshold, eval_mode="system_one", **jev_options
+            ),
+            ContextualRecallMetric(
+                threshold=self.threshold, eval_mode="system_one", **jev_options
+            ),
         ]
-        if self.enable_geval:
+        if self.enable_correctness:
             metrics.append(
-                GEval(
+                JevEval(
                     name="Correctness",
-                    criteria=CORRECTNESS_CRITERIA,
+                    questions=[
+                        Noul(
+                            "actual_output is medically accurate and does not "
+                            "include unsafe medical advice."
+                        ),
+                        Noul(
+                            "actual_output is consistent with expected_output "
+                            "and does not contradict it."
+                        ),
+                        Score(
+                            "How completely does actual_output cover the medically "
+                            "important information in expected_output?",
+                            levels=[
+                                "Contradictory or unsafe",
+                                "Mostly incomplete",
+                                "Mostly complete",
+                                "Complete and accurate",
+                            ],
+                        ),
+                    ],
                     evaluation_params=[
+                        SingleTurnParams.INPUT,
                         SingleTurnParams.ACTUAL_OUTPUT,
                         SingleTurnParams.EXPECTED_OUTPUT,
                     ],
                     threshold=self.threshold,
-                    model=model,
+                    **jev_options,
                 )
             )
         return metrics
@@ -281,8 +331,17 @@ class VacxisRAGEvaluator:
         signature = fingerprint({
             "dataset": list(dataset_items), "results": list(generation_results),
             "contexts": [info.retrieval_context for info in case_infos],
-            "judge": self.judge.get_model_name(), "threshold": self.threshold,
-            "geval": self.enable_geval, "ir": self.enable_ir_metrics, "k": self.ir_k_values,
+            "judge": (
+                {"type": "legacy_llm", "model": self._legacy_judge.get_model_name()}
+                if self._legacy_judge is not None
+                else {
+                    "type": "jev",
+                    "model": self.jev_model or "~typesafe/jev-latest",
+                }
+            ),
+            "threshold": self.threshold,
+            "correctness": self.enable_correctness,
+            "ir": self.enable_ir_metrics, "k": self.ir_k_values,
         })
         path = Path(checkpoint_path)
         rows = []
@@ -371,7 +430,7 @@ class VacxisRAGEvaluator:
         *,
         k_values: Sequence[int] | None = None,
     ) -> EvaluationSummary:
-        """Evaluate deterministic IR metrics without invoking any LLM judge."""
+        """Evaluate deterministic IR metrics without calling Jev."""
         k_vals = tuple(k_values) if k_values is not None else self.ir_k_values
         if not k_vals or any(type(k) is not int or k < 1 for k in k_vals):
             raise ValueError("IR cutoffs must be positive integers.")

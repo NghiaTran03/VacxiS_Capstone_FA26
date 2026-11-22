@@ -1,9 +1,7 @@
-"""DeepEval-based evaluation suite for the VacxiS RAG pipeline.
+"""Jev-backed DeepEval suite for the VacxiS RAG pipeline.
 
 Scoring is delegated to DeepEval's RAG metric family (generator, retriever, and
-a GEval correctness judge) plus a deterministic refusal-correctness check.
-The judge LLM is configurable; by default it runs through the project's
-OpenRouter endpoint so no OpenAI key is required.
+Jev metrics and a deterministic refusal-correctness check.
 """
 from __future__ import annotations
 
@@ -30,11 +28,7 @@ from vacxis_capstone_fa26.evaluation.ir_metrics import (
     precision_at_k,
     recall_at_k,
 )
-from vacxis_capstone_fa26.evaluation.judge import (
-    OpenRouterJudgeLLM,
-    require_judge_credentials,
-    resolve_judge_model,
-)
+from vacxis_capstone_fa26.evaluation.jev import require_jev_credentials, resolve_jev_model
 from vacxis_capstone_fa26.evaluation.schemas import (
     EvaluationSummary,
     MetricAggregate,
@@ -45,9 +39,8 @@ __all__ = [
     "VacxisRAGEvaluator",
     "align_results",
     "validate_query_ids",
-    "OpenRouterJudgeLLM",
-    "resolve_judge_model",
-    "require_judge_credentials",
+    "resolve_jev_model",
+    "require_jev_credentials",
     "GoldenRecord",
     "load_goldens",
     "load_chunk_texts",

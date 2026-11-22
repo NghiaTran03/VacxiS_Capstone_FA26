@@ -1,7 +1,7 @@
-"""Result schemas for the DeepEval-based VacxiS evaluation module.
+"""Result schemas for the Jev-backed DeepEval evaluation module.
 
-The module delegates LLM-judged scoring to DeepEval. These dataclasses wrap
-DeepEval's ``EvaluationResult`` in project-native shapes: a per-query record
+The module delegates decision scoring to Jev through DeepEval. These
+dataclasses wrap DeepEval's ``EvaluationResult`` in project-native shapes: a per-query record
 that carries every metric's score/reason/success flag, and an aggregated
 summary with per-metric statistics and breakdowns by stratification axis.
 """
