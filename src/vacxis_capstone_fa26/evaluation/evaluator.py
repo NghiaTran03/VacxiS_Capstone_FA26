@@ -497,9 +497,9 @@ class VacxisRAGEvaluator:
             metrics=self.build_metrics(),
             _skip_reset=True,
             display_config=DisplayConfig(
-                show_indicator=True,
-                print_results=True,
-                inspect_after_run=True,
+                show_indicator=False,
+                print_results=False,
+                inspect_after_run=False,
             ),
             cache_config=CacheConfig(write_cache=write_cache, use_cache=use_cache),
             async_config=AsyncConfig(run_async=True, max_concurrent=max_concurrent),
