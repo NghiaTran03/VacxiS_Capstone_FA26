@@ -833,6 +833,19 @@ class ScientificReviewWorkflow(unittest.TestCase):
         admin_view = self.admin.get("/admin?scope=live")
         self.assertIn("Chỉ số Fleiss' Kappa (Gói Overlap)", admin_view.text)
         self.assertIn("2 / 2", admin_view.text)
+        report_path = "/admin/export/live/overlap"
+        self.assertIn(f'href="{report_path}"', admin_view.text)
+        self.assertEqual(experts[1].get(report_path).status_code, 403)
+        self.assertEqual(self.admin.get("/admin/export/test/overlap").status_code, 404)
+        report = self.admin.get(report_path)
+        self.assertEqual(report.status_code, 200)
+        self.assertEqual(report.headers["Content-Disposition"], 'attachment; filename="overlap_agreement_live.json"')
+        metrics = report.json()
+        self.assertEqual((metrics["scope"], metrics["completed"], metrics["total"]), ("live", 2, 2))
+        self.assertAlmostEqual(metrics["answerability_kappa"], 0.25)
+        self.assertEqual(metrics["answerability_exact_rate"], 0.5)
+        self.assertEqual(metrics["evidence_exact_rate"], 1.0)
+        self.assertEqual(metrics["mean_jaccard"], 1.0)
 
         history = self.admin.get(f"/admin/history/live/{overlap[1]}")
         self.assertIn("Đối chiếu kết quả chuyên gia", history.text)
@@ -843,6 +856,7 @@ class ScientificReviewWorkflow(unittest.TestCase):
             "evidence_id": chunk_id_b, "notes": "Chốt theo đa số", "answer_reason": "Chốt theo đa số.",
         })
         self.assertEqual(adj.status_code, 303)
+        self.assertEqual(self.admin.get(report_path).json(), metrics)
 
         with connect(self.location) as db:
             self.assertEqual(db.one("SELECT status FROM review_items WHERE scope = 'live' AND question_id = ?", (overlap[1],))["status"], "verified")
