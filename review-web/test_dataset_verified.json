@@ -3409,6 +3409,36 @@
 			}
 		},
 		{
+			"input": "Bệnh nhân BN52, 52 tuổi, có bệnh nền tiểu đường, chưa tiêm bất kỳ vaccine COVID‑19 nào, cần đo nồng độ kháng thể sau 14 ngày (Ab14d), lịch tiêm dự kiến 0‑3‑7‑14‑28 ngày, muốn tiêm liều đầu gấp 2 lần, vị trí tiêm ở cơ bắp nào? Trong trường hợp này, nên sử dụng vaccine COVID‑19 Moderna (mRNA‑1273) và cách tính liều IM như thế nào?",
+			"expected_output": "Theo hướng dẫn sử dụng Vaccine Rabipur (được nêu trong ngữ cảnh), khi tiêm liều đầu gấp đôi cần tiêm **hai mũi đồng thời**: một mũi vào **cơ delta (vai) bên phải** và một mũi vào **cơ delta (vai) bên trái** (đối với trẻ nhỏ thì tiêm vào vùng trước‑bên của mỗi đùi).  \r\n\r\nThông tin về việc sử dụng vaccine COVID‑19 Moderna (mRNA‑1273) và cách tính liều tiêm bắp IM không có trong tài liệu này; cần tham khảo hướng dẫn cụ thể của nhà sản xuất hoặc tài liệu chuyên môn về vaccine COVID‑19.",
+			"context": [],
+			"additional_metadata": {
+				"query_id": "eval_0095",
+				"answerability": "UNANSWERABLE",
+				"complexity": "SINGLE_HOP",
+				"multi_hop_type": null,
+				"query_style": "CLINICAL_STYLE",
+				"source_chunk_ids": [],
+				"doc_ids": [],
+				"doc_titles": [],
+				"review_batch": "overlap",
+				"VERIFIED": true,
+				"ANNOTATOR_IDS": [
+					"đặng quốc dũng",
+					"R-FD5EFBEA9DDCF69B",
+					"Bác sĩ Nguyễn Thùy Linh"
+				],
+				"ADJUDICATED": true,
+				"VERIFICATION_NOTES": "Kết quả 3 chuyên gia có khác biệt, cần đối chiếu thống nhất.\n\nCâu trả lời sau chỉnh sửa:\nTheo hướng dẫn sử dụng Vaccine Rabipur (được nêu trong ngữ cảnh), khi tiêm liều đầu gấp đôi cần tiêm **hai mũi đồng thời**: một mũi vào **cơ delta (vai) bên phải** và một mũi vào **cơ delta (vai) bên trái** (đối với trẻ nhỏ thì tiêm vào vùng trước‑bên của mỗi đùi).  \r\n\r\nThông tin về việc sử dụng vaccine COVID‑19 Moderna (mRNA‑1273) và cách tính liều tiêm bắp IM không có trong tài liệu này; cần tham khảo hướng dẫn cụ thể của nhà sản xuất hoặc tài liệu chuyên môn về vaccine COVID‑19.",
+				"status": "EDITED",
+				"annotator_notes": {
+					"lí do sửa câu hỏi": null,
+					"lí do sửa câu trả lời": "Rabipur có phải vaccine dại không? Không thấy đề cập trong câu hỏi. Còn nếu chỉ hỏi về Moderna, thì câu hỏi nên xoáy sâu vào Moderna. Và phác đồ cũng cần kiểm tra lại",
+					"ghi chú cho nhóm đồ án": "Kết quả 3 chuyên gia có khác biệt, cần đối chiếu thống nhất."
+				}
+			}
+		},
+		{
 			"input": "Bệnh nhân nữ 27 tuổi, tiểu đường, đang dùng kháng sinh, đã tiêm liều đầu tiên của vaccine Gardasil cách đây 32 tháng và muốn tiêm liều tăng cường muộn 4 tháng; liệu liều tăng cường này vẫn nằm trong thời gian giới hạn 36 tháng cho liều tăng cường của vaccine Gardasil không?",
 			"expected_output": "Có, liều tăng cường vẫn được tiêm nếu vắc‑xin dùng cho liều tăng cường chưa vượt quá hạn dùng 36 tháng tính từ ngày sản xuất của nó. Hạn 36 tháng áp dụng cho từng lọ vắc‑xin, không phải khoảng thời gian giữa liều đầu và liều tăng cường. Vì vậy, nếu lọ vắc‑xin tăng cường còn trong thời hạn (≤ 36 tháng kể ngày sản xuất), bệnh nhân có thể tiêm liều tăng cường vào tháng 36.",
 			"context": [
@@ -3957,6 +3987,46 @@
 					"lí do sửa câu hỏi": null,
 					"lí do sửa câu trả lời": null,
 					"ghi chú cho nhóm đồ án": null
+				}
+			}
+		},
+		{
+			"input": "Người làm việc tiếp xúc máu, có nên tiêm Hepavax‑Gene TF không ạ?",
+			"expected_output": "Có, người làm việc tiếp xúc máu thuộc nhóm đối tượng được chỉ định tiêm Hepavax‑Gene TF (nhân viên thẩm phân máu, nhân viên huyết học, ngân hàng máu, …). Chỉ cần lưu ý không tiêm nếu có dị ứng với nấm men hoặc bất kỳ thành phần nào của vắc‑xin, hoặc đang bị nhiễm khuẩn nặng có sốt. Khi mức độ kháng thể giảm dưới 10 mIU/mL, cần tiêm nhắc lại mỗi vài năm.",
+			"context": [
+				"[Hướng dẫn sử dụng Vaccine HEPAVAX-GENE TF inj. | chỉ định | Nhân viên y tế:]\n[CHỦ ĐỀ: HEPAVAX-GENE TF inj.] > [MỤC: Nhân viên y tế:]\nBác sĩ phẫu thuật vùng miệng, nha sĩ, bác sĩ và phẫu thuật viên, y tá, nha tá, nhân viên chăm sóc răng miệng, trợ y tiếp xúc thường xuyên với bệnh nhân, nhân viên thẩm phân máu, nhân viên huyết học và ung bướu, nhân viên phòng xét nghiệm huyết học và các xét nghiệm lâm sàng khác, nhân viên nhà xác, nhân viên ngân hàng máu và nhân viên phân đoạn huyết tương; người chuyên chữa bệnh chân, nhân viên vệ sinh trong bệnh viện, nhân viên cấp cứu và sơ cứu, đội cứu thương.",
+				"[Hướng dẫn sử dụng Vaccine HEPAVAX-GENE TF inj. | chống chỉ định | Tiêm nhắc lại | CHỐNG CHỈ ĐỊNH]\n[CHỦ ĐỀ: HEPAVAX-GENE TF inj.] > [MỤC: Tiêm nhắc lại | CHỐNG CHỈ ĐỊNH]\nLiều tăng cường sẽ được yêu cầu mỗi vài năm khi mức độ kháng thể giảm dưới $10\\text{ mIU/mL}$.\n\nCó thể dùng Hepavax-Gene® TF inj. đồng thời với Globulin miễn dịch viêm gan B, nhưng phải tiêm ở hai nơi khác nhau.\n\nBệnh nhân mẫn cảm với nấm men hoặc bất cứ thành phần nào của vắc xin.  \nCũng như tất cả các vắc xin khác, Hepavax-Gene® TF inj. không được tiêm cho các đối tượng nhiễm khuẩn nặng có sốt. Tuy nhiên, không chống chỉ định tiêm phòng trong những trường hợp nhiễm trùng thông thường."
+			],
+			"additional_metadata": {
+				"query_id": "eval_0111",
+				"answerability": "PARTIALLY_ANSWERABLE",
+				"complexity": "MULTI_HOP",
+				"multi_hop_type": "same_doc",
+				"query_style": "PATIENT_STYLE",
+				"source_chunk_ids": [
+					"hepavax_gene_tf_inj_qlvx_0774_14_c_0002",
+					"hepavax_gene_tf_inj_qlvx_0774_14_c_0007"
+				],
+				"doc_ids": [
+					"hepavax_gene_tf_inj_qlvx_0774_14"
+				],
+				"doc_titles": [
+					"Hướng dẫn sử dụng Vaccine HEPAVAX-GENE TF inj."
+				],
+				"review_batch": "overlap",
+				"VERIFIED": true,
+				"ANNOTATOR_IDS": [
+					"đặng quốc dũng",
+					"R-FD5EFBEA9DDCF69B",
+					"Bác sĩ Nguyễn Thùy Linh"
+				],
+				"ADJUDICATED": true,
+				"VERIFICATION_NOTES": "Kết quả 3 chuyên gia có khác biệt, cần đối chiếu thống nhất.",
+				"status": "EDITED",
+				"annotator_notes": {
+					"lí do sửa câu hỏi": null,
+					"lí do sửa câu trả lời": null,
+					"ghi chú cho nhóm đồ án": "Kết quả 3 chuyên gia có khác biệt, cần đối chiếu thống nhất."
 				}
 			}
 		},
@@ -5649,6 +5719,36 @@
 			}
 		},
 		{
+			"input": "Vaccine COVID‑19 (Pfizer‑BioNTech) nên tiêm lại cho phụ nữ mang thai 30 tuổi vào thời điểm nào, và cần điều chỉnh liều lượng hoặc vị trí tiêm như thế nào khi bệnh nhân có bệnh tim mạch và đang dùng aspirin?",
+			"expected_output": "Theo nội dung trong ngữ cảnh chỉ đề cập đến vắc‑xin Vaxigrip (vắc‑xin cúm), không có thông tin nào liên quan đến vắc‑xin COVID‑19 (Pfizer‑BioNTech), thời điểm tiêm lại cho phụ nữ mang thai, hay việc điều chỉnh liều lượng và vị trí tiêm khi bệnh nhân có bệnh tim mạch và đang dùng aspirin. Vì vậy, không thể đưa ra câu trả lời cho câu hỏi này dựa trên thông tin hiện có.",
+			"context": [],
+			"additional_metadata": {
+				"query_id": "eval_0156",
+				"answerability": "UNANSWERABLE",
+				"complexity": "MULTI_HOP",
+				"multi_hop_type": "same_doc",
+				"query_style": "CLINICAL_STYLE",
+				"source_chunk_ids": [],
+				"doc_ids": [],
+				"doc_titles": [],
+				"review_batch": "overlap",
+				"VERIFIED": true,
+				"ANNOTATOR_IDS": [
+					"đặng quốc dũng",
+					"R-FD5EFBEA9DDCF69B",
+					"Bác sĩ Nguyễn Thùy Linh"
+				],
+				"ADJUDICATED": true,
+				"VERIFICATION_NOTES": "Kết quả 3 chuyên gia có khác biệt, cần đối chiếu thống nhất.",
+				"status": "EDITED",
+				"annotator_notes": {
+					"lí do sửa câu hỏi": null,
+					"lí do sửa câu trả lời": null,
+					"ghi chú cho nhóm đồ án": "Kết quả 3 chuyên gia có khác biệt, cần đối chiếu thống nhất."
+				}
+			}
+		},
+		{
 			"input": "Trong trường hợp trẻ từ 2‑5 tuổi có tiền sử tiêm vắc‑xin trước, có bệnh nền tim mạch và đang dùng thuốc kháng viêm không steroid, tỷ lệ sốc sốt ≥38 °C, tê đau, đỏ, sưng tại chỗ tiêm và tương tác với thuốc hạ sốt của vắc‑xin Bexsero và ProQuad như thế nào?",
 			"expected_output": "**So sánh tác dụng không mong muốn của Bexsero và ProQuad (trẻ 2‑5 tuổi, có tiền sử tiêm vắc‑xin, bệnh tim mạch, đang dùng NSAIDs):**\r\n\r\n| Tác dụng | Bexsero | ProQuad |\r\n|----------|---------|---------|\r\n| **Sốt ≥ 38 °C** | Khi tiêm đồng thời với các vắc‑xin thường quy, tần suất sốt cao (69‑79 %) – cao hơn đáng kể so với chỉ tiêm vắc‑xin thường (44‑59 %). Khi chỉ tiêm Bexsero, tần suất sốt tương đương với vắc‑xin thường. | Sốt (≥ 39,4 °C) xuất hiện ở 22,6 % khi dùng đồng thời, 20,5 % khi dùng ProQuad đơn độc – thấp hơn nhiều so với Bexsero. |\r\n| **Phản ứng tại chỗ (đau, đỏ, sưng)** | Rất phổ biến ở trẻ sơ sinh và trẻ nhỏ; đau và đỏ tại vị trí tiêm thường gặp. Ở thanh thiếu niên và người lớn cũng có đau tại chỗ. | Đau/nhạy cảm, đỏ, sưng hoặc bầm tím là các phản ứng thường gặp; tần suất tương đương hoặc hơi cao hơn sau liều thứ hai trong một số nghiên cứu, nhưng chung là “phổ biến”. |\r\n| **Tương tác với thuốc hạ sốt (NSAIDs/acetaminophen)** | Không có báo cáo về tương tác trực tiếp; tuy nhiên trong các nghiên cứu Bexsero có ghi nhận tần suất sử dụng thuốc hạ sốt cao hơn khi sốt xuất hiện. | Hồ sơ an toàn tổng thể “tương đương” dù dùng đơn độc hay đồng thời; không có thông tin về tương tác đặc biệt với thuốc hạ sốt, nhưng vì tần suất sốt thấp nên nhu cầu dùng thuốc hạ sốt ít hơn. |\r\n| **An toàn chung** | Không gia tăng tần suất hoặc mức độ nghiêm trọng của phản ứng ở các mũi tiêm sau. | An toàn tổng thể tương đương giữa tiêm bắp và tiêm dưới da; không có tăng đáng kể các phản ứng bất lợi sau liều thứ hai. |\r\n\r\n**Điểm giống nhau:**  \r\n- Cả hai vắc‑xin đều gây sốt và phản ứng tại chỗ (đau, đỏ, sưng).  \r\n- Không có báo cáo về tương tác độc hại với NSAIDs; việc dùng thuốc hạ sốt chỉ là để kiểm soát sốt.\r\n\r\n**Điểm khác nhau:**  \r\n- Bexsero gây sốt đáng kể hơn (69‑79 % khi đồng thời) so với ProQuad (≈ 20 %).  \r\n- ProQuad có tần suất phản ứng tại chỗ tương đương hoặc hơi cao hơn sau liều thứ hai, trong khi Bexsero không tăng phản ứng ở các mũi tiêm sau.  \r\n- Nhu cầu dùng thuốc hạ sốt cao hơn với Bexsero do tần suất sốt cao hơn; với ProQuad nhu cầu này thấp hơn.  \r\n\r\n**Kết luận:** Ở trẻ 2‑5 tuổi có bệnh tim mạch và đang dùng NSAIDs, cả Bexsero và ProQuad đều an toàn về mặt tương tác thuốc, nhưng Bexsero có khả năng gây sốt và cần dùng thuốc hạ sốt nhiều hơn so với ProQuad; các phản ứng tại chỗ thì tương tự nhau.",
 			"context": [
@@ -5929,6 +6029,48 @@
 					"lí do sửa câu hỏi": null,
 					"lí do sửa câu trả lời": "Các câu hỏi về Peg‑Grafeel caanf xem lại vì đây là THUỐC,  không phải VACIN",
 					"ghi chú cho nhóm đồ án": "Các câu hỏi về Peg‑Grafeel caanf xem lại vì đây là THUỐC,  không phải VACIN"
+				}
+			}
+		},
+		{
+			"input": "Trong trường hợp trẻ từ 12 tháng đến 5 tuổi có bệnh tim mạch, tiền sử nhiễm khuẩn ác tính, vừa mới tiêm một loại vaccine gần đây và cần hoãn liều thứ hai, nên lựa chọn vaccine Varivax hay Bexsero? Xin cho biết chỉ định, liều lượng, lịch tiêm, chống chỉ định và tác dụng phụ của cả Varivax và Bexsero trong hoàn cảnh này.",
+			"expected_output": "**Varivax**  \r\n- **Chỉ định:** Tiêm phòng thủy đậu cho trẻ từ 12 tháng tuổi trở lên; cũng dùng dự phòng trong vòng 3‑5 ngày sau khi tiếp xúc.  \r\n- **Liều lượng & lịch tiêm:** 0,5 ml tiêm dưới da (sub‑cut). Trẻ 12 tháng‑12 tuổi chỉ cần 1 liều duy nhất; thanh thiếu niên ≥13 tuổi và người lớn cần 2 liều (0,5 ml) cách nhau 4‑8 tuần.  \r\n- **Chống chỉ định:** Không tiêm tĩnh mạch; cần dùng ống tiêm, kim vô khuẩn riêng cho mỗi bệnh nhân; không dùng nếu vắc‑xin đã pha quá 30 phút hoặc bị đóng băng. (Không có thông tin cụ thể về bệnh tim mạch hay tiền sử nhiễm khuẩn ác tính trong ngữ cảnh.)  \r\n- **Tác dụng phụ:** Ngữ cảnh không nêu chi tiết; thường gặp nhẹ như sưng, đỏ tại chỗ tiêm.  \r\n\r\n**Bexsero**  \r\n- **Chỉ định:** Tiêm phòng bệnh não mô cầu (meningococcal) cho trẻ từ 2 tháng tuổi trở lên (độ tuổi 12 tháng‑5 tuổi: 2 liều 0,5 ml, cách nhau ≥2 tháng).  \r\n- **Liều lượng & lịch tiêm:** 0,5 ml mỗi liều; trẻ 12‑23 tháng: 2 liều cách ≥2 tháng, sau đó một liều nhắc trong năm thứ hai của đời. Trẻ 2‑10 tuổi: 2 liều cách ≥1 tháng, có thể có liều nhắc nếu vẫn có nguy cơ.  \r\n- **Chống chỉ định:** Không an toàn/hiệu lực chưa xác định ở trẻ <8 tuần và người >50 tuổi; không có ghi chú cụ thể về bệnh tim mạch hay nhiễm khuẩn ác tính.  \r\n- **Tác dụng phụ:** Ngữ cảnh không liệt kê; thường là phản ứng tại chỗ, sốt nhẹ.  \r\n\r\n**So sánh (giống/khác nhau)**  \r\n- **Giống nhau:** Cả hai đều dùng liều 0,5 ml, tiêm vào vùng cơ (cánh tay) hoặc dưới da, không tiêm tĩnh mạch, cần dụng cụ vô khuẩn riêng.  \r\n- **Khác nhau:**  \r\n  - *Loại vắc‑xin:* Varivax là vaccine sống (cần cẩn trọng ở người suy giảm miễn dịch); Bexsero là vaccine protein không sống.  \r\n  - *Lịch tiêm:* Varivax cho trẻ 12 tháng‑5 tuổi chỉ 1 liều duy nhất, nên không cần hoãn liều thứ hai; Bexsero yêu cầu 2 liều (và có thể có liều nhắc), do đó cần lên lịch hoãn liều thứ hai nếu cần.  \r\n  - *Chống chỉ định:* Varivax có yêu cầu nghiêm ngặt về việc không để vắc‑xin đã pha quá 30 phút và không dùng nếu đông lạnh; Bexsero không có yêu cầu này nhưng không dùng cho trẻ <8 tuần và người >50 tuổi.  \r\n\r\n**Lựa chọn cho trẻ 12 tháng‑5 tuổi có bệnh tim mạch, tiền sử nhiễm khuẩn ác tính, vừa tiêm một loại vaccine và cần hoãn liều thứ hai:**  \r\n- Vì Varivax chỉ cần 1 liều duy nhất trong độ tuổi này, không phải lo về việc hoãn liều thứ hai và không có ghi chú cản trở do bệnh tim mạch, nên **Varivax** là lựa chọn thích hợp hơn.  \r\n- Nếu muốn tiêm phòng bệnh não mô cầu, Bexsero vẫn có thể dùng nhưng phải lên kế hoạch cho liều thứ hai và liều nhắc, đồng thời kiểm tra kỹ tình trạng miễn dịch của trẻ.",
+			"context": [
+				"[Hướng dẫn sử dụng Vaccine Varivax | liều lượng và cách dùng | CHỈ ĐỊNH | LIỀU LƯỢNG VÀ CÁCH DÙNG]\n[CHỦ ĐỀ: Varivax] > [MỤC: CHỈ ĐỊNH | LIỀU LƯỢNG VÀ CÁCH DÙNG]\nđược chỉ định để tiêm phòng bệnh thủy đậu cho đối tượng từ 12 tháng tuổi trở lên. \nchỉ định để dự phòng cho những người nhạy cảm bị phơi nhiễm bệnh thủy đậu trong vòng 3 ngày, và có thể đến 5 ngày sau khi tiếp xúc. \nDÙNG TIÊM DƯỚI DA.\nKhông được tiêm tĩnh mạch.\n\nVắc xin vi-rút thủy đậu sống (chủng Oka/Merck), Công thức ổn định ở nhiệt độ tủ lạnh, \nTrẻ em từ 12 tháng đến 12 tuổi nên được sử dụng một liều đơn 0,5 ml tiêm dưới da. \nThanh thiếu niên từ 13 tuổi trở lên và người lớn nên được dùng một liều 0,5 ml tiêm dưới da vào ngày đã chọn và một liều thứ hai 0,5 ml vào 4 đến 8 tuần sau đó. \nVị trí tiêm ưa dùng là mặt ngoài của cánh tay phần trên (vùng cơ delta). \nCách dùng\nNước hồi chỉnh\nBảo quản nước hồi chỉnh riêng ở nhiệt độ phòng (20-25°C, 68-77°F), hoặc trong tủ lạnh. \nĐể hoàn nguyên vắc-xin, đầu tiên rút 0,7 ml nước hồi chỉnh vào ống tiêm dùng để pha. Bơm tất cả lượng nước hồi chỉnh trong ống tiêm vào lọ vắc-xin đông khô và lắc nhẹ để trộn đều. Rút toàn bộ chất chứa bên trong vào ống tiêm và tiêm dưới da toàn bộ thể tích (khoảng 0,5 ml) vắc-xin đã pha, tốt nhất là tiêm vào mặt ngoài của cánh tay phần trên (vùng cơ delta) hoặc mặt trước-bên của đùi. \nKHUYẾN CÁO SỬ DỤNG VẮC-XIN NGAY SAU KHI PHA ĐỂ GIẢM THIỂU SỰ MẤT HIỆU LỰC. LOẠI BỎ VẮC-XIN ĐÃ PHA NẾU KHÔNG ĐƯỢC SỬ DỤNG TRONG VÒNG 30 PHÚT.\nKhông làm đông lạnh vắc-xin đã pha.\nTHẬN TRỌNG: Sử dụng xy-lanh vô khuẩn không chất bảo quản, chất khử trùng và chất tẩy rửa cho mỗi lần tiêm và/hoặc pha vì các chất này có thể làm mất hoạt tính của vi-rút trong vắc-xin. \nLưu ý quan trọng: sử dụng xy-lanh và kim vô khuẩn riêng cho mỗi bệnh nhân để ngăn ngừa sự lây truyền các tác nhân lây nhiễm từ người này sang người khác. \nĐể hoàn nguyên vắc-xin, chỉ sử dụng nước hồi chỉnh được cung cấp kèm theo (nước hồi chỉnh vô khuẩn dùng cho vắc-xin vi-rút sống của Merck, Sharp & Dohme), vì nước hồi chỉnh này không có chất bảo quản hoặc các chất chống vi-rút khác mà có thể làm mất hoạt tính của vi-rút trong vắc-xin. \nCác thuốc tiêm cần được kiểm tra bằng mắt về tiểu phân lạ và sự đổi màu trước khi dùng, bất cứ khi nào dung dịch và bao bì chứa cho phép. sau khi hoàn nguyên là một chất lỏng trong suốt, không màu đến màu vàng nhạt.",
+				"[Hướng dẫn sử dụng Vaccine Bexsero | liều lượng và cách dùng | Liều dùng]\n[CHỦ ĐỀ: Bexsero] > [MỤC: Liều dùng]\n<table border=\"1\" cellspacing=\"0\" cellpadding=\"5\">\n  <thead>\n    <tr>\n      <th>Độ tuổi nhận liều đầu tiên</th>\n      <th>Tiêm chủng cơ bản</th>\n      <th>Khoảng thời gian giữa các liều cơ bản</th>\n      <th>Tiêm nhắc</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <td rowspan=\"2\">Nhũ nhi, 2 đến 5 tháng tuổi <sup>a</sup></td>\n      <td>Ba liều, mỗi liều 0,5 ml</td>\n      <td>Không dưới 1 tháng</td>\n      <td rowspan=\"2\">Có, một liều trong năm thứ hai cuộc đời với thời gian giãn cách ít nhất 6 tháng giữa các liều cơ bản và liều nhắc lại <sup>b</sup></td>\n    </tr>\n    <tr>\n      <td>Hai liều, mỗi liều 0,5 ml</td>\n      <td>Không dưới 2 tháng</td>\n    </tr>\n    <tr>\n      <td>Nhũ nhi, 6 đến 11 tháng tuổi</td>\n      <td>Hai liều, mỗi liều 0,5 ml</td>\n      <td>Không dưới 2 tháng</td>\n      <td>Có, một liều trong năm thứ hai cuộc đời với thời gian giãn cách ít nhất 2 tháng giữa các liều cơ bản và liều nhắc lại <sup>b</sup></td>\n    </tr>\n    <tr>\n      <td>Trẻ nhỏ, từ 12 đến 23 tháng tuổi</td>\n      <td>Hai liều, mỗi liều 0,5 ml</td>\n      <td>Không dưới 2 tháng</td>\n      <td>Có, một liều với thời gian giãn cách từ 12 đến 23 tháng giữa các liều cơ bản và liều nhắc lại <sup>b</sup></td>\n    </tr>\n    <tr>\n      <td>Trẻ nhỏ, từ 2 đến 10 tuổi</td>\n      <td rowspan=\"2\">Hai liều, mỗi liều 0,5 ml</td>\n      <td rowspan=\"2\">Không dưới 1 tháng</td>\n      <td rowspan=\"2\">Khuyến cáo liều nhắc lại cho những đối tượng vẫn có nguy cơ mắc bệnh não mô cầu, dựa trên các khuyến nghị chính thức <sup>b</sup></td>\n    </tr>\n    <tr>\n      <td>Thanh thiếu niên (từ 11 tuổi) và người trưởng thành*</td>\n    </tr>\n  </tbody>\n</table>\n\n<p><sup>a</sup> Vẫn chưa xác định được tính an toàn và hiệu lực của Bexsero ở nhũ nhi dưới 8 tuần tuổi. Không có sẵn dữ liệu.</p>\n\n<p><sup>b</sup> Xem “Tác dụng dược lực”.</p>\n\n<p>* Chưa xác định được tính an toàn và hiệu lực của Bexsero ở những người trên 50 tuổi.</p>"
+			],
+			"additional_metadata": {
+				"query_id": "eval_0164",
+				"answerability": "PARTIALLY_ANSWERABLE",
+				"complexity": "MULTI_HOP",
+				"multi_hop_type": "cross_vaccine",
+				"query_style": "CLINICAL_STYLE",
+				"source_chunk_ids": [
+					"varivax_001310037823_c_0001",
+					"bexsero_800310090123_c_0002"
+				],
+				"doc_ids": [
+					"varivax_001310037823",
+					"bexsero_800310090123"
+				],
+				"doc_titles": [
+					"Hướng dẫn sử dụng Vaccine Varivax",
+					"Hướng dẫn sử dụng Vaccine Bexsero"
+				],
+				"review_batch": "overlap",
+				"VERIFIED": true,
+				"ANNOTATOR_IDS": [
+					"đặng quốc dũng",
+					"R-FD5EFBEA9DDCF69B",
+					"Bác sĩ Nguyễn Thùy Linh"
+				],
+				"ADJUDICATED": true,
+				"VERIFICATION_NOTES": "Kết quả 3 chuyên gia có khác biệt, cần đối chiếu thống nhất.\n\nCâu trả lời sau chỉnh sửa:\n**Varivax**  \r\n- **Chỉ định:** Tiêm phòng thủy đậu cho trẻ từ 12 tháng tuổi trở lên; cũng dùng dự phòng trong vòng 3‑5 ngày sau khi tiếp xúc.  \r\n- **Liều lượng & lịch tiêm:** 0,5 ml tiêm dưới da (sub‑cut). Trẻ 12 tháng‑12 tuổi chỉ cần 1 liều duy nhất; thanh thiếu niên ≥13 tuổi và người lớn cần 2 liều (0,5 ml) cách nhau 4‑8 tuần.  \r\n- **Chống chỉ định:** Không tiêm tĩnh mạch; cần dùng ống tiêm, kim vô khuẩn riêng cho mỗi bệnh nhân; không dùng nếu vắc‑xin đã pha quá 30 phút hoặc bị đóng băng. (Không có thông tin cụ thể về bệnh tim mạch hay tiền sử nhiễm khuẩn ác tính trong ngữ cảnh.)  \r\n- **Tác dụng phụ:** Ngữ cảnh không nêu chi tiết; thường gặp nhẹ như sưng, đỏ tại chỗ tiêm.  \r\n\r\n**Bexsero**  \r\n- **Chỉ định:** Tiêm phòng bệnh não mô cầu (meningococcal) cho trẻ từ 2 tháng tuổi trở lên (độ tuổi 12 tháng‑5 tuổi: 2 liều 0,5 ml, cách nhau ≥2 tháng).  \r\n- **Liều lượng & lịch tiêm:** 0,5 ml mỗi liều; trẻ 12‑23 tháng: 2 liều cách ≥2 tháng, sau đó một liều nhắc trong năm thứ hai của đời. Trẻ 2‑10 tuổi: 2 liều cách ≥1 tháng, có thể có liều nhắc nếu vẫn có nguy cơ.  \r\n- **Chống chỉ định:** Không an toàn/hiệu lực chưa xác định ở trẻ <8 tuần và người >50 tuổi; không có ghi chú cụ thể về bệnh tim mạch hay nhiễm khuẩn ác tính.  \r\n- **Tác dụng phụ:** Ngữ cảnh không liệt kê; thường là phản ứng tại chỗ, sốt nhẹ.  \r\n\r\n**So sánh (giống/khác nhau)**  \r\n- **Giống nhau:** Cả hai đều dùng liều 0,5 ml, tiêm vào vùng cơ (cánh tay) hoặc dưới da, không tiêm tĩnh mạch, cần dụng cụ vô khuẩn riêng.  \r\n- **Khác nhau:**  \r\n  - *Loại vắc‑xin:* Varivax là vaccine sống (cần cẩn trọng ở người suy giảm miễn dịch); Bexsero là vaccine protein không sống.  \r\n  - *Lịch tiêm:* Varivax cho trẻ 12 tháng‑5 tuổi chỉ 1 liều duy nhất, nên không cần hoãn liều thứ hai; Bexsero yêu cầu 2 liều (và có thể có liều nhắc), do đó cần lên lịch hoãn liều thứ hai nếu cần.  \r\n  - *Chống chỉ định:* Varivax có yêu cầu nghiêm ngặt về việc không để vắc‑xin đã pha quá 30 phút và không dùng nếu đông lạnh; Bexsero không có yêu cầu này nhưng không dùng cho trẻ <8 tuần và người >50 tuổi.  \r\n\r\n**Lựa chọn cho trẻ 12 tháng‑5 tuổi có bệnh tim mạch, tiền sử nhiễm khuẩn ác tính, vừa tiêm một loại vaccine và cần hoãn liều thứ hai:**  \r\n- Vì Varivax chỉ cần 1 liều duy nhất trong độ tuổi này, không phải lo về việc hoãn liều thứ hai và không có ghi chú cản trở do bệnh tim mạch, nên **Varivax** là lựa chọn thích hợp hơn.  \r\n- Nếu muốn tiêm phòng bệnh não mô cầu, Bexsero vẫn có thể dùng nhưng phải lên kế hoạch cho liều thứ hai và liều nhắc, đồng thời kiểm tra kỹ tình trạng miễn dịch của trẻ.",
+				"status": "EDITED",
+				"annotator_notes": {
+					"lí do sửa câu hỏi": null,
+					"lí do sửa câu trả lời": "Mới tiêm 1 loại vaccine gần đây nhưng chưa nói chính xác thời gian. Nếu chỉ sau 1-2 ngày, kèm theo sốt hoặc phản ứng cấp tính do mũi tiêm đó gây ra, thì nên hoãn tiêm. Tiền sử nhiễm khuẩn ác tính đã ổn định như thế nào?  Bexsero là vaccine tái tổ hợp, không chứa vi khuẩn hay virus sống. Còn Varivax là sống giảm độc lực, nếu mũi vừa tiêm cũng là vaccine giảm độc lực thì nên cách ít nhất 28 ngày(4 tuần).",
+					"ghi chú cho nhóm đồ án": "Kết quả 3 chuyên gia có khác biệt, cần đối chiếu thống nhất."
 				}
 			}
 		},
@@ -9439,6 +9581,48 @@
 			}
 		},
 		{
+			"input": "Menactra có 3% nôn, Vaxneuvance thì bao nhiêu?",
+			"expected_output": "Menactra: 3 % nôn (theo Bảng 2).  \r\nVaxneuvance: không có dữ liệu về tỷ lệ nôn trong tài liệu; tài liệu chỉ nêu yêu cầu báo cáo phản ứng bất lợi mà không cung cấp số liệu phần trăm.",
+			"context": [
+				"[Hướng dẫn sử dụng Vaccine Menactra | tác dụng không mong muốn | Bảng 2: Tỷ lệ phần trăm đối tượng tham gia ở Hoa Kỳ từ 2 đến 10 tuổi báo cáo các phản ứng bất lợi trong dự kiến ghi nhận trong vòng 7 ngày sau tiêm chủng]\n[CHỦ ĐỀ: Menactra] > [MỤC: Bảng 2: Tỷ lệ phần trăm đối tượng tham gia ở Hoa Kỳ từ 2 đến 10 tuổi báo cáo các phản ứng bất lợi trong dự kiến ghi nhận trong vòng 7 ngày sau tiêm chủng]\n<table border=\"1\" cellspacing=\"0\" cellpadding=\"5\">\n<thead>\n    <tr>\n      <th></th>\n      <th colspan=\"3\">Menactra<br><br>N<sup>a</sup>=1.156 – 1.157</th>\n      <th colspan=\"3\">Menomune<sup>®</sup> – A/C/Y/W-135<br><br>N<sup>a</sup>=1.027</th>\n    </tr>\n    <tr>\n      <th>Phản ứng</th>\n      <th>Bất kỳ</th>\n      <th>Mức độ 2</th>\n      <th>Mức độ 3</th>\n      <th>Bất kỳ</th>\n      <th>Mức độ 2</th>\n      <th>Mức độ 3</th>\n    </tr>\n  </thead>\n<tbody>\n<tr>\n      <td>Phát ban<sup>j</sup></td>\n      <td>3.4</td>\n      <td>-</td>\n      <td>-</td>\n      <td>3.0</td>\n      <td>-</td>\n      <td>-</td>\n    </tr>\n<tr>\n      <td>Nôn<sup>k</sup></td>\n      <td>3.0</td>\n      <td>0.7</td>\n      <td>0.3</td>\n      <td>2.7</td>\n      <td>0.7</td>\n      <td>0.6</td>\n    </tr>\n<tr>\n      <td>Co giật<sup>j</sup></td>\n      <td>0.0</td>\n      <td>-</td>\n      <td>-</td>\n      <td>0.0</td>\n      <td>-</td>\n      <td>-</td>\n    </tr>\n</tbody>\n</table>\n<p><sup>a</sup> N = Tổng số đối tượng tham gia báo cáo ít nhất một phản ứng dự kiến. Độ tuổi trung bình của các đối tượng tham gia là 6 tuổi trong cả hai nhóm sử dụng vắc-xin</p>\n\n<p><sup>b</sup> Mức độ 2: Các hoạt động bình thường bị gây trở ngại.<br>",
+				"[Hướng dẫn sử dụng Vaccine Vaxneuvance | tác dụng không mong muốn | Báo cáo các phản ứng có hại nghi ngờ]\n[CHỦ ĐỀ: Vaxneuvance] > [MỤC: Báo cáo các phản ứng có hại nghi ngờ]\nBáo cáo các phản ứng bất lợi nghi ngờ sau khi có giấy phép lưu hành thuốc là điều quan trọng. Điều này cho phép theo dõi liên tục cân bằng lợi ích/nguy cơ của thuốc. Các chuyên gia y tế được yêu cầu báo cáo bất kỳ phản ứng bất lợi nghi ngờ nào qua hệ thống báo cáo quốc gia.\n\nTHÔNG BÁO NGAY CHO BÁC SĨ HOẶC DƯỢC SĨ NHỮNG PHẢN ỨNG CÓ HẠI GẶP PHẢI KHI SỬ DỤNG THUỐC."
+			],
+			"additional_metadata": {
+				"query_id": "eval_0260",
+				"answerability": "PARTIALLY_ANSWERABLE",
+				"complexity": "MULTI_HOP",
+				"multi_hop_type": "cross_vaccine",
+				"query_style": "PATIENT_STYLE",
+				"source_chunk_ids": [
+					"menactra_qlvx_h03_1111_18_c_0024",
+					"vaxneuvance_539310049125_c_0024"
+				],
+				"doc_ids": [
+					"menactra_qlvx_h03_1111_18",
+					"vaxneuvance_539310049125"
+				],
+				"doc_titles": [
+					"Hướng dẫn sử dụng Vaccine Menactra",
+					"Hướng dẫn sử dụng Vaccine Vaxneuvance"
+				],
+				"review_batch": "overlap",
+				"VERIFIED": true,
+				"ANNOTATOR_IDS": [
+					"đặng quốc dũng",
+					"R-FD5EFBEA9DDCF69B",
+					"Bác sĩ Nguyễn Thùy Linh"
+				],
+				"ADJUDICATED": true,
+				"VERIFICATION_NOTES": "Kết quả 3 chuyên gia có khác biệt, cần đối chiếu thống nhất.\n\nCâu trả lời sau chỉnh sửa:\nMenactra: 3 % nôn (theo Bảng 2).  \r\nVaxneuvance: không có dữ liệu về tỷ lệ nôn trong tài liệu; tài liệu chỉ nêu yêu cầu báo cáo phản ứng bất lợi mà không cung cấp số liệu phần trăm.",
+				"status": "EDITED",
+				"annotator_notes": {
+					"lí do sửa câu hỏi": null,
+					"lí do sửa câu trả lời": ".",
+					"ghi chú cho nhóm đồ án": "Kết quả 3 chuyên gia có khác biệt, cần đối chiếu thống nhất."
+				}
+			}
+		},
+		{
 			"input": "Mẹ bầu muốn tiêm Boostrix, còn bé 6 tháng dùng Rotavin‑M1, có an toàn không?",
 			"expected_output": "**Trả lời dựa trên dữ liệu có trong tài liệu:**\r\n\r\n- **Boostrix cho mẹ bầu:**  \r\n  - Có dữ liệu an toàn từ một nghiên cứu quan sát cho thấy Boostrix được dùng trong 3 tháng cuối thai kỳ (tháng 7‑9) không gây tác dụng phụ liên quan đến thai kỳ hoặc sức khỏe của thai nhi/đứa trẻ sơ sinh.  \r\n  - Boostrix chỉ nên cân nhắc dùng trong 3 tháng cuối khi lợi ích vượt hơn rủi ro.  \r\n  - Không có dữ liệu về việc dùng Boostrix trong 3 tháng đầu hoặc giữa thai kỳ, và không có dữ liệu đánh giá an toàn khi cho con bú; chưa biết thuốc có được bài tiết trong sữa mẹ hay không, nên chỉ dùng khi lợi ích lớn hơn rủi ro tiềm ẩn.\r\n\r\n- **Rotavin‑M1 cho bé 6 tháng:**  \r\n  - Rotavin‑M1 được phép tiêm cho trẻ sơ sinh và không ảnh hưởng đến độ an toàn và hiệu lực khi dùng cùng các vắc‑xin khác.  \r\n  - Không có dữ liệu về việc dùng Rotavin‑M1 ở phụ nữ mang thai hoặc cho con bú, nhưng việc cho con bú không làm giảm hiệu quả bảo vệ của vắc‑xin cho trẻ, nên bé có thể tiếp tục bú mẹ sau tiêm.\r\n\r\n- **Kết hợp:**  \r\n  - Tài liệu không đề cập tới bất kỳ tương tác hay ảnh hưởng tiêu cực nào khi mẹ tiêm Boostrix trong thai kỳ và bé đồng thời tiêm Rotavin‑M1. Vì vậy, không có bằng chứng cho thấy việc này không an toàn.\r\n\r\n**Phần không có trong tài liệu:**  \r\n- Không có thông tin cụ thể về việc dùng Boostrix trong 3 tháng đầu hoặc giữa thai kỳ.  \r\n- Không có dữ liệu về việc Rotavin‑M1 được bài tiết trong sữa mẹ hoặc ảnh hưởng trực tiếp tới mẹ đang mang thai.  \r\n\r\n**Kết luận:**  \r\nMẹ bầu có thể cân nhắc tiêm Boostrix trong 3 tháng cuối thai kỳ nếu lợi ích vượt rủi ro; an toàn khi cho con bú chưa được xác định. Bé 6 tháng có thể tiêm Rotavin‑M1 an toàn, và việc cho con bú không ảnh hưởng tới hiệu quả của vắc‑xin. Không có thông tin trong tài liệu cho thấy sự không an toàn khi hai việc này diễn ra đồng thời.",
 			"context": [
@@ -9939,6 +10123,48 @@
 			}
 		},
 		{
+			"input": "Trong trường hợp trẻ 4‑tháng tuổi, không có tiền sử bệnh nền và chưa tiêm bất kỳ vaccine nào, chỉ định và lịch tiêm của vaccine Rabipur và vaccine Pentaxim là gì? Ngoài ra, nếu trẻ đang dùng thuốc kháng sinh amoxicillin để điều trị viêm tai giữa, liệu có cần hoãn lịch tiêm của hai vaccine này không?",
+			"expected_output": "Trả lời:  \r\n\r\n- **Vaccine Rabipur** – Tài liệu chỉ nêu rằng Rabipur được dùng theo bảng chỉ định điều trị dại dựa trên mức độ phơi nhiễm (theo hướng dẫn WHO 1977). Không có thông tin trong tài liệu về chỉ định cụ thể hoặc lịch tiêm cho trẻ 4‑tháng tuổi không có tiền sử bệnh nền và chưa tiêm vaccine nào.  \r\n\r\n- **Vaccine Pentaxim** – Được chỉ định để bảo vệ trẻ từ **2 tháng tuổi trở lên** khỏi bạch hầu, uốn ván, ho gà, bại liệt và các bệnh nhiễm khuẩn xâm lấn do *Haemophilus influenzae* type b. Tài liệu không cung cấp lịch tiêm chi tiết cho trẻ 4‑tháng tuổi.  \r\n\r\n- **Ảnh hưởng của amoxicillin** – Tài liệu không đề cập đến việc có cần hoãn lịch tiêm Rabipur hoặc Pentaxim khi trẻ đang dùng kháng sinh amoxicillin cho viêm tai giữa.  \r\n\r\n**Kết luận:** Tài liệu chỉ cung cấp chỉ định chung (Rabipur cho các trường hợp có nguy cơ dại; Pentaxim cho trẻ ≥2 tháng) nhưng không có lịch tiêm cụ thể cho trẻ 4 tháng và không có hướng dẫn về việc hoãn tiêm khi dùng amoxicillin, vì vậy không thể trả lời những phần này dựa trên tài liệu hiện có.",
+			"context": [
+				"[Hướng dẫn sử dụng Vaccine Rabipur | chỉ định | Bảng 1: Điều trị dại thích hợp dựa trên các độ phơi nhiễm khác nhau]\n[CHỦ ĐỀ: Rabipur] > [MỤC: Bảng 1: Điều trị dại thích hợp dựa trên các độ phơi nhiễm khác nhau]\n<p>(Dựa theo hướng dẫn 1977 của WHO)</p>\n<p>* Tất cả những con vật có hành vi bất thường ở một vùng được chính thức công nhận có bệnh dại lưu hành phải được xem là có nguy cơ bị dại. Xác thú vật bị bệnh dại cũng có thể lây bệnh.</p>",
+				"[Hướng dẫn sử dụng Vaccine Pentaxim | chỉ định | DƯỢC ĐỘNG HỌC | CHỈ ĐỊNH:]\n[CHỦ ĐỀ: Pentaxim] > [MỤC: DƯỢC ĐỘNG HỌC | CHỈ ĐỊNH:]\nKhông áp dụng.\n\nPENTAXIM được chỉ định để giúp bảo vệ phòng bệnh bạch hầu, uốn ván, ho gà, bại liệt và phòng các bệnh nhiễm khuẩn xâm lấn do vi khuẩn Haemophilus influenzae týp b (viêm màng não, nhiễm khuẩn huyết, v.v...) ở trẻ em từ 2 tháng tuổi trở lên.\nVắc-xin này không có tác dụng phòng các bệnh nhiễm khuẩn do các týp Haemophilus influenzae khác hoặc phòng viêm màng não do các loại vi sinh vật khác gây ra."
+			],
+			"additional_metadata": {
+				"query_id": "eval_0274",
+				"answerability": "PARTIALLY_ANSWERABLE",
+				"complexity": "MULTI_HOP",
+				"multi_hop_type": "cross_vaccine",
+				"query_style": "CLINICAL_STYLE",
+				"source_chunk_ids": [
+					"rabipur_qlvx_1048_17_c_0014",
+					"pentaxim_300310250623_c_0007"
+				],
+				"doc_ids": [
+					"rabipur_qlvx_1048_17",
+					"pentaxim_300310250623"
+				],
+				"doc_titles": [
+					"Hướng dẫn sử dụng Vaccine Rabipur",
+					"Hướng dẫn sử dụng Vaccine Pentaxim"
+				],
+				"review_batch": "overlap",
+				"VERIFIED": true,
+				"ANNOTATOR_IDS": [
+					"đặng quốc dũng",
+					"R-FD5EFBEA9DDCF69B",
+					"Bác sĩ Nguyễn Thùy Linh"
+				],
+				"ADJUDICATED": true,
+				"VERIFICATION_NOTES": "Kết quả 3 chuyên gia có khác biệt, cần đối chiếu thống nhất.\n\nCâu trả lời sau chỉnh sửa:\nTrả lời:  \r\n\r\n- **Vaccine Rabipur** – Tài liệu chỉ nêu rằng Rabipur được dùng theo bảng chỉ định điều trị dại dựa trên mức độ phơi nhiễm (theo hướng dẫn WHO 1977). Không có thông tin trong tài liệu về chỉ định cụ thể hoặc lịch tiêm cho trẻ 4‑tháng tuổi không có tiền sử bệnh nền và chưa tiêm vaccine nào.  \r\n\r\n- **Vaccine Pentaxim** – Được chỉ định để bảo vệ trẻ từ **2 tháng tuổi trở lên** khỏi bạch hầu, uốn ván, ho gà, bại liệt và các bệnh nhiễm khuẩn xâm lấn do *Haemophilus influenzae* type b. Tài liệu không cung cấp lịch tiêm chi tiết cho trẻ 4‑tháng tuổi.  \r\n\r\n- **Ảnh hưởng của amoxicillin** – Tài liệu không đề cập đến việc có cần hoãn lịch tiêm Rabipur hoặc Pentaxim khi trẻ đang dùng kháng sinh amoxicillin cho viêm tai giữa.  \r\n\r\n**Kết luận:** Tài liệu chỉ cung cấp chỉ định chung (Rabipur cho các trường hợp có nguy cơ dại; Pentaxim cho trẻ ≥2 tháng) nhưng không có lịch tiêm cụ thể cho trẻ 4 tháng và không có hướng dẫn về việc hoãn tiêm khi dùng amoxicillin, vì vậy không thể trả lời những phần này dựa trên tài liệu hiện có.",
+				"status": "EDITED",
+				"annotator_notes": {
+					"lí do sửa câu hỏi": null,
+					"lí do sửa câu trả lời": "Đã bỏ sót lịch tiêm Pentaxim dù có thể trả lời được.",
+					"ghi chú cho nhóm đồ án": "Kết quả 3 chuyên gia có khác biệt, cần đối chiếu thống nhất."
+				}
+			}
+		},
+		{
 			"input": "Đối với trẻ 6 tháng có tiền sử dị ứng kháng sinh, liều vaccine Euvax B 10µg/0.5ml và JEEV 0.5ml nên được tiêm theo lịch nào, và trong trường hợp cần hoãn liều, liều có thể bảo quản ở nhiệt độ 2‑8°C trong bao lâu?",
 			"expected_output": "Trả lời chính xác phần có dữ liệu trong context:  \r\n- Cả vắc‑xin Euvax B và JEEV đều phải được bảo quản ở nhiệt độ **2 °C – 8 °C** và không được để đông đá.  \r\n\r\nNội dung không có trong tài liệu (vì tài liệu không cung cấp):  \r\n- **Lịch tiêm** cho trẻ 6 tháng có tiền sử dị ứng kháng sinh đối với Euvax B 10 µg/0,5 ml và JEEV 0,5 ml.  \r\n- **Thời gian bảo quản** liều đã mở (hoãn tiêm) ở nhiệt độ 2 °C – 8 °C.  \r\n\r\nDo đó, tài liệu không cho phép xác định lịch tiêm hoặc thời gian bảo quản khi hoãn liều.",
 			"context": [
@@ -10409,6 +10635,44 @@
 			}
 		},
 		{
+			"input": "Bảng cho biết bao nhiêu % người nhận Vaccine Pneumovax 23 bị sốt, còn tỷ lệ phản ứng dị ứng thì sao?",
+			"expected_output": "Trả lời: Trong tài liệu, tần suất của sốt và các phản ứng dị ứng (phù ngoại biên) được ghi là “Không rõ”, nên không có dữ liệu phần trăm cụ thể nào được cung cấp. Vì vậy, không thể đưa ra % người nhận Vaccine Pneumovax 23 bị sốt hay tỷ lệ phản ứng dị ứng.",
+			"context": [
+				"[Hướng dẫn sử dụng Vaccine Pneumovax 23 | tác dụng không mong muốn | TÁC DỤNG KHÔNG MONG MUỐN CỦA THUỐC]\n[CHỦ ĐỀ: Pneumovax 23] > [MỤC: TÁC DỤNG KHÔNG MONG MUỐN CỦA THUỐC]\n<table>\n<thead>\n    <tr>\n      <th>Phản ứng bất lợi</th>\n      <th>Tần suất</th>\n    </tr>\n  </thead>\n<tbody>\n<tr>\n      <td>Suy nhược<br>Ớn lạnh<br>Sốt<br>Giảm tính cử động của chi được tiêm<br>Khó chịu<br>Phù ngoại biên††</td>\n      <td>Không rõ</td>\n    </tr>\n<tr>\n      <td colspan=\"2\"><i>Xét nghiệm</i></td>\n    </tr>\n<tr>\n      <td>Tăng protein phản ứng C</td>\n      <td>Không rõ</td>\n    </tr>\n</tbody>\n</table>"
+			],
+			"additional_metadata": {
+				"query_id": "eval_0287",
+				"answerability": "PARTIALLY_ANSWERABLE",
+				"complexity": "TABLE_REASONING",
+				"multi_hop_type": null,
+				"query_style": "PATIENT_STYLE",
+				"source_chunk_ids": [
+					"pneumovax_23_001310303524_c_0011"
+				],
+				"doc_ids": [
+					"pneumovax_23_001310303524"
+				],
+				"doc_titles": [
+					"Hướng dẫn sử dụng Vaccine Pneumovax 23"
+				],
+				"review_batch": "overlap",
+				"VERIFIED": true,
+				"ANNOTATOR_IDS": [
+					"đặng quốc dũng",
+					"R-FD5EFBEA9DDCF69B",
+					"Bác sĩ Nguyễn Thùy Linh"
+				],
+				"ADJUDICATED": true,
+				"VERIFICATION_NOTES": "Kết quả 3 chuyên gia có khác biệt, cần đối chiếu thống nhất.",
+				"status": "APPROVED",
+				"annotator_notes": {
+					"lí do sửa câu hỏi": null,
+					"lí do sửa câu trả lời": null,
+					"ghi chú cho nhóm đồ án": "Kết quả 3 chuyên gia có khác biệt, cần đối chiếu thống nhất."
+				}
+			}
+		},
+		{
 			"input": "Bảng cho thấy trẻ 2‑6 tháng nhận Envacgen 45%, placebo 30%, tỷ lệ nào cao hơn? Còn tác dụng phụ của Envacgen ra sao?",
 			"expected_output": "Bảng trong tài liệu cho biết nhóm tuổi 2 tháng đến dưới 6 tháng có tỉ lệ trẻ nhận Envacgen là 251/1039 ≈ 24,2 % và nhận giả dược là 250/1048 ≈ 23,9 %. Vì vậy tỉ lệ của Envacgen cao hơn một chút so với giả dược.  \r\n\r\nVề tác dụng phụ của Envacgen: tài liệu không cung cấp bất kỳ thông tin nào liên quan đến tác dụng phụ, nên không thể trả lời phần này.",
 			"context": [
@@ -10633,6 +10897,44 @@
 					"lí do sửa câu hỏi": null,
 					"lí do sửa câu trả lời": ".",
 					"ghi chú cho nhóm đồ án": null
+				}
+			}
+		},
+		{
+			"input": "Trong bảng dữ liệu lâm sàng về vaccine Prevenar 13, mức GMT của kháng thể OPA serotype 6A ở nhóm tuổi 10‑17 năm so với nhóm 5‑<10 năm chênh lệch bao nhiêu phần trăm? Ngoài ra, bệnh nhân có tiền sử tiểu đường có nên được tiêm liều bù của vaccine Prevenar 13 không?",
+			"expected_output": "- Theo bảng so sánh GMT OPA serotype 6A, nhóm tuổi 10‑17 năm có GMT = 9 928, trong khi nhóm 5‑<10 năm có GMT = 7 514. Chênh lệch = (9 928 – 7 514) / 7 514 × 100 ≈ 32 % (nhóm lớn hơn khoảng 32 % so với nhóm trẻ hơn).\r\n\r\n- Về việc bệnh nhân có tiền sử tiểu đường có nên tiêm liều bù của Prevenar 13, tài liệu được cung cấp không đề cập đến khuyến cáo hoặc dữ liệu liên quan đến bệnh nhân tiểu đường; vì vậy không thể trả lời dựa trên thông tin hiện có.",
+			"context": [
+				"[Hướng dẫn sử dụng Vaccine Prevenar 13 | dược lực học | Bảng 8. So sánh hiệu giá trung bình nhân (GMT) của OPA phế cầu khuẩn sau khi tiêm chủng, Prevenar 13 (10-17 tuổi) với Prevenar 13 (5 đến &lt;10 tuổi) trong Nghiên cứu 6096A1-3011 a]\n[CHỦ ĐỀ: Prevenar 13] > [MỤC: Bảng 8. So sánh hiệu giá trung bình nhân (GMT) của OPA phế cầu khuẩn sau khi tiêm chủng, Prevenar 13 (10-17 tuổi) với Prevenar 13 (5 đến &lt;10 tuổi) trong Nghiên cứu 6096A1-3011 a]\n<table border=\"1\" cellspacing=\"0\" cellpadding=\"5\">\n<thead>\n    <tr>\n      <th></th>\n      <th colspan=\"8\" style=\"text-align: left;\">Nhóm Vắc xin</th>\n    </tr>\n    <tr>\n      <th></th>\n      <th colspan=\"3\">Prevenar 13<br>(10-17 tuổi)</th>\n      <th colspan=\"3\">Prevenar 13<br>(5 đến &lt;10 tuổi)</th>\n      <th colspan=\"2\"></th>\n    </tr>\n    <tr>\n      <th>Týp huyết thanh</th>\n      <th>n<sup>b</sup></th>\n      <th>GMT<sup>c</sup></th>\n      <th>(CI 95%<sup>d</sup>)</th>\n      <th>n<sup>b</sup></th>\n      <th>GMT<sup>c</sup></th>\n      <th>(CI 95%<sup>d</sup>)</th>\n      <th>Tỷ lệ<sup>e</sup></th>\n      <th>(CI 95%<sup>f</sup>)</th>\n    </tr>\n  </thead>\n<tbody>\n<tr>\n      <td>6A</td>\n      <td>182</td>\n      <td>9928</td>\n      <td>(8457,0, 11654,8)</td>\n      <td>178</td>\n      <td>7514</td>\n      <td>(6350,8, 8890,7)</td>\n      <td>1,3</td>\n      <td>(1,05, 1,67)</td>\n    </tr>\n<tr>\n      <td>7F</td>\n      <td>185</td>\n      <td>6584</td>\n      <td>(5829,4, 7435,5)</td>\n      <td>178</td>\n      <td>10334</td>\n      <td>(9099,0, 11736,8)</td>\n      <td>0,6</td>\n      <td>(0,53, 0,76)</td>\n    </tr>\n<tr>\n      <td>19A</td>\n      <td>187</td>\n      <td>1276</td>\n      <td>(1131,7, 1439,0)</td>\n      <td>180</td>\n      <td>1180</td>\n      <td>(1047,5, 1329,4)</td>\n      <td>1,1</td>\n      <td>(0,91, 1,28)</td>\n    </tr>\n</tbody>\n</table>"
+			],
+			"additional_metadata": {
+				"query_id": "eval_0294",
+				"answerability": "PARTIALLY_ANSWERABLE",
+				"complexity": "TABLE_REASONING",
+				"multi_hop_type": null,
+				"query_style": "CLINICAL_STYLE",
+				"source_chunk_ids": [
+					"prevenar_13_qlvx_h03_1142_19_c_0060"
+				],
+				"doc_ids": [
+					"prevenar_13_qlvx_h03_1142_19"
+				],
+				"doc_titles": [
+					"Hướng dẫn sử dụng Vaccine Prevenar 13"
+				],
+				"review_batch": "overlap",
+				"VERIFIED": true,
+				"ANNOTATOR_IDS": [
+					"đặng quốc dũng",
+					"R-FD5EFBEA9DDCF69B",
+					"Bác sĩ Nguyễn Thùy Linh"
+				],
+				"ADJUDICATED": true,
+				"VERIFICATION_NOTES": "Kết quả 3 chuyên gia có khác biệt, cần đối chiếu thống nhất.\n\nCâu trả lời sau chỉnh sửa:\n- Theo bảng so sánh GMT OPA serotype 6A, nhóm tuổi 10‑17 năm có GMT = 9 928, trong khi nhóm 5‑<10 năm có GMT = 7 514. Chênh lệch = (9 928 – 7 514) / 7 514 × 100 ≈ 32 % (nhóm lớn hơn khoảng 32 % so với nhóm trẻ hơn).\r\n\r\n- Về việc bệnh nhân có tiền sử tiểu đường có nên tiêm liều bù của Prevenar 13, tài liệu được cung cấp không đề cập đến khuyến cáo hoặc dữ liệu liên quan đến bệnh nhân tiểu đường; vì vậy không thể trả lời dựa trên thông tin hiện có.",
+				"status": "EDITED",
+				"annotator_notes": {
+					"lí do sửa câu hỏi": null,
+					"lí do sửa câu trả lời": ".",
+					"ghi chú cho nhóm đồ án": "Kết quả 3 chuyên gia có khác biệt, cần đối chiếu thống nhất."
 				}
 			}
 		},
