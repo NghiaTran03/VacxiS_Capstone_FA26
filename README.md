@@ -18,9 +18,11 @@ cp .env.example .env
 | --- | --- |
 | `OPENROUTER_API_KEY` | Key OpenRouter dùng chung cho mọi lời gọi LLM. |
 | `VACXIS_GENERATION_MODEL` | Model trả lời. `--model` ghi đè theo CLI tương ứng. |
+| `VACXIS_GENERATION_BASE_URL` | Endpoint riêng cho generation; để trống sẽ dùng `VACXIS_LLM_BASE_URL`. |
+| `VACXIS_LLM_BASE_URL` | Endpoint chung cho planner và evaluation; mặc định `https://openrouter.ai/api/v1`. |
 | `VACXIS_QUERY_PLANNER_MODEL` | Model planner cho backend website gọi `run_turn()`. CLI và batch không gọi planner. |
 
-Ứng dụng chỉ đọc biến môi trường bằng `os.getenv()`, không đọc `.env` hay gọi `load_dotenv()`. `uv run --env-file .env ...` nạp biến vào môi trường tiến trình. Mọi lời gọi LLM dùng OpenAI SDK tại `https://openrouter.ai/api/v1`; không còn backend hay alias LiteLLM.
+Ứng dụng chỉ đọc biến môi trường bằng `os.getenv()`, không đọc `.env` hay gọi `load_dotenv()`. `uv run --env-file .env ...` nạp biến vào môi trường tiến trình. Generation dùng endpoint riêng nếu `VACXIS_GENERATION_BASE_URL` được đặt; planner và evaluation dùng `VACXIS_LLM_BASE_URL`. Không còn backend hay alias LiteLLM.
 
 Online thiếu key/model, timeout, API lỗi hoặc phản hồi không hợp lệ sẽ báo lỗi và dừng. Chỉ chế độ `--dry-run` mới dùng trích xuất offline. Không cần key/model LLM cho chế độ này; retrieval vẫn cần Qdrant và model BGE.
 
