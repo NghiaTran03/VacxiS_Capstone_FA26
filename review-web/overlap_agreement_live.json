@@ -1,0 +1,13 @@
+{
+  "scope": "live",
+  "total": 30,
+  "completed": 30,
+  "answerability_kappa": 0.6120689655172417,
+  "answerability_level": "Tốt / Đáng tin cậy (0.61–0.80)",
+  "answerability_exact_rate": 0.7333333333333333,
+  "evidence_kappa": -0.025641025641025057,
+  "evidence_level": "Không đồng thuận (< 0.00)",
+  "evidence_exact_rate": 0.9333333333333333,
+  "mean_jaccard": 0.9555555555555556,
+  "total_chunks_evaluated": 40
+}
