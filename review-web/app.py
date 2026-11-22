@@ -1058,6 +1058,22 @@ def create_app(location=None):
             raise HTTPException(409, str(error)) from error
         return redirect(f"/admin/history/{scope}/{identifier}")
 
+    @app.get("/admin/export/{scope}/overlap")
+    def export_overlap(request: Request, scope: str):
+        require_admin(request)
+        if scope not in SCOPES:
+            raise HTTPException(404, "Lượt duyệt không tồn tại.")
+        with connect(location) as db:
+            metrics = scientific_dashboard_data(db, scope)["kappa"]
+        if metrics is None or not metrics["completed"]:
+            raise HTTPException(404, "Chưa có câu Overlap đủ ba bản chấm.")
+
+        content = json.dumps({"scope": scope, **metrics}, ensure_ascii=False, allow_nan=False, indent=2)
+        return Response(content + "\n", media_type="application/json", headers={
+            "Content-Disposition": f'attachment; filename="overlap_agreement_{scope}.json"',
+            "Cache-Control": "no-store",
+        })
+
     @app.get("/admin/export/{scope}")
     def export(request: Request, scope: str):
         require_admin(request)

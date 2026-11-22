@@ -160,6 +160,9 @@ Lời mời dùng một lần, có hạn 7 ngày.</textarea></div>
     </div>
     {% if scientific.kappa %}
       <h3>Chỉ số Fleiss' Kappa (Gói Overlap)</h3>
+      {% if scientific.kappa.completed %}
+        <a class="button" href="/admin/export/{{ scope }}/overlap">Tải báo cáo Fleiss’ κ (JSON)</a>
+      {% endif %}
       <div class="metrics-grid">
         <div class="metric-card">
           <span class="muted">Số câu 3 người đã nộp</span>
