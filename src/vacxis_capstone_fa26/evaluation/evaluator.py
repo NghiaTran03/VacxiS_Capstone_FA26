@@ -296,7 +296,7 @@ class VacxisRAGEvaluator:
         generation_results: Sequence[dict[str, Any]],
         chunk_texts: dict[str, str] | None = None,
         *,
-        max_concurrent: int = 1,
+        max_concurrent: int = 20,
         write_cache: bool = True,
         use_cache: bool = True,
         checkpoint_path: str | Path | None = None,
@@ -392,7 +392,7 @@ class VacxisRAGEvaluator:
         answer_fn: Callable[[str, dict[str, Any]], dict[str, Any]],
         chunk_texts: dict[str, str] | None = None,
         *,
-        max_concurrent: int = 1,
+        max_concurrent: int = 20,
         write_cache: bool = True,
         use_cache: bool = True,
     ) -> EvaluationSummary:
