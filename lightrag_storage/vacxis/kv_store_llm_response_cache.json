@@ -37928,5 +37928,1525 @@
     "create_time": 1795255482,
     "update_time": 1795255482,
     "_id": "hybrid:keywords:9c31ff584c2589eaacbc38f624db930f"
+  },
+  "hybrid:keywords:12ded0c727e049d8e66985ce5e42bee2": {
+    "return": "{\"high_level_keywords\": [\"t\\u1ef7 l\\u1ec7 kh\\u00e1ng th\\u1ec3\", \"ph\\u01b0\\u01a1ng ph\\u00e1p th\\u1ed1ng k\\u00ea\", \"vaccine\"], \"low_level_keywords\": [\"IgG\", \"GMC\", \"Moderna\", \"B\\u1ea3ng 4\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bảng 4 cho tỷ lệ IgG, GMC của vaccine Moderna là gì, dùng thống kê gì ạ?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795353868,
+    "update_time": 1795353868,
+    "_id": "hybrid:keywords:12ded0c727e049d8e66985ce5e42bee2"
+  },
+  "hybrid:keywords:3f05d68335dae4f3abbb6c35c60a8519": {
+    "return": "{\"high_level_keywords\": [\"vaccine COVID-19\", \"hi\\u1ec7u l\\u1ef1c vaccine\", \"th\\u1eddi gian b\\u1eaft \\u0111\\u1ea7u b\\u1ea3o v\\u1ec7\", \"li\\u1ec1u duy nh\\u1ea5t\"], \"low_level_keywords\": [\"Johnson & Johnson\", \"7-10 ng\\u00e0y\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Sau bao nhiêu ngày (7‑10) vaccine COVID‑19 Johnson & Johnson bắt đầu bảo vệ và liều duy nhất có hiệu lực?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795353880,
+    "update_time": 1795353880,
+    "_id": "hybrid:keywords:3f05d68335dae4f3abbb6c35c60a8519"
+  },
+  "hybrid:keywords:1dd4503468b0a17ec9f2ac4a1550464e": {
+    "return": "{\"high_level_keywords\": [\"t\\u00e1c d\\u1ee5ng ph\\u1ee5 vaccine\", \"an to\\u00e0n vaccine\", \"ti\\u00eam ch\\u1ee7ng\"], \"low_level_keywords\": [\"Nimenrix\", \"ti\\u00eau ch\\u1ea3y\", \"b\\u00e9 8 tu\\u1ed5i\", \"ph\\u1ee5 n\\u1eef mang thai\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bé 8 tuổi tiêm Nimenrix, hôm nay bị tiêu chảy, có nguy hiểm không? Vậy vaccine này có an toàn cho phụ nữ mang thai không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795353890,
+    "update_time": 1795353890,
+    "_id": "hybrid:keywords:1dd4503468b0a17ec9f2ac4a1550464e"
+  },
+  "hybrid:keywords:a0e89d103aa5c9f0ee188432083a13f5": {
+    "return": "{\"high_level_keywords\": [\"b\\u1ea3o qu\\u1ea3n\", \"ph\\u00f9 h\\u1ee3p\"], \"low_level_keywords\": [\"Flumist\", \"Tetavax\", \"b\\u00e9 2 tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bé 2 tuổi, nên dùng Flumist hay Tetavax? Thời gian bảo quản nào phù hợp hơn?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795353902,
+    "update_time": 1795353902,
+    "_id": "hybrid:keywords:a0e89d103aa5c9f0ee188432083a13f5"
+  },
+  "hybrid:keywords:65dc09a00b5b4b21bd8eab58375d5c2d": {
+    "return": "{\"high_level_keywords\": [\"an to\\u00e0n ti\\u00eam ch\\u1ee7ng\", \"ti\\u00eam ch\\u1ee7ng cho tr\\u1ebb em\", \"lo\\u1ea1i bao b\\u00ec\"], \"low_level_keywords\": [\"VAXIGRIP\", \"b\\u00e9 6 th\\u00e1ng\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bé 6 tháng có thể tiêm VAXIGRIP an toàn không, và loại bao bì là gì?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795353918,
+    "update_time": 1795353918,
+    "_id": "hybrid:keywords:65dc09a00b5b4b21bd8eab58375d5c2d"
+  },
+  "hybrid:keywords:b6c9bf7070678e1e5bae290ff78759fc": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam vaccine\", \"n\\u1ed3ng \\u0111\\u1ed9 kh\\u00e1ng th\\u1ec3\", \"l\\u1ecbch ti\\u00eam\", \"li\\u1ec1u ti\\u00eam\", \"ti\\u00eam c\\u01a1 b\\u1eafp\"], \"low_level_keywords\": [\"BN52\", \"ti\\u1ec3u \\u0111\\u01b0\\u1eddng\", \"Ab14d\", \"Moderna\", \"mRNA-1273\", \"IM\", \"li\\u1ec1u g\\u1ea5p 2\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bệnh nhân BN52, 52 tuổi, có bệnh nền tiểu đường, chưa tiêm bất kỳ vaccine COVID‑19 nào, cần đo nồng độ kháng thể sau 14 ngày (Ab14d), lịch tiêm dự kiến 0‑3‑7‑14‑28 ngày, muốn tiêm liều đầu gấp 2 lần, vị trí tiêm ở cơ bắp nào? Trong trường hợp này, nên sử dụng vaccine COVID‑19 Moderna (mRNA‑1273) và cách tính liều IM như thế nào?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795353928,
+    "update_time": 1795353928,
+    "_id": "hybrid:keywords:b6c9bf7070678e1e5bae290ff78759fc"
+  },
+  "hybrid:keywords:2dcc91b45a733da749fdd8d5cb90e17e": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam vaccine nh\\u1eafc l\\u1ea1i\", \"ph\\u1ee5 n\\u1eef mang thai\", \"\\u0111i\\u1ec1u ch\\u1ec9nh li\\u1ec1u l\\u01b0\\u1ee3ng\", \"v\\u1ecb tr\\u00ed ti\\u00eam\", \"b\\u1ec7nh tim m\\u1ea1ch\"], \"low_level_keywords\": [\"Pfizer-BioNTech\", \"COVID-19\", \"aspirin\", \"30 tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Vaccine COVID‑19 (Pfizer‑BioNTech) nên tiêm lại cho phụ nữ mang thai 30 tuổi vào thời điểm nào, và cần điều chỉnh liều lượng hoặc vị trí tiêm như thế nào khi bệnh nhân có bệnh tim mạch và đang dùng aspirin?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795353940,
+    "update_time": 1795353940,
+    "_id": "hybrid:keywords:2dcc91b45a733da749fdd8d5cb90e17e"
+  },
+  "hybrid:keywords:5da93017dd17bfef51e6951eca4ce7f8": {
+    "return": "{\"high_level_keywords\": [\"ch\\u1ec9 \\u0111\\u1ecbnh vaccine\", \"li\\u1ec1u l\\u01b0\\u1ee3ng\", \"l\\u1ecbch ti\\u00eam\", \"ch\\u1ed1ng ch\\u1ec9 \\u0111\\u1ecbnh\", \"t\\u00e1c d\\u1ee5ng ph\\u1ee5\", \"ho\\u00e3n ti\\u00eam vaccine\"], \"low_level_keywords\": [\"Varivax\", \"Bexsero\", \"tr\\u1ebb t\\u1eeb 12 th\\u00e1ng \\u0111\\u1ebfn 5 tu\\u1ed5i\", \"b\\u1ec7nh tim m\\u1ea1ch\", \"nhi\\u1ec5m khu\\u1ea9n \\u00e1c t\\u00ednh\", \"li\\u1ec1u th\\u1ee9 hai\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Trong trường hợp trẻ từ 12 tháng đến 5 tuổi có bệnh tim mạch, tiền sử nhiễm khuẩn ác tính, vừa mới tiêm một loại vaccine gần đây và cần hoãn liều thứ hai, nên lựa chọn vaccine Varivax hay Bexsero? Xin cho biết chỉ định, liều lượng, lịch tiêm, chống chỉ định và tác dụng phụ của cả Varivax và Bexsero trong hoàn cảnh này.",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795353949,
+    "update_time": 1795353949,
+    "_id": "hybrid:keywords:5da93017dd17bfef51e6951eca4ce7f8"
+  },
+  "hybrid:keywords:ec775264c83d44f9bcf6074513283361": {
+    "return": "{\"high_level_keywords\": [\"an to\\u00e0n vaccine\", \"ti\\u00eam ch\\u1ee7ng\"], \"low_level_keywords\": [\"Menactra\", \"tr\\u1ebb 4 tu\\u1ed5i\", \"li\\u1ec1u b\\u1eafp\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Trẻ 4 tuổi, Menactra cần 2 liều bắp, có lưu ý gì về an toàn không ạ?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795353967,
+    "update_time": 1795353967,
+    "_id": "hybrid:keywords:ec775264c83d44f9bcf6074513283361"
+  },
+  "hybrid:keywords:94d256f6aafc0b24c01507ccb8c1a8c1": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam vaccine\", \"bi\\u1ec7n ph\\u00e1p th\\u1eadn tr\\u1ecdng\", \"l\\u1ecbch ti\\u00eam ch\\u1ee7ng\"], \"low_level_keywords\": [\"vaccine DTP\", \"ti\\u1ec1n s\\u1eed b\\u1ec7nh th\\u1eadn\", \"kh\\u00e1ng sinh\", \"li\\u1ec1u t\\u0103ng c\\u01b0\\u1eddng\", \"li\\u1ec1u th\\u1ee9 hai\", \"tr\\u1ebb 4 tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Đối với trẻ 4 tuổi có tiền sử bệnh thận, đã tiêm liều đầu tiên của vaccine DTP ở tuổi 2 và hiện đang dùng kháng sinh, liệu có nên tiêm liều thứ hai và liều tăng cường của vaccine DTP không? Cần lưu ý những biện pháp thận trọng gì khi thực hiện?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795353989,
+    "update_time": 1795353989,
+    "_id": "hybrid:keywords:94d256f6aafc0b24c01507ccb8c1a8c1"
+  },
+  "hybrid:keywords:c39516d6b882dba1d3ce3124022dd0b4": {
+    "return": "{\"high_level_keywords\": [\"t\\u00e1 d\\u01b0\\u1ee3c\", \"ch\\u1ee9c n\\u0103ng\", \"th\\u00e0nh ph\\u1ea7n vaccine\"], \"low_level_keywords\": [\"Vaccine COVID-19 Pfizer\", \"Pfizer\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Vaccine COVID-19 Pfizer có thành phần tá dược gì, chức năng của chúng?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354001,
+    "update_time": 1795354001,
+    "_id": "hybrid:keywords:c39516d6b882dba1d3ce3124022dd0b4"
+  },
+  "hybrid:keywords:e0b5bd3fc867b75ff25da530e7bb23c8": {
+    "return": "{\"high_level_keywords\": [\"an to\\u00e0n vaccine\", \"ti\\u00eau ch\\u1ea3y\", \"li\\u1ec1u b\\u00f9\", \"ti\\u00eam vaccine\"], \"low_level_keywords\": [\"Rotavac\", \"2 tu\\u1ed5i\", \"\\u226510^5 FFU\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bé 2 tuổi đang tiêu chảy, Rotavac (≥10^5 FFU) có an toàn không? Liều bù có cần tiêm không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354008,
+    "update_time": 1795354008,
+    "_id": "hybrid:keywords:e0b5bd3fc867b75ff25da530e7bb23c8"
+  },
+  "hybrid:keywords:fd7f36360dc5e9f36b782aa3d982bb16": {
+    "return": "{\"high_level_keywords\": [\"an to\\u00e0n vaccine\", \"li\\u1ec1u 4\", \"t\\u01b0\\u01a1ng t\\u00e1c thu\\u1ed1c\", \"ti\\u1ec1n s\\u1eed d\\u1ecb \\u1ee9ng\", \"r\\u1ee7i ro ti\\u00eam ch\\u1ee7ng\"], \"low_level_keywords\": [\"mRNA-1273\", \"Moderna\", \"aspirin\", \"\\u0111au x\\u01b0\\u01a1ng\", \"r\\u00f2 r\\u1ec9 mao m\\u1ea1ch\", \"vaccine c\\u00fam m\\u00f9a 2024\", \"d\\u1ecb \\u1ee9ng ph\\u1ea5n hoa\", \"68 tu\\u1ed5i\", \"2 tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Liệu vaccine COVID‑19 mRNA‑1273 (Moderna) liều 4 tuần có an toàn cho bệnh nhân 68 tuổi đang dùng aspirin, có tiền sử đau xương ≥1/10 liều và rủi ro rò rỉ mao mạch ≥1/1.000? Ngoài ra, liệu vaccine phòng cúm mùa 2024 có thể được tiêm cho trẻ 2 tuổi có tiền sử dị ứng phấn hoa không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354017,
+    "update_time": 1795354017,
+    "_id": "hybrid:keywords:fd7f36360dc5e9f36b782aa3d982bb16"
+  },
+  "hybrid:keywords:33ac7aaaa7398c02c1d59d308a8017c2": {
+    "return": "{\"high_level_keywords\": [\"ch\\u1ec9 \\u0111\\u1ecbnh vaccine\", \"l\\u1ecbch ti\\u00eam vaccine\", \"ho\\u00e3n ti\\u00eam vaccine\", \"t\\u01b0\\u01a1ng t\\u00e1c kh\\u00e1ng sinh v\\u00e0 vaccine\"], \"low_level_keywords\": [\"Rabipur\", \"Pentaxim\", \"amoxicillin\", \"vi\\u00eam tai gi\\u1eefa\", \"tr\\u1ebb 4 th\\u00e1ng tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Trong trường hợp trẻ 4‑tháng tuổi, không có tiền sử bệnh nền và chưa tiêm bất kỳ vaccine nào, chỉ định và lịch tiêm của vaccine Rabipur và vaccine Pentaxim là gì? Ngoài ra, nếu trẻ đang dùng thuốc kháng sinh amoxicillin để điều trị viêm tai giữa, liệu có cần hoãn lịch tiêm của hai vaccine này không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354032,
+    "update_time": 1795354032,
+    "_id": "hybrid:keywords:33ac7aaaa7398c02c1d59d308a8017c2"
+  },
+  "hybrid:keywords:2b83603e3578a95d11735f5239af9fce": {
+    "return": "{\"high_level_keywords\": [\"so s\\u00e1nh vaccine\", \"ch\\u1ed1ng ch\\u1ec9 \\u0111\\u1ecbnh\", \"t\\u00e1c d\\u1ee5ng ph\\u1ee5\", \"t\\u01b0\\u01a1ng t\\u00e1c thu\\u1ed1c\", \"ph\\u00e1c \\u0111\\u1ed3 tr\\u1ec5 m\\u0169i\", \"ph\\u1ea3n \\u1ee9ng t\\u1ea1i ch\\u1ed7 ch\\u1eadm\", \"\\u1ee9c ch\\u1ebf mi\\u1ec5n d\\u1ecbch\"], \"low_level_keywords\": [\"Cervarix\", \"Arexvy\", \"vaccine HPV\", \"b\\u1ec7nh tim m\\u1ea1ch\", \"thu\\u1ed1c \\u1ee9c ch\\u1ebf mi\\u1ec5n d\\u1ecbch\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bệnh nhân 45 tuổi, có tiền sử bệnh tim mạch, đang dùng thuốc ức chế miễn dịch và đã tiêm 2 liều vaccine HPV trước, cần tiêm bổ sung theo phác đồ trễ mũi. Làm sao để so sánh các chống chỉ định, tác dụng phụ, phản ứng tại chỗ chậm và tương tác thuốc của vaccine Cervarix và vaccine Arexvy?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354044,
+    "update_time": 1795354044,
+    "_id": "hybrid:keywords:2b83603e3578a95d11735f5239af9fce"
+  },
+  "hybrid:keywords:cc7e5244397cafaa2fe8e0d9f2d9fde6": {
+    "return": "{\"high_level_keywords\": [\"t\\u01b0\\u01a1ng t\\u00e1c thu\\u1ed1c\", \"l\\u1ecbch ti\\u00eam vaccine\", \"ti\\u00eam \\u0111\\u1ed3ng th\\u1eddi\", \"an to\\u00e0n ti\\u00eam ch\\u1ee7ng\"], \"low_level_keywords\": [\"Shingrix\", \"aspirin 81 mg\", \"vaccine COVID-19 mRNA\", \"b\\u1ec7nh tim m\\u1ea1ch\", \"68 tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Trong bệnh nhân 68 tuổi, có tiền sử bệnh tim mạch và đã tiêm liều đầu Shingrix, liệu có thể đồng thời dùng aspirin 81 mg hàng ngày và tiêm liều thứ hai của Shingrix theo lịch trễ mũi 2 tháng không? Ngoài ra, liệu có thể tiêm đồng thời vaccine COVID‑19 mRNA cùng lúc với Shingrix không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354070,
+    "update_time": 1795354070,
+    "_id": "hybrid:keywords:cc7e5244397cafaa2fe8e0d9f2d9fde6"
+  },
+  "hybrid:keywords:2dc900c7c56360c2250dc255a2052f2c": {
+    "return": "{\"high_level_keywords\": [\"an to\\u00e0n ti\\u00eam vaccine\", \"t\\u01b0\\u01a1ng t\\u00e1c thu\\u1ed1c\", \"vaccine cho tr\\u1ebb s\\u01a1 sinh\", \"ti\\u00eam vaccine \\u0111\\u1ed3ng th\\u1eddi\"], \"low_level_keywords\": [\"Rotavac\", \"BCG\", \"amoxicillin\", \"b\\u1ec7nh tim b\\u1ea9m sinh\", \"CHD\", \"8 tu\\u1ea7n tu\\u1ed5i\", \"4 tu\\u1ea7n sau sinh\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Đối với trẻ 8 tuần tuổi, có bệnh tim bẩm sinh (CHD) và đang dùng amoxicillin, liệu có an toàn để tiêm liều đầu tiên của vaccine Rotavac ở tuần thứ 4 sau sinh mà không gây tương tác thuốc? Ngoài ra, liệu có thể đồng thời tiêm vaccine BCG cho trẻ này trong cùng buổi khám không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354079,
+    "update_time": 1795354079,
+    "_id": "hybrid:keywords:2dc900c7c56360c2250dc255a2052f2c"
+  },
+  "hybrid:keywords:db45a191522d09062e5b012711dabb32": {
+    "return": "{\"high_level_keywords\": [\"an to\\u00e0n ti\\u00eam ch\\u1ee7ng\", \"ti\\u00eam vaccine\", \"COVID-19\"], \"low_level_keywords\": [\"GC Flu\", \"d\\u1ecb \\u1ee9ng tr\\u1ee9ng\", \"4 tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bé 4 tuổi dị ứng trứng đã tiêm GC Flu, có an toàn không, và có nên tiêm COVID‑19 nữa không ạ?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354091,
+    "update_time": 1795354091,
+    "_id": "hybrid:keywords:db45a191522d09062e5b012711dabb32"
+  },
+  "hybrid:keywords:5b849af00ef39306c310fe154a45bf9d": {
+    "return": "{\"high_level_keywords\": [\"nghi\\u00ean c\\u1ee9u\", \"v\\u1eafc xin\", \"ti\\u00eam ch\\u1ee7ng\"], \"low_level_keywords\": [\"6096A1-004\", \"vi\\u00eam gan\", \"Hib\", \"MMR\", \"kh\\u00e1ng th\\u1ec3\", \"vitamin D\", \"tr\\u1ebb 2 tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Nghiên cứu 6096A1-004 cho thấy tỷ lệ kháng thể sau vắc‑xin viêm gan 85%, Hib 78%, MMR 90%. Vậy em có nên tiêm vắc‑xin viêm gan cho bé 2 tuổi cùng vitamin D không ạ?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354100,
+    "update_time": 1795354100,
+    "_id": "hybrid:keywords:5b849af00ef39306c310fe154a45bf9d"
+  },
+  "hybrid:keywords:f76e1a6a605c8f102d41f29dd2e91516": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam nh\\u1eafc l\\u1ea1i\", \"l\\u1ecbch ti\\u00eam vaccine\", \"vaccine cho tr\\u1ebb s\\u01a1 sinh\"], \"low_level_keywords\": [\"Pentaxim\", \"li\\u1ec1u 3\", \"6 th\\u00e1ng\", \"2 th\\u00e1ng\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Con 2 tháng đã tiêm liều 3 Pentaxim, có cần tiêm nhắc lại sau 6 tháng không? Ngoài ra, có nên tiêm vaccine nào khác cho bé ở độ tuổi 6 tháng không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354107,
+    "update_time": 1795354107,
+    "_id": "hybrid:keywords:f76e1a6a605c8f102d41f29dd2e91516"
+  },
+  "hybrid:keywords:b26436961be9cf13b13df046165f9838": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam vaccine\", \"chu\\u1ea9n b\\u1ecb v\\u00e0 ki\\u1ec3m tra vial\", \"d\\u1ecb \\u1ee9ng thu\\u1ed1c kh\\u00e1ng sinh\", \"\\u0111i\\u1ec1u ch\\u1ec9nh li\\u1ec1u\"], \"low_level_keywords\": [\"Prevenar 13\", \"0.5 ml single-dose vial\", \"tr\\u1ebb 2 tu\\u1ed5i\", \"macrolide\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Đối với trẻ 2 tuổi có tiền sử dị ứng thuốc kháng sinh, cần tiêm vaccine Prevenar 13 0.5 ml single‑dose vial, làm thế nào chuẩn bị và kiểm tra vial trước khi tiêm? Ngoài ra, liệu có cần điều chỉnh liều cho bệnh nhân đang dùng thuốc kháng sinh macrolide không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354119,
+    "update_time": 1795354119,
+    "_id": "hybrid:keywords:b26436961be9cf13b13df046165f9838"
+  },
+  "hybrid:keywords:b218d9beb20937642427288dd60259df": {
+    "return": "{\"high_level_keywords\": [\"li\\u1ec1u khuy\\u1ebfn c\\u00e1o\", \"ng\\u01b0\\u1eddi cao tu\\u1ed5i\", \"huy\\u1ebft \\u00e1p cao\", \"theo d\\u00f5i \\u0111\\u1eb7c bi\\u1ec7t\"], \"low_level_keywords\": [\"Vaxigrip\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bác sĩ ơi, Vaxigrip liều khuyến cáo cho người cao tuổi là bao nhiêu? Còn nếu người bệnh có huyết áp cao, có cần theo dõi đặc biệt không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354128,
+    "update_time": 1795354128,
+    "_id": "hybrid:keywords:b218d9beb20937642427288dd60259df"
+  },
+  "hybrid:keywords:e0c6fb678f5a5f9fa778d04743363818": {
+    "return": "{\"high_level_keywords\": [\"v\\u1eafc-xin\", \"h\\u1ea1n s\\u1eed d\\u1ee5ng\", \"c\\u00e1ch b\\u1ea3o qu\\u1ea3n\", \"so s\\u00e1nh\"], \"low_level_keywords\": [\"Peg-Grafeel\", \"Boostrix\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Vắc-xin Peg‑Grafeel và Boostrix khác nhau như thế nào về hạn sử dụng và cách bảo quản?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354137,
+    "update_time": 1795354137,
+    "_id": "hybrid:keywords:e0c6fb678f5a5f9fa778d04743363818"
+  },
+  "hybrid:keywords:54f3229b12bd6eb686d784dd32f01ab2": {
+    "return": "{\"high_level_keywords\": [\"b\\u1ea3o qu\\u1ea3n vaccine\", \"t\\u01b0\\u01a1ng t\\u00e1c thu\\u1ed1c\", \"l\\u1ecbch ti\\u00eam vaccine\", \"ti\\u00eam vaccine cho tr\\u1ebb em\"], \"low_level_keywords\": [\"Quimi-Hib\", \"vaccine COVID-19 mRNA\", \"kh\\u00e1ng sinh r\\u1ed9ng ph\\u1ed5\", \"4\\u00b0C\", \"2 tu\\u1ed5i\", \"ti\\u1ec1n s\\u1eed d\\u1ecb \\u1ee9ng thu\\u1ed1c\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Đối với bệnh nhân 2 tuổi, không có tiền sử dị ứng thuốc, chưa tiêm bất kỳ vaccine nào trước đó, đang dùng thuốc kháng sinh rộng phổ và việc tiêm bị trễ 2 tuần so với lịch dự kiến, nếu mở lọ Quimi‑Hib và bảo quản ở 4 °C, thời gian tối đa có thể tiêm sau khi mở là bao lâu? Ngoài ra, liệu có thể dùng đồng thời vaccine COVID‑19 mRNA cho bệnh nhân này mà không gây tương tác thuốc?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354147,
+    "update_time": 1795354147,
+    "_id": "hybrid:keywords:54f3229b12bd6eb686d784dd32f01ab2"
+  },
+  "hybrid:keywords:68f702d2e6e19bf016c6306ce6687495": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam vaccine\", \"l\\u1ecbch ti\\u00eam vaccine\", \"li\\u1ec1u b\\u00f9 vaccine\", \"vaccine MMR\"], \"low_level_keywords\": [\"globulin\", \"MMR II\", \"8 th\\u00e1ng\", \"3 th\\u00e1ng\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bé 8 tháng sau tiêm globulin, có nên chờ 3 tháng mới tiêm vaccine MMR II không? Còn liều bù của vaccine này nên tiêm ở tuổi bao nhiêu?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354157,
+    "update_time": 1795354157,
+    "_id": "hybrid:keywords:68f702d2e6e19bf016c6306ce6687495"
+  },
+  "hybrid:keywords:183db89193e8aefd3351a145a0171cdc": {
+    "return": "{\"high_level_keywords\": [\"an to\\u00e0n vaccine\", \"ti\\u00eam ch\\u1ee7ng cho tr\\u1ebb em\", \"suy gi\\u1ea3m mi\\u1ec5n d\\u1ecbch\"], \"low_level_keywords\": [\"TRESIVAC\", \"BCG\", \"vitamin A\", \"li\\u1ec1u th\\u1ee9 hai\", \"tr\\u1ebb 3 n\\u0103m\", \"suy gi\\u1ea3m mi\\u1ec5n d\\u1ecbch nh\\u1eb9\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Liều thứ hai của vaccine TRESIVAC có an toàn khi tiêm ở tuổi 4‑5 năm cho trẻ 3 năm, đã tiêm BCG, được bổ sung vitamin A và có tiền sử suy giảm miễn dịch nhẹ không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354178,
+    "update_time": 1795354178,
+    "_id": "hybrid:keywords:183db89193e8aefd3351a145a0171cdc"
+  },
+  "hybrid:keywords:cd8c1c763f17a2d2b0d4fcb6201637e3": {
+    "return": "{\"high_level_keywords\": [\"so s\\u00e1nh vaccine\", \"ch\\u1ec9 \\u0111\\u1ecbnh ti\\u00eam vaccine\", \"ch\\u1ed1ng ch\\u1ec9 \\u0111\\u1ecbnh\", \"t\\u00e1c d\\u1ee5ng ph\\u1ee5\", \"l\\u1ecbch ti\\u00eam\", \"b\\u1ec7nh gan m\\u00e3n t\\u00ednh\", \"\\u1ee9c ch\\u1ebf mi\\u1ec5n d\\u1ecbch\"], \"low_level_keywords\": [\"Twinrix\", \"Peg-Grafeel\", \"vaccine Hepatitis B\", \"ho\\u00e1 tr\\u1ecb\", \"ti\\u00eam d\\u01b0\\u1edbi da\", \"6 mg\", \"0-7-21\", \"nh\\u1eafc l\\u1ea1i sau 12 th\\u00e1ng\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Trong trường hợp bệnh nhân từ 18‑65 tuổi, có tiền sử bệnh gan mãn tính, đã tiêm vaccine Hepatitis B trước đó và đang dùng thuốc ức chế miễn dịch, nên so sánh chỉ định, lịch tiêm (0‑7‑21 ml và nhắc lại sau 12 tháng) của vaccine Twinrix với liều 6 mg Peg‑Grafeel tiêm dưới da 24 h sau hoá trị, bao gồm thời gian tiêm, các chống chỉ định và tác dụng phụ tiềm năng là gì?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354190,
+    "update_time": 1795354190,
+    "_id": "hybrid:keywords:cd8c1c763f17a2d2b0d4fcb6201637e3"
+  },
+  "hybrid:keywords:6dd6f2fd5fd31c87a95da13ce6253771": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam vaccine\", \"li\\u1ec1u d\\u00f9ng\", \"ho\\u00e3n ti\\u00eam\", \"ch\\u1ed1ng ch\\u1ec9 \\u0111\\u1ecbnh ti\\u00eam ch\\u1ee7ng\"], \"low_level_keywords\": [\"Rotarix\", \"6 th\\u00e1ng\", \"1.5 ml\", \"ti\\u00eau ch\\u1ea3y\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bé 6 tháng muốn tiêm Rotarix, liều 1.5 ml có đúng không? Nếu bé bị tiêu chảy, có nên hoãn tiêm không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354207,
+    "update_time": 1795354207,
+    "_id": "hybrid:keywords:6dd6f2fd5fd31c87a95da13ce6253771"
+  },
+  "hybrid:keywords:d870693bd1754219b4319b1b53cd3518": {
+    "return": "{\"high_level_keywords\": [\"kho\\u1ea3ng th\\u1eddi gian ti\\u00eam vaccine\", \"\\u0111\\u00e1p \\u1ee9ng mi\\u1ec5n d\\u1ecbch\", \"b\\u1ec7nh n\\u1ec1n\", \"khuy\\u1ebfn c\\u00e1o ti\\u00eam vaccine\", \"hi\\u1ec7u qu\\u1ea3 vaccine\"], \"low_level_keywords\": [\"Vaxneuvance\", \"ti\\u1ec3u \\u0111\\u01b0\\u1eddng type 2\", \"aspirin 100 mg\", \"li\\u1ec1u th\\u1ee9 hai\", \"30 ng\\u00e0y\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Đối với bệnh nhân nữ 68 tuổi, mắc bệnh tiểu đường type 2 và có ít nhất một bệnh nền khác, đã tiêm liều đầu của vaccine Vaxneuvance và muốn tiêm liều thứ hai sau 30 ngày, liệu khoảng thời gian này có được khuyến cáo và hiệu quả so sánh với khoảng thời gian tiêu chuẩn như thế nào? Ngoài ra, liệu có thể dùng đồng thời thuốc aspirin 100 mg mỗi ngày mà không ảnh hưởng đến đáp ứng miễn dịch của vaccine Vaxneuvance không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354216,
+    "update_time": 1795354216,
+    "_id": "hybrid:keywords:d870693bd1754219b4319b1b53cd3518"
+  },
+  "hybrid:keywords:a2eb6d9642f919c56888ac4520ad1e67": {
+    "return": "{\"high_level_keywords\": [\"ti\\u1ec3u c\\u1ea7u th\\u1ea5p\", \"ti\\u00eam vaccine\", \"ch\\u1ed1ng ch\\u1ec9 \\u0111\\u1ecbnh\"], \"low_level_keywords\": [\"Shingrix\", \"thu\\u1ed1c kh\\u00e1ng sinh\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bệnh nhân tiểu cầu thấp, có nên tiêm Shingrix không? Nếu đang dùng thuốc kháng sinh thì sao?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354227,
+    "update_time": 1795354227,
+    "_id": "hybrid:keywords:a2eb6d9642f919c56888ac4520ad1e67"
+  },
+  "hybrid:keywords:b5a176ae8046c77f307a37059cf7a435": {
+    "return": "{\"high_level_keywords\": [\"li\\u1ec1u vaccine BCG\", \"t\\u01b0\\u01a1ng t\\u00e1c thu\\u1ed1c\", \"ho\\u00e3n ti\\u00eam vaccine\", \"vi\\u00eam ph\\u1ed5i\", \"\\u0111i\\u1ec1u ch\\u1ec9nh li\\u1ec1u vaccine\", \"th\\u1eddi gian ti\\u00eam vaccine\"], \"low_level_keywords\": [\"BCG\", \"rifampicin\", \"DTP\", \"9 th\\u00e1ng\", \"2 th\\u00e1ng\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Đối với trẻ 9 tháng, hiện đang bị viêm phổi trong 1 tháng và đang dùng rifampicin, liều vaccine BCG (tên vaccine: BCG) nên tiêm bao nhiêu ml và có nên hoãn tiêm do tương tác thuốc không? Ngoài ra, nếu trẻ này còn có tiền sử tiêm vaccine DTP ở tuổi 2 tháng, liệu có cần điều chỉnh liều hoặc thời gian tiêm BCG không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354254,
+    "update_time": 1795354254,
+    "_id": "hybrid:keywords:b5a176ae8046c77f307a37059cf7a435"
+  },
+  "hybrid:keywords:e443348aec72216332cc42c6f685412f": {
+    "return": "{\"high_level_keywords\": [\"ch\\u1ed1ng ch\\u1ec9 \\u0111\\u1ecbnh\", \"ti\\u00eam vaccine\", \"d\\u1ecb \\u1ee9ng\", \"s\\u1ed1t\", \"kho\\u1ea3ng c\\u00e1ch ti\\u00eam\"], \"low_level_keywords\": [\"Adacel\", \"DPT\", \"tr\\u1ebb 4 tu\\u1ed5i\", \"s\\u1ed1t nh\\u1eb9\", \"li\\u1ec1u \\u0111\\u1ea7u ti\\u00ean\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Trẻ 4 tuổi có dị ứng và sốt nhẹ, Adacel và DPT có chống chỉ định khác nhau không? Vậy liều đầu tiên nên tiêm cách nhau bao lâu ạ?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354263,
+    "update_time": 1795354263,
+    "_id": "hybrid:keywords:e443348aec72216332cc42c6f685412f"
+  },
+  "hybrid:keywords:4a491692d587e00e0cf51c6eb3224468": {
+    "return": "{\"high_level_keywords\": [\"ho\\u00e3n li\\u1ec1u vaccine\", \"l\\u1ecbch ti\\u00eam vaccine\", \"t\\u01b0\\u01a1ng t\\u00e1c thu\\u1ed1c\", \"HIV kh\\u00f4ng ki\\u1ec3m so\\u00e1t\"], \"low_level_keywords\": [\"vaccine Indirab\", \"vaccine Adacel\", \"vaccine BCG\", \"macrolide\", \"b\\u1ec7nh nh\\u00e2n 45 tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Đối với bệnh nhân 45 tuổi, có HIV không kiểm soát và đang dùng macrolide, liệu có nên hoãn liều thứ hai của vaccine Indirab và liều thứ hai của vaccine Adacel trong 2 tuần? Ngoài ra, liệu lịch tiêm của vaccine BCG có phù hợp với bệnh nhân này không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354277,
+    "update_time": 1795354277,
+    "_id": "hybrid:keywords:4a491692d587e00e0cf51c6eb3224468"
+  },
+  "hybrid:keywords:c239ce62d2690ffd560559f9f4462157": {
+    "return": "{\"high_level_keywords\": [\"c\\u00e1ch ti\\u00eam\", \"l\\u1ecbch ti\\u00eam\", \"ch\\u1ed1ng ch\\u1ec9 \\u0111\\u1ecbnh\", \"ti\\u00eam t\\u0129nh m\\u1ea1ch\"], \"low_level_keywords\": [\"Infanrix IPV-Hib\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Infanrix IPV‑Hib tiêm như nào, lịch tiêm và chống chỉ định gì, có cấm tiêm tĩnh mạch không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354290,
+    "update_time": 1795354290,
+    "_id": "hybrid:keywords:c239ce62d2690ffd560559f9f4462157"
+  },
+  "hybrid:keywords:ab517b557eb2249e98cd48ee056299f3": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam nh\\u1eafc l\\u1ea1i\", \"vaccine\", \"l\\u1ecbch ti\\u00eam ch\\u1ee7ng\", \"mi\\u1ec5n d\\u1ecbch\", \"c\\u00fam m\\u00f9a\"], \"low_level_keywords\": [\"Nimenrix\", \"hSBA\", \"W-135/Y\", \"2 tu\\u1ed5i\", \"12 th\\u00e1ng\", \"\\u22658\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Con tôi 2 tuổi đã tiêm Nimenrix, có cần tiêm nhắc lại 12 tháng để đạt hSBA ≥8 cho nhóm W‑135/Y không? Còn có nên tiêm vaccine cúm mùa này không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354300,
+    "update_time": 1795354300,
+    "_id": "hybrid:keywords:ab517b557eb2249e98cd48ee056299f3"
+  },
+  "hybrid:keywords:6631acbc027eba878767aa9ac772f3c6": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam BCG tr\\u1ec5 m\\u0169i\", \"d\\u1ef1 ph\\u00f2ng isoniazid\", \"tr\\u1ebb s\\u01a1 sinh\", \"khuy\\u1ebfn c\\u00e1o\", \"nh\\u00e0 m\\u00e1y s\\u1ea3n xu\\u1ea5t vaccine\", \"li\\u00ean h\\u1ec7\"], \"low_level_keywords\": [\"IVAC\", \"BCG\", \"isoniazid\", \"3 th\\u00e1ng tu\\u1ed5i\", \"2,5 kg\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Đối với trẻ sơ sinh 3 tháng tuổi, cân nặng 2,5 kg, không có tiền sử tiêm BCG và đang dùng thuốc isoniazid dự phòng, liệu có nên áp dụng phác đồ tiêm BCG (IVAC) trễ mũi theo khuyến cáo không? Ngoài ra, xin cho biết nhà máy sản xuất vaccine BCG của IVAC nằm ở đâu và số điện thoại, fax, email liên hệ của họ là gì?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354324,
+    "update_time": 1795354324,
+    "_id": "hybrid:keywords:6631acbc027eba878767aa9ac772f3c6"
+  },
+  "hybrid:keywords:4be99b29b3f7a603da7d8d218b868ad1": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam ch\\u1ee7ng\", \"tr\\u1ebb em\", \"s\\u1ed1t nh\\u1eb9\", \"chu\\u1ea9n b\\u1ecb y t\\u1ebf\"], \"low_level_keywords\": [\"Quimi-Hib\", \"6 th\\u00e1ng\", \"adrenaline\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Có nên tiêm Quimi‑Hib cho trẻ 6 tháng có sốt nhẹ, và có cần chuẩn bị adrenaline?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354363,
+    "update_time": 1795354363,
+    "_id": "hybrid:keywords:4be99b29b3f7a603da7d8d218b868ad1"
+  },
+  "hybrid:keywords:f7b8c551b0ec25e751112524e2812344": {
+    "return": "{\"high_level_keywords\": [\"th\\u1eadn tr\\u1ecdng ti\\u00eam vaccine\", \"ch\\u1ed1ng ch\\u1ec9 \\u0111\\u1ecbnh\", \"an to\\u00e0n ti\\u00eam ch\\u1ee7ng\"], \"low_level_keywords\": [\"M-M-R\\u00ae II\", \"b\\u1ec7nh gan\", \"b\\u00e0 b\\u1ea7u\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "M‑M‑R® II có thận trọng với bệnh gan, bà bầu có được tiêm không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354373,
+    "update_time": 1795354373,
+    "_id": "hybrid:keywords:f7b8c551b0ec25e751112524e2812344"
+  },
+  "hybrid:keywords:7599504d2cccfb03435906d92651d1c1": {
+    "return": "{\"high_level_keywords\": [\"hi\\u1ec7u qu\\u1ea3 vaccine\", \"OM\", \"ti\\u00eam \\u0111\\u1ed3ng th\\u1eddi\", \"serotype\"], \"low_level_keywords\": [\"Prevenar 13\", \"serotype 6A\", \"serotype 1,3,5,7F,19A\", \"vaccine rotavirus\", \"96%\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Em vừa nghe Prevenar 13 giảm 96% OM, còn giảm bao nhiêu % serotype 6A và các serotype 1,3,5,7F,19A? Ngoài ra, có nên tiêm đồng thời vaccine rotavirus không ạ?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354386,
+    "update_time": 1795354386,
+    "_id": "hybrid:keywords:7599504d2cccfb03435906d92651d1c1"
+  },
+  "hybrid:keywords:328a1a3eec657b089ad204579cd32f37": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam ch\\u1ee7ng\", \"thai k\\u1ef3\"], \"low_level_keywords\": [\"Prevenar 13\", \"6 tu\\u1ea7n\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Con tôi 6 tuần được tiêm Prevenar 13, mình có thể tiêm trong thai kỳ được không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354396,
+    "update_time": 1795354396,
+    "_id": "hybrid:keywords:328a1a3eec657b089ad204579cd32f37"
+  },
+  "hybrid:keywords:96e92540d6202277b9ac30df62968bc0": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam vaccine\", \"vaccine s\\u1edfi\", \"l\\u1ecbch ti\\u00eam ch\\u1ee7ng tr\\u1ebb em\"], \"low_level_keywords\": [\"ProQuad\", \"li\\u1ec1u 2\", \"10 th\\u00e1ng\", \"2 tu\\u1ed5i\", \"3 th\\u00e1ng\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Con 10 tháng đã tiêm ProQuad, liều 2 cách ít nhất 3 tháng, có nên tiêm vaccine sởi cho bé 2 tuổi không ạ?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354411,
+    "update_time": 1795354411,
+    "_id": "hybrid:keywords:96e92540d6202277b9ac30df62968bc0"
+  },
+  "hybrid:keywords:48d01274e6f6defc35484f46c65a50fb": {
+    "return": "{\"high_level_keywords\": [\"t\\u01b0\\u01a1ng t\\u00e1c thu\\u1ed1c\", \"an to\\u00e0n ti\\u00eam vaccine\", \"\\u0111i\\u1ec1u ch\\u1ec9nh li\\u1ec1u\", \"ch\\u1ed1ng \\u0111\\u00f4ng\", \"ph\\u1ed1i h\\u1ee3p thu\\u1ed1c\"], \"low_level_keywords\": [\"warfarin\", \"Qdenga\", \"ti\\u00eam d\\u01b0\\u1edbi da\", \"0.5 ml\", \"l\\u1ecbch 0/3 th\\u00e1ng\", \"2 gi\\u1edd\", \"62 tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bệnh nhân 62 tuổi đang dùng warfarin, có thể tiêm 0.5 ml Qdenga (tiêm dưới da) theo lịch 0/3 tháng có an toàn không? Cần dùng trong vòng 2 giờ, có cần điều chỉnh liều warfarin hoặc tránh phối hợp với thuốc khác không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354421,
+    "update_time": 1795354421,
+    "_id": "hybrid:keywords:48d01274e6f6defc35484f46c65a50fb"
+  },
+  "hybrid:keywords:f4395b40acf5200444c23788c705b87f": {
+    "return": "{\"high_level_keywords\": [\"ph\\u1ea3n \\u1ee9ng ph\\u1ee5\", \"ti\\u00eam\"], \"low_level_keywords\": [\"Vaxneuvance\", \"Peg-Grafeel\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bé mình tiêm Vaxneuvance hay Peg‑Grafeel, phản ứng phụ có khác không ạ?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354432,
+    "update_time": 1795354432,
+    "_id": "hybrid:keywords:f4395b40acf5200444c23788c705b87f"
+  },
+  "hybrid:keywords:704184408901b8974286dd3feddc0356": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam vaccine\", \"d\\u1ecb \\u1ee9ng gelatin\", \"ho\\u00e3n l\\u1ecbch ti\\u00eam\", \"ph\\u1ea3n \\u1ee9ng d\\u1ecb \\u1ee9ng\", \"ti\\u00eam \\u0111\\u1ed3ng th\\u1eddi vaccine\", \"vaccine tr\\u1ebb em\"], \"low_level_keywords\": [\"Pentaxim\", \"Haemophilus influenzae type B\", \"vaccine COVID-19\", \"gelatin\", \"ampoule Pentaxim\", \"tr\\u1ebb 3 th\\u00e1ng tu\\u1ed5i\", \"li\\u1ec1u th\\u1ee9 hai\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Đối với trẻ 3 tháng tuổi, đã tiêm liều đầu của vaccine Pentaxim ở tháng 2 và do dị ứng gelatin nên muốn hoãn liều thứ hai đến tháng 6; có nên dùng ampoule Pentaxim và có lo ngại về phản ứng với thành phần Haemophilus influenzae type B không? Ngoài ra, liệu có thể đồng thời tiêm vaccine Pentaxim cùng với vaccine COVID‑19 cho trẻ trên 6 tháng tuổi không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354454,
+    "update_time": 1795354454,
+    "_id": "hybrid:keywords:704184408901b8974286dd3feddc0356"
+  },
+  "hybrid:keywords:e107a31fcf91f699111087e0db22a688": {
+    "return": "{\"high_level_keywords\": [\"t\\u00e1c d\\u1ee5ng ph\\u1ee5\", \"ti\\u00eam ch\\u1ee7ng\", \"bu\\u1ed3n n\\u00f4n\"], \"low_level_keywords\": [\"Vaxneuvance\", \"6 tu\\u1ed5i\", \"ng\\u01b0\\u1eddi l\\u1edbn\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Con 6 tuổi mình tiêm Vaxneuvance, có buồn nôn không? Còn người lớn thì sao?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354466,
+    "update_time": 1795354466,
+    "_id": "hybrid:keywords:e107a31fcf91f699111087e0db22a688"
+  },
+  "hybrid:keywords:839f5499fd1eb2aa4b3a0a58d708f73a": {
+    "return": "{\"high_level_keywords\": [\"t\\u1ef7 l\\u1ec7 kh\\u00e1ng th\\u1ec3\", \"l\\u1ecbch ti\\u00eam ch\\u1ee7ng\", \"hi\\u1ec7u qu\\u1ea3 vaccine\"], \"low_level_keywords\": [\"Hexaxim\", \"ho g\\u00e0\", \"li\\u1ec1u th\\u1ee9 ba\", \"6 th\\u00e1ng\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Em 6 tháng đã tiêm 2 liều Hexaxim, tỷ lệ kháng thể ho gà là bao nhiêu, còn liều thứ ba có cần thiết không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354476,
+    "update_time": 1795354476,
+    "_id": "hybrid:keywords:839f5499fd1eb2aa4b3a0a58d708f73a"
+  },
+  "hybrid:keywords:accf56b11dcd2cc759e21a0bbc6f2896": {
+    "return": "{\"high_level_keywords\": [\"ph\\u1ee5 n\\u1eef mang thai\", \"vaccine COVID-19\", \"ho\\u00e3n li\\u1ec1u vaccine\", \"theo d\\u00f5i b\\u1ea1ch c\\u1ea7u\", \"nguy c\\u01a1 kh\\u1ed1i u\"], \"low_level_keywords\": [\"methotrexate\", \"Pfizer-BioNTech\", \"mRNA\", \"20 tu\\u1ea7n\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bệnh nhân phụ nữ mang thai 20 tuần đang dùng methotrexate, có nên hoãn liều vaccine COVID‑19 mRNA (Pfizer‑BioNTech) không, đồng thời cần theo dõi chỉ số bạch cầu và nguy cơ khối u như thế nào?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354484,
+    "update_time": 1795354484,
+    "_id": "hybrid:keywords:accf56b11dcd2cc759e21a0bbc6f2896"
+  },
+  "hybrid:keywords:587412e2a56649fb4360744be2edf526": {
+    "return": "{\"high_level_keywords\": [\"so s\\u00e1nh\", \"ch\\u1ec9 \\u0111\\u1ecbnh\", \"\\u0111\\u1ed9 tu\\u1ed5i d\\u00f9ng\"], \"low_level_keywords\": [\"Hepavax-Gene TF inj.\", \"Menactra\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "So sánh chỉ định và độ tuổi dùng Hepavax‑Gene TF inj. vs Menactra ạ?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354491,
+    "update_time": 1795354491,
+    "_id": "hybrid:keywords:587412e2a56649fb4360744be2edf526"
+  },
+  "hybrid:keywords:27c1ca01c213d5771de2fa42e64ed6a1": {
+    "return": "{\"high_level_keywords\": [\"t\\u01b0\\u01a1ng t\\u00e1c thu\\u1ed1c\", \"ho\\u00e3n li\\u1ec1u vaccine\", \"ti\\u00eam ch\\u1ee7ng \\u0111\\u1ed3ng th\\u1eddi\", \"vaccine tr\\u1ebb em\"], \"low_level_keywords\": [\"amoxicillin 500 mg\", \"BCG 0.1 ml\", \"vaccine ph\\u00f2ng c\\u00fam m\\u00f9a \\u0111\\u00f4ng\", \"6 th\\u00e1ng tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Đối với trẻ 6 tháng tuổi đang dùng amoxicillin 500 mg mỗi ngày, có nên hoãn liều BCG 0.1 ml do lo ngại tương tác thuốc? Ngoài ra, liệu trẻ có thể đồng thời nhận vaccine phòng cúm mùa đông trong cùng buổi tiêm không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354500,
+    "update_time": 1795354500,
+    "_id": "hybrid:keywords:27c1ca01c213d5771de2fa42e64ed6a1"
+  },
+  "hybrid:keywords:6014e09c2908aebfa58fa8cf85de0572": {
+    "return": "{\"high_level_keywords\": [\"l\\u1ecbch ti\\u00eam vaccine\", \"d\\u1ecb \\u1ee9ng kh\\u00e1ng sinh\", \"b\\u1ea3o qu\\u1ea3n vaccine\", \"ho\\u00e3n li\\u1ec1u vaccine\"], \"low_level_keywords\": [\"Euvax B 10\\u00b5g/0.5ml\", \"JEEV 0.5ml\", \"2-8\\u00b0C\", \"tr\\u1ebb 6 th\\u00e1ng\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Đối với trẻ 6 tháng có tiền sử dị ứng kháng sinh, liều vaccine Euvax B 10µg/0.5ml và JEEV 0.5ml nên được tiêm theo lịch nào, và trong trường hợp cần hoãn liều, liều có thể bảo quản ở nhiệt độ 2‑8°C trong bao lâu?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354509,
+    "update_time": 1795354509,
+    "_id": "hybrid:keywords:6014e09c2908aebfa58fa8cf85de0572"
+  },
+  "hybrid:keywords:8ad7948b367d59d00d683a63f10957ef": {
+    "return": "{\"high_level_keywords\": [\"l\\u1ecbch ti\\u00eam vaccine\", \"kho\\u1ea3ng c\\u00e1ch gi\\u1eefa c\\u00e1c li\\u1ec1u\", \"b\\u1ea3o qu\\u1ea3n vaccine\", \"b\\u1ec7nh ti\\u1ec3u \\u0111\\u01b0\\u1eddng\", \"\\u0111i\\u1ec1u ch\\u1ec9nh l\\u1ecbch ti\\u00eam\"], \"low_level_keywords\": [\"HAVAX\", \"M-M-R II\", \"metformin\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Đối với bệnh nhân người lớn (tuổi từ 18‑65) mắc tiểu đường và chưa tiêm bất kỳ vaccine nào trước đó, liều đầu tiên của vaccine HAVAX và liều đầu tiên của vaccine M‑M‑R II nên được tiêm cách nhau tối thiểu bao nhiêu ngày, và nếu bệnh nhân đang dùng metformin có cần điều chỉnh lịch tiêm không? Ngoài ra, vaccine HAVAX cần bảo quản ở nhiệt độ nào?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354523,
+    "update_time": 1795354523,
+    "_id": "hybrid:keywords:8ad7948b367d59d00d683a63f10957ef"
+  },
+  "hybrid:keywords:71486641349a86f60f2860bd304e395d": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam ph\\u00f2ng\", \"ti\\u1ebfp x\\u00fac m\\u00e1u\"], \"low_level_keywords\": [\"Hepavax-Gene TF\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Người làm việc tiếp xúc máu, có nên tiêm Hepavax‑Gene TF không ạ?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354534,
+    "update_time": 1795354534,
+    "_id": "hybrid:keywords:71486641349a86f60f2860bd304e395d"
+  },
+  "hybrid:keywords:e7abd6ec5422a20e4945324bd650eea3": {
+    "return": "{\"high_level_keywords\": [\"li\\u1ec1u l\\u01b0\\u1ee3ng vaccine\", \"quy tr\\u00ecnh chu\\u1ea9n b\\u1ecb\", \"kho\\u1ea3ng c\\u00e1ch t\\u1ed1i thi\\u1ec3u gi\\u1eefa c\\u00e1c li\\u1ec1u\", \"vaccine COVID-19\"], \"low_level_keywords\": [\"tr\\u1ebb 4 tu\\u1ed5i\", \"\\u226536 th\\u00e1ng\", \"hen suy\\u1ec5n\", \"steroid h\\u00edt\", \"Pfizer-BioNTech\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Đối với trẻ 4 tuổi (≥36 tháng) có bệnh hen suyễn đang dùng steroid hít, liều lượng, quy trình chuẩn bị và khoảng cách tối thiểu giữa các liều của vaccine COVID‑19 Pfizer‑BioNTech là bao nhiêu?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354548,
+    "update_time": 1795354548,
+    "_id": "hybrid:keywords:e7abd6ec5422a20e4945324bd650eea3"
+  },
+  "hybrid:keywords:c1e4585cc4f30de1efa6e5bc4ce8832f": {
+    "return": "{\"high_level_keywords\": [\"GMT\", \"ph\\u00e1c \\u0111\\u1ed3 ti\\u00eam vaccine\", \"li\\u1ec1u \\u0111\\u1ea7u\", \"li\\u1ec1u b\\u00f9\", \"tr\\u1ebb em\"], \"low_level_keywords\": [\"Vaxigrip\", \"B Victoria\", \"6-35 th\\u00e1ng tu\\u1ed5i\", \"kh\\u00e1ng histamine\", \"d\\u1ecb \\u1ee9ng\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Trong trẻ từ 6‑35 tháng tuổi, không có bệnh nền, chưa từng tiêm bất kỳ vaccine nào trước đó và được tiêm liều đầu của vaccine Vaxigrip (B Victoria) theo phác đồ 2 liều cách nhau 4 tuần, GMT đạt bao nhiêu? Ngoài ra, đối với trẻ 5 tuổi có tiền sử dị ứng thuốc kháng histamine và được tiêm liều bù của vaccine Vaxigrip (B Victoria) sau 6 tháng so với liều đầu, GMT có thay đổi như thế nào?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354560,
+    "update_time": 1795354560,
+    "_id": "hybrid:keywords:c1e4585cc4f30de1efa6e5bc4ce8832f"
+  },
+  "hybrid:keywords:9be5f7d235d09e15809c9072738b9808": {
+    "return": "{\"high_level_keywords\": [\"vaccine BCG\", \"ti\\u00eam ch\\u1ee7ng\", \"kho\\u1ea3ng c\\u00e1ch th\\u1eddi gian ti\\u00eam vaccine\", \"khuy\\u1ebfn c\\u00e1o ti\\u00eam ch\\u1ee7ng\", \"tr\\u1ebb em\"], \"low_level_keywords\": [\"isoniazid\", \"COVID-19\", \"tr\\u1ebb 9 th\\u00e1ng\", \"tr\\u1ebb sinh non\", \"d\\u01b0\\u1edbi 2 kg\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "1) Trong trường hợp trẻ 9 tháng, không có sẹo, đã tiêm mũi COVID‑19 và đang dùng isoniazid, có nên tiêm vaccine BCG không, và nếu có, khoảng thời gian tối thiểu giữa mũi COVID‑19 và mũi BCG nên là bao nhiêu? 2) Ngoài ra, liệu có khuyến cáo nào về việc tiêm vaccine BCG cho trẻ sinh non dưới 2 kg mà không có tiền sử tiêm phòng trước không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354571,
+    "update_time": 1795354571,
+    "_id": "hybrid:keywords:9be5f7d235d09e15809c9072738b9808"
+  },
+  "hybrid:keywords:613cf1a8d0025c7b9e36026cee6ae642": {
+    "return": "{\"high_level_keywords\": [\"li\\u1ec1u t\\u0103ng c\\u01b0\\u1eddng vaccine\", \"ho\\u00e3n ti\\u00eam vaccine\", \"t\\u01b0\\u01a1ng t\\u00e1c vaccine\", \"hi\\u1ec7u qu\\u1ea3 vaccine\", \"ch\\u1ed1ng ch\\u1ec9 \\u0111\\u1ecbnh ti\\u00eam vaccine\"], \"low_level_keywords\": [\"Gardasil\", \"corticosteroid\", \"macrolide\", \"vaccine COVID-19 mRNA\", \"li\\u1ec1u t\\u0103ng c\\u01b0\\u1eddng Gardasil\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bệnh nhân 28 tuổi, không có bệnh nền nghiêm trọng, đã tiêm Gardasil 2 liều (liều đầu ở 12 tuổi, liều thứ hai ở 14 tuổi) và hiện đang dùng corticosteroid tiêm cùng với macrolide; trong trường hợp này, liệu có nên hoãn liều tăng cường Gardasil dự kiến sau 6 tuần không? Ngoài ra, liệu việc tiêm vaccine COVID‑19 mRNA trong cùng thời gian có ảnh hưởng đến hiệu quả của liều tăng cường Gardasil này không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354580,
+    "update_time": 1795354580,
+    "_id": "hybrid:keywords:613cf1a8d0025c7b9e36026cee6ae642"
+  },
+  "hybrid:keywords:bca2936c811c0d22dc031fbd46adc3a5": {
+    "return": "{\"high_level_keywords\": [\"t\\u1ea7n su\\u1ea5t\", \"s\\u01b0ng tay ch\\u00e2n\", \"ph\\u1ea3n \\u1ee9ng ph\\u1ee5 sau ti\\u00eam\"], \"low_level_keywords\": [\"Twinrix\", \"Hexaxim\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Tần suất sưng tay chân sau tiêm Twinrix và Hexaxim có khác không ạ?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354588,
+    "update_time": 1795354588,
+    "_id": "hybrid:keywords:bca2936c811c0d22dc031fbd46adc3a5"
+  },
+  "hybrid:keywords:b97bd09be99d7a76877fda7e341f467c": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam ch\\u1ee7ng \\u0111\\u1ed3ng th\\u1eddi\", \"kho\\u1ea3ng c\\u00e1ch ti\\u00eam vaccine\", \"nguy c\\u01a1 ph\\u1ea3n \\u1ee9ng\", \"ti\\u00eam vaccine cho tr\\u1ebb em\"], \"low_level_keywords\": [\"DAPTACEL\", \"Menactra\", \"Td\", \"amoxicillin\", \"vaccine HPV\", \"tr\\u1ebb 5 tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Đối với trẻ 5 tuổi, đã tiêm DAPTACEL® cách đây 30 ngày và hiện đang dùng amoxicillin, liệu có nên tiêm đồng thời Menactra+Td ngay bây giờ hay hoãn 14 ngày để giảm nguy cơ phản ứng? Ngoài ra, trong trường hợp này, có nên tiêm vaccine HPV cho trẻ này không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354595,
+    "update_time": 1795354595,
+    "_id": "hybrid:keywords:b97bd09be99d7a76877fda7e341f467c"
+  },
+  "hybrid:keywords:0521afc8f05ab8d43e851a26dc1168c2": {
+    "return": "{\"high_level_keywords\": [\"t\\u1ef7 l\\u1ec7\", \"t\\u00e1c d\\u1ee5ng ph\\u1ee5\"], \"low_level_keywords\": [\"Envacgen\", \"placebo\", \"tr\\u1ebb 2-6 th\\u00e1ng\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bảng cho thấy trẻ 2‑6 tháng nhận Envacgen 45%, placebo 30%, tỷ lệ nào cao hơn? Còn tác dụng phụ của Envacgen ra sao?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354608,
+    "update_time": 1795354608,
+    "_id": "hybrid:keywords:0521afc8f05ab8d43e851a26dc1168c2"
+  },
+  "hybrid:keywords:72e900e14e52ce1b18caccbcff3b4292": {
+    "return": "{\"high_level_keywords\": [\"li\\u1ec1u d\\u00f9ng\", \"ph\\u1ea3n \\u1ee9ng ph\\u1ee5\", \"an to\\u00e0n\", \"ph\\u1ee5 n\\u1eef mang thai\"], \"low_level_keywords\": [\"Pentavac\", \"IM\", \"b\\u1ea3o qu\\u1ea3n l\\u1ea1nh\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Pentavac liều IM, bảo quản lạnh, phản ứng thường gặp là gì; có an toàn cho phụ nữ mang thai không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354618,
+    "update_time": 1795354618,
+    "_id": "hybrid:keywords:72e900e14e52ce1b18caccbcff3b4292"
+  },
+  "hybrid:keywords:b4fb4e12ed7dd0d2dd34866cd948c090": {
+    "return": "{\"high_level_keywords\": [\"ph\\u1ea3n \\u1ee9ng ph\\u1ee5 vaccine\", \"an to\\u00e0n khi l\\u00e1i xe\", \"ph\\u00e1c \\u0111\\u1ed3 ti\\u00eam vaccine\", \"b\\u1ec7nh tim m\\u1ea1ch\"], \"low_level_keywords\": [\"Shanvac-B\", \"antihypertensive\", \"8 tu\\u1ea7n\", \"\\u0111\\u1ee3t th\\u1ee9 hai\", \"ph\\u00e1c \\u0111\\u1ed3 tr\\u1ec5 m\\u0169i\", \"45 tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bệnh nhân 45 tuổi, có tiền sử bệnh tim mạch, đang dùng thuốc antihypertensive, chưa tiêm bất kỳ vaccine nào trước đây và sẽ tiêm vaccine Shanvac‑B theo phác đồ trễ mũi (đợt thứ hai sau 8 tuần). Các phản ứng phụ thường gặp của vaccine Shanvac‑B là gì và chúng có ảnh hưởng đến khả năng lái xe không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354634,
+    "update_time": 1795354634,
+    "_id": "hybrid:keywords:b4fb4e12ed7dd0d2dd34866cd948c090"
+  },
+  "hybrid:keywords:94accc4847105d0b87f2e1e529eaa9ef": {
+    "return": "{\"high_level_keywords\": [\"vaccine\", \"t\\u1ef7 l\\u1ec7 ph\\u1ea7n tr\\u0103m\"], \"low_level_keywords\": [\"Menactra\", \"kh\\u00e1ng histamin\", \"n\\u1ed1t c\\u1ea5p \\u0111\\u1ed9 2\", \"17 tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Đối với bệnh nhân 17 tuổi, khỏe mạnh, đang dùng thuốc kháng histamin, sau một liều vaccine Menactra, tỷ lệ phần trăm xuất hiện nốt cấp độ 2 là bao nhiêu?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354643,
+    "update_time": 1795354643,
+    "_id": "hybrid:keywords:94accc4847105d0b87f2e1e529eaa9ef"
+  },
+  "hybrid:keywords:7820da9320d78072aae73dd48b88c087": {
+    "return": "{\"high_level_keywords\": [\"Ti\\u00eam vaccine\", \"T\\u01b0\\u01a1ng t\\u00e1c thu\\u1ed1c\", \"Ti\\u00eam vaccine \\u0111\\u1ed3ng th\\u1eddi\", \"Ch\\u1ec9 \\u0111\\u1ecbnh vaccine cho b\\u1ec7nh nh\\u00e2n d\\u00f9ng thu\\u1ed1c\"], \"low_level_keywords\": [\"Calcineurin inhibitor\", \"Warfarin\", \"Shingrix\", \"Vaccine c\\u00fam m\\u00f9a\", \"Li\\u1ec1u th\\u1ee9 hai\", \"68 tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bệnh nhân 68 tuổi, đang dùng calcineurin inhibitor và warfarin, có thể tiêm liều thứ hai của vaccine Shingrix sau 1 tháng không? Ngoài ra, bệnh nhân này có nên tiêm vaccine phòng cúm mùa cùng lúc không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354662,
+    "update_time": 1795354662,
+    "_id": "hybrid:keywords:7820da9320d78072aae73dd48b88c087"
+  },
+  "hybrid:keywords:823939d62564d4b4b162ff5b73fead99": {
+    "return": "{\"high_level_keywords\": [\"t\\u1ef7 l\\u1ec7 IgG\", \"an to\\u00e0n\", \"v\\u1eafc-xin\"], \"low_level_keywords\": [\"VAXNEUVANCE\", \"PCV13\", \"IgG serotype 19A\", \"tr\\u1ebb 2 tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "VAXNEUVANCE và PCV13, tỷ lệ IgG serotype 19A như nào? Có an toàn cho trẻ 2 tuổi không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354673,
+    "update_time": 1795354673,
+    "_id": "hybrid:keywords:823939d62564d4b4b162ff5b73fead99"
+  },
+  "hybrid:keywords:63cf52ffd41c950c221f3bae492db3dd": {
+    "return": "{\"high_level_keywords\": [\"tr\\u1ebb sinh non\", \"ti\\u00eam vaccine\", \"t\\u01b0\\u01a1ng t\\u00e1c thu\\u1ed1c\", \"l\\u1ecbch ti\\u00eam vaccine\", \"b\\u1ea3o v\\u1ec7 vaccine\"], \"low_level_keywords\": [\"Hexaxim\", \"aspirin\", \"co gi\\u1eadt\", \"apnea\", \"27 tu\\u1ea7n\", \"4 tu\\u1ea7n\", \"2 tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Trong trường hợp trẻ sinh non 27 tuần, có tiền sử co giật và hiện đang có apnea, nếu đã tiêm liều đầu tiên của vaccine Hexaxim và muốn tiêm liều thứ hai sau 4 tuần, liệu có cần lo ngại về tương tác với aspirin đang dùng không? Ngoài ra, liệu một liều duy nhất của vaccine Hexaxim có đủ bảo vệ cho trẻ 2 tuổi chưa tiêm bất kỳ loại vaccine nào khác không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354689,
+    "update_time": 1795354689,
+    "_id": "hybrid:keywords:63cf52ffd41c950c221f3bae492db3dd"
+  },
+  "hybrid:keywords:b0c9cdee845c6fc30561bfa9c5465caa": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam ch\\u1ee7ng\", \"li\\u1ec1u th\\u1ee9 hai\", \"ph\\u1ea3n \\u1ee9ng ph\\u1ee5\", \"nguy c\\u01a1\"], \"low_level_keywords\": [\"Influvac Tetra\", \"INFQ3002\", \"5 tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bé 5 tuổi đã tiêm 1 liều Influvac Tetra theo INFQ3002, có cần tiêm liều thứ hai không, và nếu có thì có nguy cơ phản ứng phụ nghiêm trọng không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354698,
+    "update_time": 1795354698,
+    "_id": "hybrid:keywords:b0c9cdee845c6fc30561bfa9c5465caa"
+  },
+  "hybrid:keywords:e6f795701c936993a5632cbc9a4bc0ac": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam v\\u1eafc-xin\", \"d\\u1ecb \\u1ee9ng\", \"x\\u00e1c nh\\u1eadn m\\u1ee9c \\u0111\\u1ed9\", \"ch\\u1ec9 \\u0111\\u1ecbnh ti\\u00eam\"], \"low_level_keywords\": [\"Gardasil\", \"HPV\", \"COVID-19\", \"FIGO-0\", \"gelatin\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bệnh nhân nữ 22 tuổi, tiền sử tiêm vắc-xin COVID‑19, dị ứng gelatin, có chỉ định tiêm vắc-xin HPV Gardasil. Liệu có nên bắt đầu tiêm Gardasil ngay hay hoãn, và cần xác nhận mức độ FIGO‑0 như thế nào?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354710,
+    "update_time": 1795354710,
+    "_id": "hybrid:keywords:e6f795701c936993a5632cbc9a4bc0ac"
+  },
+  "hybrid:keywords:b00d68e305058b7c8d42549e9169c3a8": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam ch\\u1ee7ng\", \"th\\u1eddi gian c\\u00e1ch ly vaccine\", \"t\\u01b0\\u01a1ng t\\u00e1c vaccine\", \"an to\\u00e0n d\\u00f9ng thu\\u1ed1c\", \"kh\\u1ea3 n\\u0103ng l\\u00e1i xe\"], \"low_level_keywords\": [\"MMR\", \"SKYVaricella\", \"v\\u1eafc-xin s\\u1edfi\", \"v\\u1eafc-xin varicella\", \"aspirin\", \"81 mg/ng\\u00e0y\", \"hen suy\\u1ec5n nh\\u1eb9\", \"6 tu\\u1ed5i\", \"28 ng\\u00e0y\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Đối với bệnh nhân 6 tuổi, không có tiền sử dị ứng thuốc, đã tiêm vắc‑xin sởi (MMR) cách đây 30 ngày và có tiền sử hen suyễn nhẹ, liệu có nên chờ ít nhất 28 ngày trước khi đồng thời tiêm vắc‑xin varicella SKYVaricella không? Ngoài ra, nếu bệnh nhân đang dùng aspirin 81 mg/ngày, liều này có ảnh hưởng đến khả năng lái xe không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354722,
+    "update_time": 1795354722,
+    "_id": "hybrid:keywords:b00d68e305058b7c8d42549e9169c3a8"
+  },
+  "hybrid:keywords:22b85eb5dd5ca2d57589bd73a05ad8fe": {
+    "return": "{\"high_level_keywords\": [\"chu\\u1ea9n b\\u1ecb vaccine\", \"ti\\u00eam vaccine\", \"an to\\u00e0n ti\\u00eam ch\\u1ee7ng\", \"ki\\u1ec3m tra t\\u1ea1p ch\\u1ea5t\"], \"low_level_keywords\": [\"VAXIGRIP\", \"oseltamivir\", \"hen suy\\u1ec5n\", \"24 th\\u00e1ng tu\\u1ed5i\", \"0,5 ml\", \"t\\u1ea1p ch\\u1ea5t ngo\\u1ea1i lai\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Trong trường hợp trẻ 24‑tháng tuổi mắc bệnh hen suyễn đang dùng oseltamivir, tôi cần chuẩn bị và tiêm VAXIGRIP (0,5 ml) như thế nào để đảm bảo không có tạp chất ngoại lai?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354731,
+    "update_time": 1795354731,
+    "_id": "hybrid:keywords:22b85eb5dd5ca2d57589bd73a05ad8fe"
+  },
+  "hybrid:keywords:668983d411ef6a4b4ceaef40c0d0dd53": {
+    "return": "{\"high_level_keywords\": [\"d\\u1ecb \\u1ee9ng\", \"vaccine\", \"l\\u1ecbch ti\\u00eam ch\\u1ee7ng\", \"bi\\u1ec7n ph\\u00e1p tr\\u00e1nh thai\"], \"low_level_keywords\": [\"Envacgen\", \"M-MR II\", \"gelatin\", \"6 th\\u00e1ng tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Đối với trẻ 6 tháng tuổi có tiền sử dị ứng gelatin, nên lựa chọn tiêm vaccine Envacgen hay M‑M‑R II cho lịch tiêm chủng ban đầu, và liệu sau khi tiêm cần thực hiện biện pháp tránh thai trong 3 tháng không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354745,
+    "update_time": 1795354745,
+    "_id": "hybrid:keywords:668983d411ef6a4b4ceaef40c0d0dd53"
+  },
+  "hybrid:keywords:b1d43b64a6c529a4b3141f3dc47c791b": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam ch\\u1ee7ng\", \"l\\u1ecbch ti\\u00eam\"], \"low_level_keywords\": [\"v\\u1eafc xin ho g\\u00e0\", \"li\\u1ec1u t\\u0103ng c\\u01b0\\u1eddng\", \"li\\u1ec1u b\\u00f9\", \"ng\\u01b0\\u1eddi l\\u1edbn\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Sau 2 liều vắc‑xin ho gà, mũi tăng cường thứ 3 nên tiêm khi nào? Còn liều bù cho người lớn thì sao?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354752,
+    "update_time": 1795354752,
+    "_id": "hybrid:keywords:b1d43b64a6c529a4b3141f3dc47c791b"
+  },
+  "hybrid:keywords:b230cc162e8172cb92fa342b44204fea": {
+    "return": "{\"high_level_keywords\": [\"seropositivity\", \"vaccine mRNA COVID-19\", \"vaccine inactivated vi\\u00eam gan B\", \"li\\u1ec1u t\\u0103ng c\\u01b0\\u1eddng\", \"pre-titer\"], \"low_level_keywords\": [\"BNT162b2\", \"15 tu\\u1ed5i\", \"30 tu\\u1ed5i\", \"1:4\", \"1 th\\u00e1ng\", \"2 th\\u00e1ng\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Đối với bệnh nhân 15 tuổi, pre‑titer <1:4, so sánh tỷ lệ seropositivity tại 1 tháng và 2 tháng sau liều đầu của vaccine mRNA COVID‑19 BNT162b2; ngoài ra, liệu có nên tiêm liều tăng cường của vaccine inactivated viêm gan B cho bệnh nhân 30 tuổi không có tiền sử tiêm trước và không có bệnh nền?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354763,
+    "update_time": 1795354763,
+    "_id": "hybrid:keywords:b230cc162e8172cb92fa342b44204fea"
+  },
+  "hybrid:keywords:a9cc7ac85bbf3351228dab033d295c6a": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam ch\\u1ee7ng\", \"x\\u00e9t nghi\\u1ec7m m\\u00e1u\", \"l\\u1ecbch ti\\u00eam\"], \"low_level_keywords\": [\"Menactra\", \"Prevenar 20\", \"2 tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Con 2 tuổi, tiêm Menactra rồi Prevenar 20 được không, có cần xét nghiệm máu?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354772,
+    "update_time": 1795354772,
+    "_id": "hybrid:keywords:a9cc7ac85bbf3351228dab033d295c6a"
+  },
+  "hybrid:keywords:09921575e17b41f94fa5f05ef4c5f03f": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam vaccine sau ph\\u01a1i nhi\\u1ec5m\", \"\\u0111i\\u1ec1u ch\\u1ec9nh li\\u1ec1u\", \"b\\u1ec7nh tim m\\u1ea1ch m\\u1ea1n\"], \"low_level_keywords\": [\"Moderna\", \"mRNA-1273\", \"corticosteroid\", \"COVID-19\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Sau phơi nhiễm, bệnh nhân đang dùng corticosteroid và có bệnh tim mạch mạn, có thể tiêm vaccine COVID‑19 Moderna (mRNA‑1273) ngay mà không cần điều chỉnh liều không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354788,
+    "update_time": 1795354788,
+    "_id": "hybrid:keywords:09921575e17b41f94fa5f05ef4c5f03f"
+  },
+  "hybrid:keywords:019f84e2b8cb6fa5d07cfed631ee3fd3": {
+    "return": "{\"high_level_keywords\": [\"GMT\", \"ti\\u00eam vaccine\"], \"low_level_keywords\": [\"Prevenar 13\", \"PPSV23\", \"serotype 6A\", \"57 tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Người 57 tuổi, sau tiêm Prevenar 13 và PPSV23, GMT serotype 6A là bao nhiêu?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354797,
+    "update_time": 1795354797,
+    "_id": "hybrid:keywords:019f84e2b8cb6fa5d07cfed631ee3fd3"
+  },
+  "hybrid:keywords:d05cb51a8480160945b1aabecc0407d7": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eau \\u0111\\u1ec1 kh\\u00e1ng th\\u1ec3\", \"so s\\u00e1nh vaccine\", \"nh\\u00f3m tu\\u1ed5i\"], \"low_level_keywords\": [\"Influvac Tetra\", \"Influvac 1/2\", \"A/H1N1\", \"B(Yam)\", \"B(Vic)\", \"3-17 n\\u0103m\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Trong nhóm tuổi 3‑17 năm, so sánh mức trung bình của tiêu đề kháng thể (average titers) giữa vaccine Influvac Tetra và vaccine Influvac 1/2 đối với các chủng virus A/H1N1, B(Yam) và B(Vic) là như thế nào?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795354807,
+    "update_time": 1795354807,
+    "_id": "hybrid:keywords:d05cb51a8480160945b1aabecc0407d7"
   }
 }

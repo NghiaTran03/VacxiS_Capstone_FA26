@@ -163,6 +163,9 @@ def prepare(args: argparse.Namespace) -> None:
     print("Changed fields exclude reviewer status, names, notes, and adjudication bookkeeping.")
 
     for name, path in args.pipeline:
+        if not path.is_file():
+            print(f"{name}: skipped; results file not found: {path}")
+            continue
         payload = read_json(path)
         if not isinstance(payload, list):
             raise ValueError(f"Pipeline output must be a JSON list: {path}")
@@ -202,6 +205,47 @@ def prepare(args: argparse.Namespace) -> None:
         )
         if missing:
             print(f"  Missing changed IDs: {', '.join(sorted(missing))}")
+
+
+def merge_results(args: argparse.Namespace) -> None:
+    """Replace only regenerated answers while preserving full reviewed rows."""
+    base_rows = read_json(args.base_results)
+    delta_rows = read_json(args.delta_results)
+    if not isinstance(base_rows, list) or not isinstance(delta_rows, list):
+        raise ValueError("Base and delta generation results must be JSON lists.")
+
+    base_by_id = index_rows(base_rows, str(args.base_results))
+    delta_by_id = index_rows(delta_rows, str(args.delta_results))
+    unknown = delta_by_id.keys() - base_by_id.keys()
+    if unknown:
+        raise ValueError(f"Delta results contain IDs absent from base: {sorted(unknown)[:10]}.")
+
+    dataset_payload = read_json(args.delta_dataset)
+    dataset_rows = dataset_payload.get("goldens") if isinstance(dataset_payload, dict) else None
+    if not isinstance(dataset_rows, list):
+        raise ValueError("--delta-dataset must contain a 'goldens' list.")
+    expected_ids = set(index_rows(dataset_rows, str(args.delta_dataset)))
+    if delta_by_id.keys() != expected_ids:
+        raise ValueError(
+            "Delta result IDs differ from regenerated delta dataset: "
+            f"missing={sorted(expected_ids - delta_by_id.keys())[:10]}, "
+            f"extra={sorted(delta_by_id.keys() - expected_ids)[:10]}."
+        )
+
+    merged_rows = []
+    for row in base_rows:
+        qid = query_id(row)
+        replacement = delta_by_id.get(qid)
+        merged = dict(row)
+        if replacement is not None:
+            answer = replacement.get("GENERATED_ANSWER")
+            if not isinstance(answer, dict):
+                raise ValueError(f"Regenerated result {qid!r} has no GENERATED_ANSWER object.")
+            merged["GENERATED_ANSWER"] = answer
+        merged_rows.append(merged)
+
+    write_json(args.out_results, merged_rows)
+    print(f"Merged {len(delta_by_id)} regenerated answers into {len(merged_rows)} reviewed rows.")
 
 
 def rounded(value: float) -> float:
@@ -392,6 +436,13 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Fail unless the delta report contains this many refreshed rows.",
     )
+    results = subparsers.add_parser(
+        "merge-results", help="Replace regenerated answers in a full reviewed results file."
+    )
+    results.add_argument("--base-results", required=True, type=Path)
+    results.add_argument("--delta-results", required=True, type=Path)
+    results.add_argument("--delta-dataset", required=True, type=Path)
+    results.add_argument("--out-results", required=True, type=Path)
     return parser.parse_args()
 
 
@@ -402,8 +453,10 @@ def main() -> None:
         pipelines.update({name: Path(path) for name, path in args.pipeline})
         args.pipeline = list(pipelines.items())
         prepare(args)
-    else:
+    elif args.command == "merge-report":
         merge_report(args)
+    else:
+        merge_results(args)
 
 
 if __name__ == "__main__":
