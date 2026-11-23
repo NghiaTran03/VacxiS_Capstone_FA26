@@ -31,5 +31,6 @@ bugs-review/
 models/
 .pytest_cache
 .deepeval/
+.gradio/
 qdrant_storage/
 neo4j/

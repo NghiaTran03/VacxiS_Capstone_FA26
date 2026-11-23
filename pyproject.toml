@@ -42,7 +42,7 @@ retrieval = [
     "nano-vectordb>=0.0.4.3",
     "qdrant-client>=1.19.1",
 ]
-web = ["gradio>=6.31.0"]
+web = ["gradio>=6.31.0", "markdown-it-py>=4.0.0"]
 # GPU-only extra for the query-driven dataset path (Colab/Kaggle).
 # Not in the core deps so CPU/offline environments stay lightweight and the
 # module remains importable without vLLM installed.

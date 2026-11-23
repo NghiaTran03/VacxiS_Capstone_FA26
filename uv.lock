@@ -7125,6 +7125,7 @@ vllm = [
 ]
 web = [
     { name = "gradio" },
+    { name = "markdown-it-py" },
 ]
 websearch = [
     { name = "playwright" },
@@ -7141,6 +7142,7 @@ requires-dist = [
     { name = "flagembedding", marker = "extra == 'retrieval'", specifier = ">=1.4.2" },
     { name = "gradio", marker = "extra == 'web'", specifier = ">=6.31.0" },
     { name = "json-repair", specifier = ">=0.64.9" },
+    { name = "markdown-it-py", marker = "extra == 'web'", specifier = ">=4.0.0" },
     { name = "nano-vectordb", marker = "extra == 'retrieval'", specifier = ">=0.0.4.3" },
     { name = "neo4j", specifier = ">=6.4.1" },
     { name = "networkx", specifier = ">=3.7" },
