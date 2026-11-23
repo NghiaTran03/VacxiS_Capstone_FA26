@@ -6502,6 +6502,25 @@ wheels = [
 ]
 
 [[package]]
+name = "typesafe-sdk"
+version = "0.7.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "httpx2" },
+    { name = "packaging" },
+    { name = "pydantic" },
+    { name = "pydantic-core" },
+    { name = "tenacity" },
+    { name = "truststore", marker = "sys_platform != 'emscripten'" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/26/4d/383aa14f4cfe5fb41023ea1cab52d7f79db744/typesafe_sdk-0.7.5.tar.gz", hash = "sha256:1eeeb0dc80a7161d84896db42a5016dc0a7c8872fa16540b70163e5357b6d398", size = 34152, upload-time = "2026-10-14T21:21:42.837Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1c/f6/bee4c3b49570c2d312057c9e37c1446be8e40186516e57a276eac79e6af3fdb9ce422b7f41668/typesafe_sdk-0.7.5-py3-none-any.whl", hash = "sha256:967a8b61494d536abb55ee3f3a2b10e81685cb6baad6ccdcab588bdc6c9b86d2", size = 49948, upload-time = "2026-10-14T21:21:41.337Z" },
+]
+
+[[package]]
 name = "threadpoolctl"
 version = "3.8.0"
 source = { registry = "https://pypi.org/simple" }
@@ -7111,6 +7130,7 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "tenacity" },
     { name = "tiktoken" },
+    { name = "typesafe-sdk" },
 ]
 
 [package.optional-dependencies]
@@ -7155,6 +7175,7 @@ requires-dist = [
     { name = "qdrant-client", marker = "extra == 'retrieval'", specifier = ">=1.19.1" },
     { name = "tenacity", specifier = ">=9.2.1" },
     { name = "tiktoken", specifier = ">=0.14.0" },
+    { name = "typesafe-sdk", specifier = ">=0.7.5" },
     { name = "vllm", marker = "extra == 'vllm'", specifier = ">=0.6.0" },
 ]
 provides-extras = ["retrieval", "web", "vllm", "websearch"]
