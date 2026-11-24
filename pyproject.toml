@@ -19,6 +19,7 @@ dependencies = [
     "python-dotenv>=1.2.4",
     "tenacity>=9.2.1",
     "tiktoken>=0.14.0",
+    "typesafe-sdk>=0.7.5",
 ]
 
 [project.scripts]

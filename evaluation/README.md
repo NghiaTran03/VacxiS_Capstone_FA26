@@ -81,7 +81,11 @@ uv run vacxis-eval --advanced-rag --retrieval-only --top-k 10 \
   --out-json evaluation/advanced_k10.json --out-md evaluation/advanced_k10.md
 ```
 
-Full RAG evaluation also requires the standard generation/judge configuration:
+Full RAG evaluation also requires an OpenRouter API key for Jev:
+
+```bash
+export OPENROUTER_API_KEY="<your-openrouter-api-key>"
+```
 
 ```bash
 uv run vacxis-eval --advanced-rag --top-k 4 --ir-k-values 1 3 4 \
@@ -107,27 +111,28 @@ state must remain unchanged between attempts; they are not snapshotted.
 Both CLIs accept `--retries 5 --retry-initial 1 --retry-max 60` for bounded
 exponential backoff with jitter on transient API errors. Retries are additional
 attempts. Authentication and permission failures stop immediately. Generation
-accepts `--timeout 480`. Evaluation accepts `--judge-request-timeout 360`,
-`--schema-retries 3`, and `--judge-timeout 3600` (DeepEval task budget).
+accepts `--timeout 480`. Jev model selection accepts `--jev-model` or
+`VACXIS_JEV_MODEL` (default `~typesafe/jev-latest`). Jev calls use OpenRouter's
+System One endpoint and your `OPENROUTER_API_KEY`.
 
 For explicit evaluation recovery, use `vacxis-eval --results OUTPUT.json
 --checkpoint REPORT.checkpoint.json --resume --skip-unanswerable`. The checkpoint
 contains a fingerprint and a partial `report`, saved after each fully scored
 query. Failed or interrupted queries are retried on restart; completed queries
 are reused independently of DeepEval's cache. Reports include completion and
-coverage metadata. Resume rejects changed answers, contexts, dataset, judge,
-threshold, or metric selection. Final `--out-json` and `--out-md` reports are
+coverage metadata. Resume rejects changed answers, contexts, dataset, Jev
+model, threshold, or metric selection. Final `--out-json` and `--out-md` reports are
 written after the full run. The checkpoint is single-writer; do not run multiple
 processes against the same output path. IR-only scoring needs no API retries:
 rerun it against saved answers.
 
 ### Environment and response diagnostics
 
-Set `OPENROUTER_API_KEY` and `VACXIS_GENERATION_MODEL` in your shell.
-`VACXIS_LLM_BASE_URL` defaults to `https://openrouter.ai/api/v1`.
-Set `VACXIS_EVALUATION_MODEL` to choose the judge independently; otherwise it
-falls back to the generation model. The CLIs do not automatically load `.env`.
-Retry and timeout controls are CLI flags rather than environment variables.
+Set `OPENROUTER_API_KEY` and `VACXIS_GENERATION_MODEL` in your shell. Set
+`VACXIS_JEV_MODEL` to choose the Jev model independently; it defaults to
+`~typesafe/jev-latest`. The CLIs do not automatically load `.env`. Jev calls
+use the TypeSafe SDK against OpenRouter's System One endpoint; generation retry
+and timeout controls remain CLI flags.
 
 Validation errors include the failure reason, finish reason, content type and
 length, reasoning length (when provided), response ID, model, and completion
@@ -154,10 +159,9 @@ refusal and the dataset provides no positive retrieval evidence.
 
 Add `--llm-call-delay 5` to either `vacxis-generation` or `vacxis-eval` to
 require at least five seconds between request starts within that process.
-The default is 0 (no added spacing). Generation calls, DeepEval judge calls,
-schema-correction calls, and transport retries all use the spacing policy.
-Concurrent async judge calls share the same pacing gate; waits do not block
-the event loop. Retry backoff still applies, and pacing waits only for any
+The default is 0 (no added spacing). Generation calls and transport retries
+use the spacing policy. The Jev SDK manages Jev requests independently. Retry
+backoff still applies to generation calls, and pacing waits only for any
 remaining gap. The first request can start immediately.
 
 You can add or change this flag while resuming an existing checkpoint; it does

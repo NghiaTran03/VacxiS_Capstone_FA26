@@ -85,6 +85,7 @@ class MedicalGenerator:
             temperature=self.config.temperature, timeout=self.config.timeout,
             retry_policy=self.config.retry_policy,
             base_url=os.getenv("VACXIS_GENERATION_BASE_URL"),
+            extra_body={"reasoning": {"effort": "none"}},
             **kwargs,
         )
         answer_text = response.choices[0].message.content.strip()
