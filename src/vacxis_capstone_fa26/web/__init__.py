@@ -1,4 +1,4 @@
-"""Gradio entry point for the local VacxiS demo."""
+"""Gradio entry point for the local VaxiS demo."""
 
 from __future__ import annotations
 
@@ -65,6 +65,9 @@ CSS = """
 #vacxis-composer { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; border: 1px solid var(--border-color-primary); border-radius: 14px; padding: 10px; }
 #vacxis-composer > * { min-width: 0 !important; }
 #vacxis-composer textarea { border: 0; box-shadow: none; }
+#vacxis-input-area { gap: 6px; }
+#vacxis-disclaimer .html-container { padding: 0; }
+.vacxis-disclaimer { display: block; margin: 2px 4px 0; font-size: 12px; line-height: 1.5; color: var(--body-text-color-subdued); }
 .vacxis-brand { padding: 8px 4px; }
 .vacxis-brand strong { font-size: 26px; letter-spacing: -.8px; }
 .vacxis-brand span { font-size: 13px; color: var(--body-text-color-subdued); margin-left: 12px; }
@@ -242,12 +245,12 @@ def _submit(text: str, saved: dict, run_turn):
 
 
 def build_app(run_turn, documents: Documents, *, preview: bool = False) -> gr.Blocks:
-    with gr.Blocks(title="VacxiS", fill_width=True) as app:
+    with gr.Blocks(title="VaxiS", fill_width=True) as app:
         browser_history = gr.BrowserState(
             EMPTY_HISTORY, storage_key="vacxis-conversations-v1", secret=os.getenv("VACXIS_HISTORY_SECRET"),
         )
         history = gr.State(EMPTY_HISTORY)
-        gr.HTML('<header class="vacxis-brand"><strong>VacxiS<span>Trợ lý thông tin vắc xin</span></strong></header>', apply_default_css=False)
+        gr.HTML('<header class="vacxis-brand"><strong>VaxiS<span>Trợ lý thông tin vắc xin</span></strong></header>', apply_default_css=False)
         if preview:
             gr.HTML('<p class="vacxis-preview">Bản xem trước giao diện · Phản hồi mẫu từ tài liệu có sẵn. Pipeline AI chưa được kết nối.</p>', apply_default_css=False)
         with gr.Row(elem_id="vacxis-shell"):
@@ -262,9 +265,16 @@ def build_app(run_turn, documents: Documents, *, preview: bool = False) -> gr.Bl
                     placeholder="Bạn muốn tìm hiểu về vắc xin nào?",
                 )
                 gr.HTML("", js_on_load=SOURCE_EVENTS, elem_id="vacxis-source-events")
-                with gr.Row(elem_id="vacxis-composer"):
-                    question = gr.Textbox(label="Câu hỏi", show_label=False, placeholder="Hỏi VacxiS về vắc xin…", scale=6, min_width=0, elem_id="vacxis-question")
-                    send = gr.Button("Gửi ↑", variant="primary", scale=1, min_width=64)
+                with gr.Column(elem_id="vacxis-input-area", min_width=0):
+                    with gr.Row(elem_id="vacxis-composer"):
+                        question = gr.Textbox(label="Câu hỏi", show_label=False, placeholder="Hỏi VaxiS về vắc xin…", scale=6, min_width=0, elem_id="vacxis-question")
+                        send = gr.Button("Gửi ↑", variant="primary", scale=1, min_width=64)
+                    gr.HTML(
+                        '<small class="vacxis-disclaimer">* Thông tin này chỉ nhằm mục đích tham khảo. '
+                        'Để được tư vấn hoặc chẩn đoán y tế, hãy tham khảo ý kiến của chuyên gia. '
+                        'Câu trả lời của AI có thể chứa thông tin không chính xác.</small>',
+                        apply_default_css=False, elem_id="vacxis-disclaimer",
+                    )
 
         def restore(saved: dict):
             active = _active(saved)
@@ -292,10 +302,11 @@ def build_app(run_turn, documents: Documents, *, preview: bool = False) -> gr.Bl
     return app.queue()
 
 
-def main(argv: list[str] | None = None) -> int:
-    from ..cli import add_retrieval_arguments, retrieval_config
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Select the main Table-aware + LightRAG architecture for the web demo."""
+    from ..cli import add_retrieval_arguments
 
-    parser = argparse.ArgumentParser(description="Run the local VacxiS chat UI")
+    parser = argparse.ArgumentParser(description="Run the local VaxiS chat UI")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--share", action="store_true", help="Create a public Gradio link for chat and documents")
     parser.add_argument("--chunks", type=Path, default=Path("chunks_storage/chunks.parquet"))
@@ -304,13 +315,35 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--skip-rerank", action="store_true")
     parser.add_argument("--preview", action="store_true", help="Preview UI using sample extractive responses without model services")
     add_retrieval_arguments(parser)
+    parser.set_defaults(
+        retriever_mode="hybrid_lightrag",
+        collection_name="VacxiS_Capstone_FA26_table_dual",
+        lightrag_mode="hybrid",
+        lightrag_fusion="rrf_rerank",
+    )
     args = parser.parse_args(argv)
     if not 1 <= args.port <= 65535 or args.top_k < 1:
         parser.error("--port must be between 1 and 65535, and --top-k must be positive.")
+    return args
+
+
+def main(argv: list[str] | None = None) -> int:
+    from ..cli import retrieval_config
+
+    args = parse_args(argv)
 
     with ExitStack() as resources:
         pipeline = None
         retrieval = retrieval_config(args)
+        if not args.preview:
+            print(f"* Retriever: {retrieval.mode} | collection: {retrieval.collection_name}", flush=True)
+            if retrieval.mode in {"lightrag", "hybrid_lightrag"}:
+                print(
+                    f"* LightRAG mode: {retrieval.lightrag_mode} | workspace: {retrieval.lightrag_workspace}",
+                    flush=True,
+                )
+            if retrieval.mode == "hybrid_lightrag":
+                print(f"* LightRAG fusion: {retrieval.lightrag_fusion}", flush=True)
 
         def run_turn(query: str, **options):
             nonlocal pipeline
@@ -325,7 +358,7 @@ def main(argv: list[str] | None = None) -> int:
         documents = Documents(chunks_path, project_root=project_root)
         if args.preview:
             if not documents.indexed_ids:
-                parser.error("Preview requires an indexed --chunks file with vaccine documents.")
+                raise SystemExit("Preview requires an indexed --chunks file with vaccine documents.")
             from .preview import preview_responder
             run_turn = preview_responder(documents)
         app = build_app(run_turn, documents, preview=args.preview)

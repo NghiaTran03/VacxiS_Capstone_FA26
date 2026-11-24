@@ -298,9 +298,9 @@ class Documents:
         script = Path(__file__).with_name("documents.js").read_text(encoding="utf-8")
         return (
             '<!doctype html><html lang="vi"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
-            '<title>Tài liệu vắc xin · VacxiS</title><style>'
+            '<title>Tài liệu vắc xin · VaxiS</title><style>'
             f'{css}'
-            '</style><header><div><strong>VacxiS</strong><span>Thư viện tài liệu vắc xin</span></div>'
+            '</style><header><div><strong>VaxiS</strong><span>Thư viện tài liệu vắc xin</span></div>'
             '<label class="theme-control" for="document-theme">Giao diện'
             '<select id="document-theme"><option value="system">Theo hệ thống</option>'
             '<option value="light">Sáng</option><option value="dark">Tối</option></select></label></header>'

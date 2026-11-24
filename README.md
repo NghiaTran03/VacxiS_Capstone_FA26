@@ -1,4 +1,4 @@
-# VacxiS
+# VaxiS
 
 Hệ thống RAG thông tin vắc xin: Markdown → chunks Parquet → BGE-M3/Qdrant hybrid search → reranker → câu trả lời có trích dẫn. Module `testdata` tạo bộ câu hỏi và reference answer từ cùng corpus; `evaluation` đánh giá retrieval và generation theo `QUERY_ID`.
 
@@ -68,10 +68,12 @@ Các CLI `vacxis-generation`, `vacxis-retrieval`, `vacxis-eval`, `vacxis-evaluat
 
 ## Web UI
 
-Chạy từ thư mục gốc sau khi cấu hình `.env`, chuẩn bị model và nạp collection vào Qdrant.
+Web mặc định chạy kiến trúc chính **Table-aware + LightRAG & Table-aware hybrid**: `hybrid_lightrag`, LightRAG query mode `hybrid`, fusion `rrf_rerank`, collection `VacxiS_Capstone_FA26_table_dual` (bảng được lập chỉ mục bằng `summarize_dual`). Đây là nhánh kết hợp được mô tả trong `results/ablation_study.md`, khác Hybrid baseline trên collection gốc.
+
+Chạy từ thư mục gốc với `.env`, model, collection Table-aware, các vector collection LightRAG, dữ liệu KV và Neo4j đã có sẵn. Các biến `LIGHTRAG_*`, `QDRANT_URL`, `NEO4J_*` cần trỏ đúng dịch vụ của bộ dữ liệu. Lệnh web không chạy `prepare`, không khôi phục snapshot hay tự chuyển về baseline khi thiếu dữ liệu. `--merge-table-chunks` chỉ gộp bảng lúc truy xuất, không thay thế collection đã lập chỉ mục Table-aware. Nếu môi trường đã đủ thư viện, dùng `--no-sync` để giữ nguyên dependencies:
 
 ```bash
-uv run --extra web --extra retrieval --env-file .env vacxis-web
+uv run --no-sync --env-file .env vacxis-web
 ```
 
 Mở [VacxiS tại localhost](http://127.0.0.1:8000). Giao diện Gradio có khung hỏi đáp và lịch sử ở thanh bên. Mục **Quá trình trả lời** có thể mở/thu gọn, cập nhật thời gian đã chạy và hiện tổng thời gian khi trả lời xong. Câu hỏi làm rõ xuất hiện như một tin nhắn ngắn. Bấm nguồn hoặc **Tài liệu vắc xin** để mở tab trình duyệt mới, xem đoạn trích dẫn và toàn bộ tài liệu Markdown nguồn có sẵn của vắc xin đó.
@@ -86,19 +88,19 @@ Xem trước giao diện với phản hồi mẫu và tài liệu thật khi ch�
 uv run --extra web vacxis-web --preview
 ```
 
-Chế độ này hiển thị nhãn **Bản xem trước giao diện**, mô phỏng các bước xử lý và không gọi pipeline AI. Chạy lệnh thường ở trên để dùng Hybrid thực tế.
+Chế độ này hiển thị nhãn **Bản xem trước giao diện**, mô phỏng các bước xử lý và không gọi pipeline AI. Chạy lệnh thường ở trên để dùng kiến trúc chính thực tế.
 
 Thêm `--share` để tạo đường dẫn Gradio công khai cho cả chat và trang tài liệu:
 
 ```bash
-uv run --extra web --extra retrieval --env-file .env vacxis-web --share --collection-name VacxiS_Capstone_FA26
+uv run --no-sync --env-file .env vacxis-web --share --port 8000
 ```
 
 Terminal sẽ in `Running on public URL: https://....gradio.live`. Gửi đường dẫn này cho người dùng; máy chủ vẫn là máy đang chạy lệnh và phải giữ máy bật, có Internet, terminal đang chạy. Link là tạm thời, có thể đổi sau khi khởi động lại. Dùng `--preview --share` để chia sẻ bản xem trước mà không gọi AI. Khi không tạo được tunnel, ứng dụng báo lỗi chia sẻ và vẫn chạy local. Nhấn Ctrl+C để dừng server và đóng tunnel. Lần đầu Gradio có thể tải chương trình tunnel từ nguồn chính thức. `--share` không nạp lại dữ liệu hay thay đổi collection Qdrant.
 
 Dùng **Cuộc trò chuyện mới** để mở ngay một phiên trống hoặc chọn một phiên trong **Các cuộc trò chuyện** để mở lại. Mỗi mục đại diện cho toàn bộ hội thoại, được đặt tên theo câu hỏi đầu tiên; các câu hỏi tiếp theo ở cùng phiên. Lịch sử lưu trên cùng trình duyệt. Đặt `VACXIS_HISTORY_SECRET` ổn định trong `.env` và dùng cùng địa chỉ, cổng để giữ lịch sử qua các lần khởi động lại Gradio.
 
-Dùng `--port` để đổi cổng, `--project-root` để chọn thư mục dự án và `--chunks` để chọn tệp Parquet dùng cho trích dẫn. Đường dẫn chunks tương đối được tính từ project root. Trang tài liệu hiển thị các tài liệu Markdown gốc, kể cả tài liệu chưa được lập chỉ mục; nguồn trong câu trả lời mở đúng đoạn đã lập chỉ mục. Các tùy chọn `--qdrant-host`, `--qdrant-port`, `--collection-name`, `--model-path`, `--reranker-path`, `--top-k` và `--skip-rerank` dùng cùng mặc định với CLI pipeline. Máy chủ web lắng nghe trên loopback để chạy demo cục bộ.
+Dùng `--port` để đổi cổng, `--project-root` để chọn thư mục dự án và `--chunks` để chọn tệp Parquet dùng cho trích dẫn. Đường dẫn chunks tương đối được tính từ project root. Trang tài liệu hiển thị các tài liệu Markdown gốc, kể cả tài liệu chưa được lập chỉ mục; nguồn trong câu trả lời mở đúng đoạn đã lập chỉ mục. Các cờ retrieval có thể ghi đè cấu hình; riêng mặc định kiến trúc và collection của web được đặt như trên, không đổi mặc định CLI benchmark. Terminal in retriever, collection, mode LightRAG và fusion khi khởi động để kiểm tra. Máy chủ web lắng nghe trên loopback để chạy demo cục bộ.
 
 ### API Python cho luồng hỏi đáp
 
