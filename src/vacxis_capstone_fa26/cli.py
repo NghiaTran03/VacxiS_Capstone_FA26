@@ -73,6 +73,12 @@ def add_lightrag_arguments(parser: argparse.ArgumentParser) -> None:
         default=None,
         help="Total token budget for LightRAG query context (default: 30000)",
     )
+    parser.add_argument(
+        "--lightrag-rerank-weight",
+        type=float,
+        default=RetrievalConfig.lightrag_rerank_weight,
+        help="Weight for BGEReranker score in rrf_rerank post-rerank fusion in (0.0, 1.0] (1.0 disables RRF blending)",
+    )
 
 
 def add_retrieval_arguments(parser: argparse.ArgumentParser) -> None:
@@ -133,6 +139,9 @@ def retrieval_config(
         lightrag_max_total_tokens=getattr(args, "lightrag_max_total_tokens", None),
         lightrag_fusion=getattr(
             args, "lightrag_fusion", RetrievalConfig.lightrag_fusion
+        ),
+        lightrag_rerank_weight=getattr(
+            args, "lightrag_rerank_weight", RetrievalConfig.lightrag_rerank_weight
         ),
         chunks_parquet_path=getattr(args, "chunks", RetrievalConfig.chunks_parquet_path),
     )

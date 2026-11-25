@@ -5,6 +5,7 @@ from vacxis_capstone_fa26.resilience import add_retry_arguments, retry_from_args
 import argparse
 import json
 import logging
+import math
 import sys
 from pathlib import Path
 from typing import Any
@@ -198,6 +199,11 @@ def parse_args() -> argparse.Namespace:
     ):
         if value is not None and value < 1:
             parser.error(f"{flag} must be positive.")
+    if (
+        not math.isfinite(args.lightrag_rerank_weight)
+        or not (0.0 < args.lightrag_rerank_weight <= 1.0)
+    ):
+        parser.error("--lightrag-rerank-weight must be in (0.0, 1.0].")
     if args.ir_k_values is not None and any(k < 1 for k in args.ir_k_values):
         parser.error("--ir-k-values must contain positive integers.")
     if args.results is None:
@@ -558,6 +564,7 @@ def _record_retrieval_run(summary: EvaluationSummary, args: argparse.Namespace) 
                 "merge_table_chunks": bool(getattr(args, "merge_table_chunks", False)),
                 "lightrag_mode": ret_cfg.lightrag_mode,
                 "lightrag_fusion": ret_cfg.lightrag_fusion,
+                "lightrag_rerank_weight": ret_cfg.lightrag_rerank_weight,
                 "lightrag_working_dir": str(ret_cfg.lightrag_working_dir),
                 "lightrag_workspace": ret_cfg.lightrag_workspace,
                 "lightrag_top_k": ret_cfg.lightrag_top_k,

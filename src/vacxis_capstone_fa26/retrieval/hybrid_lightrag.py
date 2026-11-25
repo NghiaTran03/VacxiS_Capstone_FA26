@@ -4,6 +4,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from dataclasses import replace
 import logging
+import math
 from typing import Any
 
 from vacxis_capstone_fa26.retrieval.lightrag_retriever import LightRAGRetriever
@@ -80,6 +81,61 @@ def _fuse_hybrid_and_lightrag_candidates(
             )
         )
     return fused
+
+
+def _safe_sigmoid(value: float) -> float:
+    """Compute a numerically stable sigmoid mapping any finite logit into (0, 1)."""
+    if value >= 0.0:
+        exp_neg = math.exp(-value)
+        return 1.0 / (1.0 + exp_neg)
+    exp_pos = math.exp(value)
+    return exp_pos / (1.0 + exp_pos)
+
+
+def _blend_rerank_and_rrf(
+    ranked: Sequence[RetrievedChunk],
+    *,
+    rerank_weight: float,
+    top_k: int,
+) -> list[RetrievedChunk]:
+    """Blend cross-encoder rerank scores with normalized RRF consensus scores.
+
+    Preserves BGEReranker's [0, 1] sigmoid-normalized scores without double-sigmoiding,
+    falling back to a numerically stable sigmoid only when raw logits outside [0, 1]
+    are encountered.
+    """
+    if not ranked or top_k <= 0:
+        return []
+    if rerank_weight >= 1.0:
+        return list(ranked[:top_k])
+
+    raw_reranks = [
+        float(c.rerank_score if c.rerank_score is not None else c.score)
+        for c in ranked
+    ]
+    use_sigmoid = any(score < 0.0 or score > 1.0 for score in raw_reranks)
+    max_rrf = max((max(0.0, float(c.rrf_score or 0.0)) for c in ranked), default=0.0)
+    rrf_weight = 1.0 - rerank_weight
+
+    blended: list[RetrievedChunk] = []
+    for chunk, raw_rerank in zip(ranked, raw_reranks, strict=True):
+        norm_rerank = _safe_sigmoid(raw_rerank) if use_sigmoid else raw_rerank
+        rrf_val = max(0.0, float(chunk.rrf_score or 0.0))
+        norm_rrf = (rrf_val / max_rrf) if max_rrf > 0.0 else 0.0
+        final_score = rerank_weight * norm_rerank + rrf_weight * norm_rrf
+        meta = dict(chunk.metadata or {})
+        meta["rerank_rrf_weight"] = rerank_weight
+        blended.append(replace(chunk, score=final_score, metadata=meta))
+
+    blended.sort(
+        key=lambda c: (
+            c.score,
+            float(c.rerank_score if c.rerank_score is not None else c.score),
+            float(c.rrf_score or 0.0),
+        ),
+        reverse=True,
+    )
+    return blended[:top_k]
 
 
 class HybridLightRAGRetriever:
@@ -228,16 +284,24 @@ class HybridLightRAGRetriever:
             rrf_k=self.config.rrf_k,
         )
 
+        alpha = self.config.lightrag_rerank_weight
         if not fused:
             ranked: list[RetrievedChunk] = []
         elif not should_skip_rerank:
             if on_rerank is not None:
                 on_rerank()
+            rerank_top_k = len(fused) if alpha < 1.0 else k
             ranked = self.hybrid_retriever.reranker.rerank(
                 query=query,
                 candidates=fused,
-                top_k=k,
+                top_k=rerank_top_k,
             )
+            if alpha < 1.0:
+                ranked = _blend_rerank_and_rrf(
+                    ranked,
+                    rerank_weight=alpha,
+                    top_k=k,
+                )
         else:
             ranked = fused[:k]
 
@@ -325,14 +389,25 @@ class HybridLightRAGRetriever:
             )
             kg_chunks.append(kg_chunk)
 
+        alpha = self.config.lightrag_rerank_weight
         if not should_skip_rerank and any(fused_groups):
             if on_rerank is not None:
                 on_rerank()
+            rerank_top_k = (
+                max(len(group) for group in fused_groups)
+                if alpha < 1.0
+                else k
+            )
             ranked_groups = self.hybrid_retriever.reranker.batch_rerank(
                 queries=query_list,
                 candidates_list=fused_groups,
-                top_k=k,
+                top_k=rerank_top_k,
             )
+            if alpha < 1.0:
+                ranked_groups = [
+                    _blend_rerank_and_rrf(group, rerank_weight=alpha, top_k=k)
+                    for group in ranked_groups
+                ]
         else:
             ranked_groups = [group[:k] for group in fused_groups]
 

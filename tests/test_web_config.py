@@ -13,6 +13,7 @@ def test_web_defaults_match_combined_table_aware_lightrag_architecture():
     assert config.collection_name == "VacxiS_Capstone_FA26_table_dual"
     assert config.lightrag_mode == "hybrid"
     assert config.lightrag_fusion == "rrf_rerank"
+    assert config.lightrag_rerank_weight == pytest.approx(0.85)
     assert config.lightrag_top_k == 30
     assert config.lightrag_chunk_top_k == 20
     assert config.lightrag_max_entity_tokens == 3000

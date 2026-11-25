@@ -962,12 +962,28 @@ def test_cli_lightrag_flags_and_metadata(monkeypatch):
     hybrid_run = hybrid_summary.metadata["run"]
     assert hybrid_run["retriever"] == "hybrid_lightrag"
     assert hybrid_run["lightrag_fusion"] == "rrf_rerank"
+    assert hybrid_run["lightrag_rerank_weight"] == pytest.approx(0.85)
     assert hybrid_run["lightrag_mode"] == "hybrid"
     assert hybrid_run["lightrag_top_k"] == 30
     assert hybrid_run["lightrag_chunk_top_k"] == 20
     assert hybrid_run["lightrag_max_entity_tokens"] == 3000
     assert hybrid_run["lightrag_max_relation_tokens"] == 3000
     assert hybrid_run["lightrag_max_total_tokens"] == 30000
+
+    for bad_weight in ("0", "1.2"):
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "vacxis-eval",
+                "--retrieval-only",
+                "--retriever-mode",
+                "hybrid_lightrag",
+                "--lightrag-rerank-weight",
+                bad_weight,
+            ],
+        )
+        with pytest.raises(SystemExit):
+            cli.parse_args()
 
 
 def test_ir_metrics_alias_matching_preserves_ranks_and_bounds():

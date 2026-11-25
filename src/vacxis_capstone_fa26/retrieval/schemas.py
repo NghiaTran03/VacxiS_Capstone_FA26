@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+import math
 import os
 from pathlib import Path
 from typing import Any, Literal
@@ -25,6 +26,7 @@ HYBRID_LIGHTRAG_DEFAULT_CHUNK_TOP_K = 20
 HYBRID_LIGHTRAG_DEFAULT_MAX_ENTITY_TOKENS = 3000
 HYBRID_LIGHTRAG_DEFAULT_MAX_RELATION_TOKENS = 3000
 HYBRID_LIGHTRAG_DEFAULT_MAX_TOTAL_TOKENS = 30000
+HYBRID_LIGHTRAG_DEFAULT_RERANK_WEIGHT = 0.85
 
 
 @dataclass
@@ -79,6 +81,7 @@ class RetrievalConfig:
     lightrag_max_total_tokens: int | None = None
     lightrag_include_chunks: bool = True
     lightrag_fusion: LightRAGFusionMode = "rrf_rerank"
+    lightrag_rerank_weight: float = HYBRID_LIGHTRAG_DEFAULT_RERANK_WEIGHT
     chunks_parquet_path: str | Path = "chunks_storage/chunks.parquet"
 
     def __post_init__(self) -> None:
@@ -125,3 +128,11 @@ class RetrievalConfig:
             value = getattr(self, field_name)
             if value < 1:
                 raise ValueError(f"{field_name} must be positive.")
+        if (
+            isinstance(self.lightrag_rerank_weight, bool)
+            or not isinstance(self.lightrag_rerank_weight, (int, float))
+            or not math.isfinite(self.lightrag_rerank_weight)
+            or not (0.0 < float(self.lightrag_rerank_weight) <= 1.0)
+        ):
+            raise ValueError("lightrag_rerank_weight must be in (0.0, 1.0].")
+        self.lightrag_rerank_weight = float(self.lightrag_rerank_weight)
