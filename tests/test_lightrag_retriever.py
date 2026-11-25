@@ -15,7 +15,6 @@ import pytest
 
 from vacxis_capstone_fa26.retrieval.hybrid_lightrag import (
     HybridLightRAGRetriever,
-    _blend_rerank_and_rrf,
     _fuse_hybrid_and_lightrag_candidates,
 )
 from vacxis_capstone_fa26.retrieval.lightrag_embedder import (
@@ -422,14 +421,13 @@ def test_standalone_lightrag_defaults_match_lightrag_package_and_isolate_hybrid(
     assert default_retriever.config.lightrag_top_k == 40
     assert default_retriever.config.lightrag_chunk_top_k == 20
 
-    # Hybrid LightRAG uses balanced rrf_rerank defaults
+    # Hybrid LightRAG keeps compact defaults unchanged
     hybrid_cfg = RetrievalConfig(mode="hybrid_lightrag")
-    assert hybrid_cfg.lightrag_fusion == "rrf_rerank"
     assert hybrid_cfg.lightrag_mode == HYBRID_LIGHTRAG_DEFAULT_MODE == "hybrid"
-    assert hybrid_cfg.lightrag_top_k == HYBRID_LIGHTRAG_DEFAULT_TOP_K == 30
-    assert hybrid_cfg.lightrag_chunk_top_k == HYBRID_LIGHTRAG_DEFAULT_CHUNK_TOP_K == 20
-    assert hybrid_cfg.lightrag_max_entity_tokens == HYBRID_LIGHTRAG_DEFAULT_MAX_ENTITY_TOKENS == 3000
-    assert hybrid_cfg.lightrag_max_relation_tokens == HYBRID_LIGHTRAG_DEFAULT_MAX_RELATION_TOKENS == 3000
+    assert hybrid_cfg.lightrag_top_k == HYBRID_LIGHTRAG_DEFAULT_TOP_K == 20
+    assert hybrid_cfg.lightrag_chunk_top_k == HYBRID_LIGHTRAG_DEFAULT_CHUNK_TOP_K == 5
+    assert hybrid_cfg.lightrag_max_entity_tokens == HYBRID_LIGHTRAG_DEFAULT_MAX_ENTITY_TOKENS == 1500
+    assert hybrid_cfg.lightrag_max_relation_tokens == HYBRID_LIGHTRAG_DEFAULT_MAX_RELATION_TOKENS == 1500
     assert hybrid_cfg.lightrag_max_total_tokens == LIGHTRAG_DEFAULT_MAX_TOTAL_TOKENS == 30000
 
     # Explicit overrides always take precedence in standalone mode
@@ -560,90 +558,7 @@ def test_standalone_lightrag_rerank_adapter_and_skip_rerank_control():
     _, param_hybrid = fake_rag.calls[3]
     assert param_hybrid.enable_rerank is False
     assert param_hybrid.mode == "hybrid"
-    assert param_hybrid.top_k == 30
-    assert param_hybrid.chunk_top_k == 20
-    assert param_hybrid.max_entity_tokens == 3000
-    assert param_hybrid.max_relation_tokens == 3000
-
-
-def test_post_rerank_fusion_blends_consensus_and_validates_weight():
-    # Dual-branch consensus chunk (c_both) has slightly lower rerank_score (0.82)
-    # than single-branch chunk (c_single, 0.85), while noisy chunk (c_noise, 0.10)
-    # must never outrank a strongly relevant chunk.
-    c_single = replace(_chunk("c_single", "Single branch"), score=0.85, rerank_score=0.85, rrf_score=0.016)
-    c_both = replace(
-        _chunk("c_both", "Consensus chunk", metadata={"lightrag_fused": True}),
-        score=0.82,
-        rerank_score=0.82,
-        rrf_score=0.032,
-    )
-    c_noise = replace(
-        _chunk("c_noise", "Noisy consensus", metadata={"lightrag_fused": True}),
-        score=0.10,
-        rerank_score=0.10,
-        rrf_score=0.032,
-    )
-
-    blended = _blend_rerank_and_rrf([c_single, c_both, c_noise], rerank_weight=0.85, top_k=2)
-    assert [c.chunk_id for c in blended] == ["c_both", "c_single"]
-    assert blended[0].rerank_score == pytest.approx(0.82)
-    assert blended[0].rrf_score == pytest.approx(0.032)
-    assert blended[0].score == pytest.approx(0.85 * 0.82 + 0.15 * 1.0)
-    assert blended[0].metadata["rerank_rrf_weight"] == pytest.approx(0.85)
-    assert blended[1].score == pytest.approx(0.85 * 0.85 + 0.15 * 0.5)
-
-    # Pure reranker mode (weight=1.0) preserves original order without blending
-    pure = _blend_rerank_and_rrf([c_single, c_both, c_noise], rerank_weight=1.0, top_k=2)
-    assert [c.chunk_id for c in pure] == ["c_single", "c_both"]
-    assert pure[0].score == pytest.approx(0.85)
-
-    # Raw logits outside [0, 1] trigger numerically stable sigmoid fallback
-    raw_hi = replace(_chunk("raw_hi", "High logit"), score=500.0, rerank_score=500.0, rrf_score=0.01)
-    raw_lo = replace(_chunk("raw_lo", "Low logit"), score=-500.0, rerank_score=-500.0, rrf_score=0.03)
-    raw_blended = _blend_rerank_and_rrf([raw_hi, raw_lo], rerank_weight=0.85, top_k=2)
-    assert [c.chunk_id for c in raw_blended] == ["raw_hi", "raw_lo"]
-    assert 0.0 < raw_blended[0].score <= 1.0
-
-    # End-to-end retrieve() and batch_retrieve() in rrf_rerank mode
-    h1 = _chunk("c_single", "Single branch")
-    h2 = _chunk("c_both", "Consensus chunk")
-    lr1 = _chunk("c_both", "Consensus chunk")
-    kg_chunk = _chunk(KG_CONTEXT_CHUNK_ID, "[ĐỒ THỊ TRI THỨC Y KHOA (LIGHTRAG)]\n- Vax")
-
-    def _fake_rerank(query: str, candidates: list[Any], top_k: int) -> list[Any]:
-        score_map = {"c_single": 0.85, "c_both": 0.82}
-        scored = [
-            replace(c, score=score_map[c.chunk_id], rerank_score=score_map[c.chunk_id])
-            for c in candidates
-        ]
-        scored.sort(key=lambda c: c.score, reverse=True)
-        return scored[:top_k]
-
-    hybrid = Mock()
-    hybrid.retrieve.return_value = [h1, h2]
-    hybrid.batch_retrieve.return_value = [[h1, h2]]
-    hybrid.reranker.rerank.side_effect = _fake_rerank
-    hybrid.reranker.batch_rerank.side_effect = lambda queries, candidates_list, top_k: [
-        _fake_rerank(q, cands, top_k) for q, cands in zip(queries, candidates_list, strict=True)
-    ]
-    lightrag = Mock()
-    lightrag.retrieve_components.return_value = ([lr1], kg_chunk)
-
-    cfg_blend = RetrievalConfig(mode="hybrid_lightrag", lightrag_fusion="rrf_rerank", top_k=1, lightrag_rerank_weight=0.85)
-    ret_blend = HybridLightRAGRetriever(config=cfg_blend, hybrid_retriever=hybrid, lightrag_retriever=lightrag)
-    single_blend = ret_blend.retrieve("Q?", top_k=1)
-    batch_blend = ret_blend.batch_retrieve(["Q?"], top_k=1)
-    assert [c.chunk_id for c in single_blend] == ["c_both", KG_CONTEXT_CHUNK_ID]
-    assert [c.chunk_id for c in batch_blend[0]] == ["c_both", KG_CONTEXT_CHUNK_ID]
-    assert hybrid.reranker.rerank.call_args.kwargs["top_k"] == 2
-    assert hybrid.reranker.batch_rerank.call_args.kwargs["top_k"] == 2
-
-    cfg_pure = RetrievalConfig(mode="hybrid_lightrag", lightrag_fusion="rrf_rerank", top_k=1, lightrag_rerank_weight=1.0)
-    ret_pure = HybridLightRAGRetriever(config=cfg_pure, hybrid_retriever=hybrid, lightrag_retriever=lightrag)
-    single_pure = ret_pure.retrieve("Q?", top_k=1)
-    assert [c.chunk_id for c in single_pure] == ["c_single", KG_CONTEXT_CHUNK_ID]
-    assert hybrid.reranker.rerank.call_args.kwargs["top_k"] == 1
-
-    for bad_weight in (0.0, -0.1, 1.5, float("nan"), float("inf"), True):
-        with pytest.raises(ValueError, match="lightrag_rerank_weight must be in"):
-            RetrievalConfig(mode="hybrid_lightrag", lightrag_rerank_weight=bad_weight)  # type: ignore[arg-type]
+    assert param_hybrid.top_k == 20
+    assert param_hybrid.chunk_top_k == 5
+    assert param_hybrid.max_entity_tokens == 1500
+    assert param_hybrid.max_relation_tokens == 1500

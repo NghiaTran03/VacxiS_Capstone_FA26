@@ -159,7 +159,6 @@ def main() -> None:
         lightrag_max_relation_tokens=args.lightrag_max_relation_tokens,
         lightrag_max_total_tokens=args.lightrag_max_total_tokens,
         lightrag_fusion=args.lightrag_fusion,
-        lightrag_rerank_weight=args.lightrag_rerank_weight,
         chunks_parquet_path=args.chunks,
     )
 
