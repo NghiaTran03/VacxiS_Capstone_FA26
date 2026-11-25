@@ -29,7 +29,7 @@ logger = logging.getLogger("vacxis.evaluation.cli")
 
 _DEFAULT_UNANSWERABLE = Path("test_dataset.json")
 _DEFAULT_CHUNKS = Path("chunks_storage/chunks.parquet")
-_MAIN_DATASET = Path("evaluation/eval_dataset_300_final_fixed.json")
+_MAIN_DATASET = Path("review-web/test_dataset_verified.json")
 
 
 def parse_args() -> argparse.Namespace:
