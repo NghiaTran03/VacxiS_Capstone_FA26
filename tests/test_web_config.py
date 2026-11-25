@@ -27,6 +27,18 @@ def test_explicit_web_arguments_still_override_defaults():
     assert config.lightrag_fusion == "context_append"
 
 
+def test_web_standalone_lightrag_uses_lightrag_package_defaults():
+    config = cli.retrieval_config(web.parse_args(["--retriever-mode", "lightrag"]))
+    assert config.mode == "lightrag"
+    assert config.lightrag_mode == "mix"
+    assert config.lightrag_top_k == 40
+    assert config.lightrag_chunk_top_k == 20
+    assert config.lightrag_max_entity_tokens == 6000
+    assert config.lightrag_max_relation_tokens == 8000
+    assert config.lightrag_max_total_tokens == 30000
+    assert not config.skip_rerank
+
+
 def test_web_defaults_do_not_change_workflow_cli_baseline():
     assert cli.parse_args(["ask", "--query", "Verorab?"]).retriever_mode == "hybrid"
 

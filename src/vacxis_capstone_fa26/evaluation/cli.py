@@ -189,8 +189,15 @@ def parse_args() -> argparse.Namespace:
         parser.error(f"--retriever-mode naive requires a chunk corpus at {args.chunks}.")
     if args.results is None and args.top_k < 1:
         parser.error("--top-k must be positive.")
-    if args.lightrag_top_k < 1 or args.lightrag_chunk_top_k < 1:
-        parser.error("--lightrag-top-k and --lightrag-chunk-top-k must be positive.")
+    for flag, value in (
+        ("--lightrag-top-k", args.lightrag_top_k),
+        ("--lightrag-chunk-top-k", args.lightrag_chunk_top_k),
+        ("--lightrag-max-entity-tokens", args.lightrag_max_entity_tokens),
+        ("--lightrag-max-relation-tokens", args.lightrag_max_relation_tokens),
+        ("--lightrag-max-total-tokens", args.lightrag_max_total_tokens),
+    ):
+        if value is not None and value < 1:
+            parser.error(f"{flag} must be positive.")
     if args.ir_k_values is not None and any(k < 1 for k in args.ir_k_values):
         parser.error("--ir-k-values must contain positive integers.")
     if args.results is None:
@@ -333,8 +340,7 @@ def _build_answer_fn(args: argparse.Namespace, chunk_texts: dict[str, str]):
         retriever = _build_advanced_retriever(args)
         pipeline = VacxisRAGPipeline(retriever=retriever, generator=generator)
     else:
-        ret_cfg = retrieval_config(args)
-        ret_cfg.mode = eff_mode
+        ret_cfg = retrieval_config(args, mode=eff_mode)
         if eff_mode == "naive":
             retriever = build_retriever(ret_cfg, chunk_texts=chunk_texts)
         else:
@@ -392,8 +398,7 @@ def _evaluate_live_retrieval(
             from vacxis_capstone_fa26.cli import retrieval_config
             from vacxis_capstone_fa26.retrieval.factory import build_retriever
 
-            ret_cfg = retrieval_config(args)
-            ret_cfg.mode = eff_mode
+            ret_cfg = retrieval_config(args, mode=eff_mode)
             retriever = resources.enter_context(build_retriever(ret_cfg))
 
         for item in dataset_items:
@@ -525,31 +530,41 @@ def _record_retrieval_run(summary: EvaluationSummary, args: argparse.Namespace) 
                 "model_path": args.model_path,
             })
         elif eff_mode == "lightrag":
+            from vacxis_capstone_fa26.cli import retrieval_config
+
+            ret_cfg = retrieval_config(args, mode=eff_mode)
             run.update({
                 "model_path": args.model_path,
-                "lightrag_mode": getattr(args, "lightrag_mode", "hybrid"),
-                "lightrag_working_dir": str(
-                    getattr(args, "lightrag_working_dir", "lightrag_storage")
-                ),
-                "lightrag_workspace": getattr(args, "lightrag_workspace", "vacxis"),
-                "lightrag_top_k": getattr(args, "lightrag_top_k", 20),
-                "lightrag_chunk_top_k": getattr(args, "lightrag_chunk_top_k", 5),
+                "reranker_path": args.reranker_path,
+                "skip_rerank": args.skip_rerank,
+                "lightrag_mode": ret_cfg.lightrag_mode,
+                "lightrag_working_dir": str(ret_cfg.lightrag_working_dir),
+                "lightrag_workspace": ret_cfg.lightrag_workspace,
+                "lightrag_top_k": ret_cfg.lightrag_top_k,
+                "lightrag_chunk_top_k": ret_cfg.lightrag_chunk_top_k,
+                "lightrag_max_entity_tokens": ret_cfg.lightrag_max_entity_tokens,
+                "lightrag_max_relation_tokens": ret_cfg.lightrag_max_relation_tokens,
+                "lightrag_max_total_tokens": ret_cfg.lightrag_max_total_tokens,
             })
         elif eff_mode == "hybrid_lightrag":
+            from vacxis_capstone_fa26.cli import retrieval_config
+
+            ret_cfg = retrieval_config(args, mode=eff_mode)
             run.update({
                 "collection_name": args.collection_name,
                 "model_path": args.model_path,
                 "reranker_path": args.reranker_path,
                 "skip_rerank": args.skip_rerank,
                 "merge_table_chunks": bool(getattr(args, "merge_table_chunks", False)),
-                "lightrag_mode": getattr(args, "lightrag_mode", "hybrid"),
-                "lightrag_fusion": getattr(args, "lightrag_fusion", "context_append"),
-                "lightrag_working_dir": str(
-                    getattr(args, "lightrag_working_dir", "lightrag_storage")
-                ),
-                "lightrag_workspace": getattr(args, "lightrag_workspace", "vacxis"),
-                "lightrag_top_k": getattr(args, "lightrag_top_k", 20),
-                "lightrag_chunk_top_k": getattr(args, "lightrag_chunk_top_k", 5),
+                "lightrag_mode": ret_cfg.lightrag_mode,
+                "lightrag_fusion": ret_cfg.lightrag_fusion,
+                "lightrag_working_dir": str(ret_cfg.lightrag_working_dir),
+                "lightrag_workspace": ret_cfg.lightrag_workspace,
+                "lightrag_top_k": ret_cfg.lightrag_top_k,
+                "lightrag_chunk_top_k": ret_cfg.lightrag_chunk_top_k,
+                "lightrag_max_entity_tokens": ret_cfg.lightrag_max_entity_tokens,
+                "lightrag_max_relation_tokens": ret_cfg.lightrag_max_relation_tokens,
+                "lightrag_max_total_tokens": ret_cfg.lightrag_max_total_tokens,
             })
         elif eff_mode != "naive":
             run.update({

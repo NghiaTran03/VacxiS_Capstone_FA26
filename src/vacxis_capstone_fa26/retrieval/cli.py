@@ -155,6 +155,9 @@ def main() -> None:
         lightrag_mode=args.lightrag_mode,
         lightrag_top_k=args.lightrag_top_k,
         lightrag_chunk_top_k=args.lightrag_chunk_top_k,
+        lightrag_max_entity_tokens=args.lightrag_max_entity_tokens,
+        lightrag_max_relation_tokens=args.lightrag_max_relation_tokens,
+        lightrag_max_total_tokens=args.lightrag_max_total_tokens,
         lightrag_fusion=args.lightrag_fusion,
         chunks_parquet_path=args.chunks,
     )
@@ -167,6 +170,12 @@ def main() -> None:
                 top_k_dense=args.top_k_dense,
                 top_k_sparse=args.top_k_sparse,
                 rrf_top_k=args.rrf_top_k,
+                skip_rerank=args.skip_rerank,
+            )
+        elif config.mode == "lightrag":
+            results = retriever.retrieve(
+                query=query,
+                top_k=args.top_k,
                 skip_rerank=args.skip_rerank,
             )
         else:

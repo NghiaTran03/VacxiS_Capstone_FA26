@@ -22,8 +22,8 @@ def add_lightrag_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--lightrag-mode",
         choices=_LIGHTRAG_MODES,
-        default=RetrievalConfig.lightrag_mode,
-        help="LightRAG query mode",
+        default=None,
+        help="LightRAG query mode (default: mix for lightrag, hybrid for hybrid_lightrag)",
     )
     parser.add_argument(
         "--lightrag-fusion",
@@ -46,14 +46,32 @@ def add_lightrag_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--lightrag-top-k",
         type=int,
-        default=RetrievalConfig.lightrag_top_k,
-        help="Number of graph entities/relationships retrieved by LightRAG",
+        default=None,
+        help="Number of graph entities/relationships retrieved by LightRAG (default: 40 for lightrag, 20 for hybrid_lightrag)",
     )
     parser.add_argument(
         "--lightrag-chunk-top-k",
         type=int,
-        default=RetrievalConfig.lightrag_chunk_top_k,
-        help="Number of document chunks retrieved by LightRAG",
+        default=None,
+        help="Number of document chunks retrieved by LightRAG (default: 20 for lightrag, 5 for hybrid_lightrag)",
+    )
+    parser.add_argument(
+        "--lightrag-max-entity-tokens",
+        type=int,
+        default=None,
+        help="Token budget for LightRAG entity context (default: 6000 for lightrag, 1500 for hybrid_lightrag)",
+    )
+    parser.add_argument(
+        "--lightrag-max-relation-tokens",
+        type=int,
+        default=None,
+        help="Token budget for LightRAG relationship context (default: 8000 for lightrag, 1500 for hybrid_lightrag)",
+    )
+    parser.add_argument(
+        "--lightrag-max-total-tokens",
+        type=int,
+        default=None,
+        help="Total token budget for LightRAG query context (default: 30000)",
     )
 
 
@@ -82,9 +100,13 @@ def add_retrieval_arguments(parser: argparse.ArgumentParser) -> None:
     add_lightrag_arguments(parser)
 
 
-def retrieval_config(args: argparse.Namespace) -> RetrievalConfig:
+def retrieval_config(
+    args: argparse.Namespace,
+    *,
+    mode: str | None = None,
+) -> RetrievalConfig:
     """Translate shared CLI arguments into retrieval settings."""
-    mode = getattr(args, "retriever_mode", None) or RetrievalConfig.mode
+    resolved_mode = mode or getattr(args, "retriever_mode", None) or RetrievalConfig.mode
     return RetrievalConfig(
         collection_name=args.collection_name,
         qdrant_host=args.qdrant_host,
@@ -93,7 +115,7 @@ def retrieval_config(args: argparse.Namespace) -> RetrievalConfig:
         reranker_model_path=args.reranker_path,
         top_k=args.top_k,
         skip_rerank=args.skip_rerank,
-        mode=mode,
+        mode=resolved_mode,
         merge_table_chunks=bool(
             getattr(args, "merge_table_chunks", RetrievalConfig.merge_table_chunks)
         ),
@@ -103,15 +125,12 @@ def retrieval_config(args: argparse.Namespace) -> RetrievalConfig:
         lightrag_workspace=getattr(
             args, "lightrag_workspace", RetrievalConfig.lightrag_workspace
         ),
-        lightrag_mode=getattr(
-            args, "lightrag_mode", RetrievalConfig.lightrag_mode
-        ),
-        lightrag_top_k=getattr(
-            args, "lightrag_top_k", RetrievalConfig.lightrag_top_k
-        ),
-        lightrag_chunk_top_k=getattr(
-            args, "lightrag_chunk_top_k", RetrievalConfig.lightrag_chunk_top_k
-        ),
+        lightrag_mode=getattr(args, "lightrag_mode", None),
+        lightrag_top_k=getattr(args, "lightrag_top_k", None),
+        lightrag_chunk_top_k=getattr(args, "lightrag_chunk_top_k", None),
+        lightrag_max_entity_tokens=getattr(args, "lightrag_max_entity_tokens", None),
+        lightrag_max_relation_tokens=getattr(args, "lightrag_max_relation_tokens", None),
+        lightrag_max_total_tokens=getattr(args, "lightrag_max_total_tokens", None),
         lightrag_fusion=getattr(
             args, "lightrag_fusion", RetrievalConfig.lightrag_fusion
         ),

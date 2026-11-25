@@ -67,13 +67,94 @@ def _import_lightrag() -> tuple[Any, Any, Any]:
 class _FallbackQueryParam:
     """Minimal QueryParam substitute used only when LightRAG is mocked without the package."""
 
-    mode: str = "hybrid"
+    mode: str = "mix"
     only_need_context: bool = True
-    top_k: int = 20
-    chunk_top_k: int = 5
-    max_entity_tokens: int = 1500
-    max_relation_tokens: int = 1500
-    enable_rerank: bool = False
+    top_k: int = 40
+    chunk_top_k: int = 20
+    max_entity_tokens: int = 6000
+    max_relation_tokens: int = 8000
+    max_total_tokens: int = 30000
+    enable_rerank: bool = True
+
+
+class _LocalBGERerankAdapter:
+    """Thread-safe local BGE-Reranker adapter matching LightRAG's rerank_model_func contract."""
+
+    def __init__(
+        self,
+        model_path: str | Path,
+        *,
+        reranker: Any | None = None,
+        batch_size: int = 32,
+        normalize: bool = True,
+    ) -> None:
+        self.model_path = str(model_path)
+        self._reranker = reranker
+        self.batch_size = batch_size
+        self.normalize = normalize
+        self._lock = threading.Lock()
+
+    def _get_reranker(self) -> Any:
+        if self._reranker is None:
+            from vacxis_capstone_fa26.retrieval.reranker import BGEReranker
+
+            self._reranker = BGEReranker(model_path=self.model_path)
+        return self._reranker
+
+    def rerank_sync(
+        self,
+        query: str,
+        documents: list[str],
+        top_n: int | None = None,
+    ) -> list[dict[str, Any]]:
+        if not documents:
+            return []
+        pairs = [[query, doc] for doc in documents]
+        with self._lock:
+            reranker = self._get_reranker()
+            raw_scores = reranker.model.compute_score(
+                pairs,
+                batch_size=self.batch_size,
+                normalize=self.normalize,
+            )
+
+        if hasattr(raw_scores, "tolist"):
+            raw_scores = raw_scores.tolist()
+        if isinstance(raw_scores, (int, float)) or (
+            hasattr(raw_scores, "item") and getattr(raw_scores, "ndim", 0) == 0
+        ):
+            scores = [float(raw_scores)]
+        else:
+            scores = [float(s) for s in raw_scores]
+
+        if len(scores) != len(documents):
+            raise ValueError(
+                f"Expected {len(documents)} reranker scores, got {len(scores)}."
+            )
+
+        ranked = [
+            {"index": idx, "relevance_score": score}
+            for idx, score in enumerate(scores)
+        ]
+        ranked.sort(key=lambda item: item["relevance_score"], reverse=True)
+        if top_n is not None and top_n > 0:
+            return ranked[:top_n]
+        return ranked
+
+    async def __call__(
+        self,
+        query: str,
+        documents: list[str],
+        top_n: int | None = None,
+        **kwargs: Any,
+    ) -> list[dict[str, Any]]:
+        del kwargs
+        return await asyncio.to_thread(self.rerank_sync, query, documents, top_n)
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> _LocalBGERerankAdapter:
+        """Return self during ``dataclasses.asdict`` deepcopy inside ``LightRAG.__post_init__``."""
+        memo[id(self)] = self
+        return self
 
 
 class _AsyncLoopRunner:
@@ -302,12 +383,14 @@ class LightRAGRetriever:
         config: RetrievalConfig | None = None,
         *,
         embed_model: Any | None = None,
+        reranker: Any | None = None,
         rag: Any | None = None,
         chunk_id_map: dict[str, dict[str, Any]] | None = None,
         lazy_load: bool = True,
     ) -> None:
-        self.config = config or RetrievalConfig()
+        self.config = config if config is not None else RetrievalConfig(mode="lightrag")
         self._embed_model = embed_model
+        self._reranker = reranker
         self._rag = rag
         self._owns_rag = rag is None
         self._initialized = rag is not None
@@ -318,6 +401,11 @@ class LightRAGRetriever:
 
         if not lazy_load:
             self._ensure_initialized()
+
+    def _should_enable_rerank(self, skip_rerank: bool | None = None) -> bool:
+        """Enable LightRAG's internal rerank only for standalone lightrag mode."""
+        effective_skip = self.config.skip_rerank if skip_rerank is None else skip_rerank
+        return self.config.mode == "lightrag" and not effective_skip
 
     def _get_loop_runner(self) -> _AsyncLoopRunner:
         if self._loop_runner is None:
@@ -454,6 +542,15 @@ class LightRAGRetriever:
                 )
             working_dir.mkdir(parents=True, exist_ok=True)
 
+            rerank_model_func = (
+                _LocalBGERerankAdapter(
+                    model_path=self.config.reranker_model_path,
+                    reranker=self._reranker,
+                )
+                if self.config.mode == "lightrag"
+                else None
+            )
+
             rag = LightRAG(
                 working_dir=str(working_dir),
                 workspace=workspace,
@@ -462,6 +559,7 @@ class LightRAGRetriever:
                 llm_model_func=custom_llm_model_func,
                 llm_model_name=llm_model,
                 embedding_func=embedding_wrapper,
+                rerank_model_func=rerank_model_func,
                 vector_db_storage_cls_kwargs={"cosine_better_than_threshold": 0.2},
                 addon_params={
                     "language": "Vietnamese",
@@ -478,6 +576,7 @@ class LightRAGRetriever:
         mode: str,
         top_k: int,
         chunk_top_k: int,
+        enable_rerank: bool = False,
     ) -> Any:
         try:
             _, QueryParam, _ = _import_lightrag()
@@ -491,7 +590,8 @@ class LightRAGRetriever:
             chunk_top_k=chunk_top_k,
             max_entity_tokens=self.config.lightrag_max_entity_tokens,
             max_relation_tokens=self.config.lightrag_max_relation_tokens,
-            enable_rerank=False,
+            max_total_tokens=self.config.lightrag_max_total_tokens,
+            enable_rerank=enable_rerank,
         )
 
     def query_raw(
@@ -501,20 +601,28 @@ class LightRAGRetriever:
         mode: str | None = None,
         top_k: int | None = None,
         chunk_top_k: int | None = None,
+        enable_rerank: bool | None = None,
     ) -> dict[str, Any]:
         """Execute LightRAG ``aquery_data`` and return the raw structured response."""
         self._ensure_initialized()
         assert self._rag is not None
 
         active_mode = mode or self.config.lightrag_mode
+        assert active_mode is not None
         active_top_k = top_k if top_k is not None else self.config.lightrag_top_k
+        assert active_top_k is not None
         active_chunk_top_k = (
             chunk_top_k if chunk_top_k is not None else self.config.lightrag_chunk_top_k
+        )
+        assert active_chunk_top_k is not None
+        active_rerank = (
+            self._should_enable_rerank() if enable_rerank is None else enable_rerank
         )
         param = self._build_query_param(
             mode=active_mode,
             top_k=active_top_k,
             chunk_top_k=active_chunk_top_k,
+            enable_rerank=active_rerank,
         )
         response = self._get_loop_runner().run(self._rag.aquery_data(query, param))
         if isinstance(response, dict):
@@ -602,6 +710,13 @@ class LightRAGRetriever:
                 meta["lightrag_chunk_id"] = lr_cid
                 meta["lightrag_rank"] = rank
                 rank_score = 1.0 / (60.0 + rank)
+                raw_rerank_score = item.get("rerank_score")
+                rerank_score = (
+                    float(raw_rerank_score)
+                    if isinstance(raw_rerank_score, (int, float))
+                    and not isinstance(raw_rerank_score, bool)
+                    else None
+                )
                 doc_chunks.append(
                     RetrievedChunk(
                         chunk_id=orig_cid,
@@ -612,9 +727,9 @@ class LightRAGRetriever:
                         header=header,
                         content_type=content_type,
                         text=content,
-                        score=rank_score,
+                        score=rerank_score if rerank_score is not None else rank_score,
                         rrf_score=rank_score,
-                        rerank_score=None,
+                        rerank_score=rerank_score,
                         point_id=None,
                         metadata=meta,
                     )
@@ -631,6 +746,7 @@ class LightRAGRetriever:
         top_k: int | None = None,
         include_chunks: bool | None = None,
         mode: str | None = None,
+        skip_rerank: bool | None = None,
     ) -> tuple[list[RetrievedChunk], RetrievedChunk | None]:
         """Return ``(document_chunks, kg_context_chunk)`` separately for fusion pipelines."""
         if not query or not query.strip():
@@ -638,19 +754,28 @@ class LightRAGRetriever:
             return [], None
 
         active_mode = mode or self.config.lightrag_mode
+        assert active_mode is not None
         should_include_chunks = (
             include_chunks
             if include_chunks is not None
             else self.config.lightrag_include_chunks
         )
-        doc_limit = top_k if top_k is not None else self.config.lightrag_chunk_top_k
-        request_chunk_top_k = max(self.config.lightrag_chunk_top_k, doc_limit) if should_include_chunks else self.config.lightrag_chunk_top_k
+        default_chunk_top_k = self.config.lightrag_chunk_top_k
+        assert default_chunk_top_k is not None
+        doc_limit = top_k if top_k is not None else default_chunk_top_k
+        request_chunk_top_k = (
+            max(default_chunk_top_k, doc_limit)
+            if should_include_chunks
+            else default_chunk_top_k
+        )
+        enable_rerank = self._should_enable_rerank(skip_rerank)
 
         response = self.query_raw(
             query.strip(),
             mode=active_mode,
             top_k=self.config.lightrag_top_k,
             chunk_top_k=request_chunk_top_k,
+            enable_rerank=enable_rerank,
         )
         return self._parse_response(
             response,
@@ -667,8 +792,13 @@ class LightRAGRetriever:
         **kwargs: Any,
     ) -> list[RetrievedChunk]:
         """Retrieve document chunks and formatted Knowledge Graph context for a single query."""
-        del skip_rerank, kwargs
-        doc_chunks, kg_chunk = self.retrieve_components(query, top_k=top_k)
+        del kwargs
+        effective_top_k = top_k if top_k is not None else self.config.top_k
+        doc_chunks, kg_chunk = self.retrieve_components(
+            query,
+            top_k=effective_top_k,
+            skip_rerank=skip_rerank,
+        )
         if kg_chunk is not None:
             return [*doc_chunks, kg_chunk]
         return doc_chunks

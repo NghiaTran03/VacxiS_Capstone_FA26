@@ -318,7 +318,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.set_defaults(
         retriever_mode="hybrid_lightrag",
         collection_name="VacxiS_Capstone_FA26_table_dual",
-        lightrag_mode="hybrid",
         lightrag_fusion="rrf_rerank",
     )
     args = parser.parse_args(argv)

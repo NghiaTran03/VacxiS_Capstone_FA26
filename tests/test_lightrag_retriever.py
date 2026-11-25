@@ -26,10 +26,25 @@ from vacxis_capstone_fa26.retrieval.lightrag_retriever import (
     KG_CONTENT_TYPE,
     KG_CONTEXT_CHUNK_ID,
     LightRAGRetriever,
+    _LocalBGERerankAdapter,
     build_lightrag_chunk_id_map,
     format_kg_context,
 )
-from vacxis_capstone_fa26.retrieval.schemas import RetrievalConfig, RetrievedChunk
+from vacxis_capstone_fa26.retrieval.schemas import (
+    HYBRID_LIGHTRAG_DEFAULT_CHUNK_TOP_K,
+    HYBRID_LIGHTRAG_DEFAULT_MAX_ENTITY_TOKENS,
+    HYBRID_LIGHTRAG_DEFAULT_MAX_RELATION_TOKENS,
+    HYBRID_LIGHTRAG_DEFAULT_MODE,
+    HYBRID_LIGHTRAG_DEFAULT_TOP_K,
+    LIGHTRAG_DEFAULT_CHUNK_TOP_K,
+    LIGHTRAG_DEFAULT_MAX_ENTITY_TOKENS,
+    LIGHTRAG_DEFAULT_MAX_RELATION_TOKENS,
+    LIGHTRAG_DEFAULT_MAX_TOTAL_TOKENS,
+    LIGHTRAG_DEFAULT_MODE,
+    LIGHTRAG_DEFAULT_TOP_K,
+    RetrievalConfig,
+    RetrievedChunk,
+)
 
 
 def _chunk(
@@ -273,9 +288,14 @@ def test_lightrag_retriever_maps_chunks_and_appends_kg_context():
     assert len(fake_rag.calls) == 3
     first_query, first_param = fake_rag.calls[0]
     assert first_query == "Liều tiêm Verorab?"
-    assert first_param.enable_rerank is False
+    assert first_param.enable_rerank is True
     assert first_param.only_need_context is True
     assert first_param.mode == "hybrid"
+    assert first_param.top_k == LIGHTRAG_DEFAULT_TOP_K
+    assert first_param.chunk_top_k == 5
+    assert first_param.max_entity_tokens == LIGHTRAG_DEFAULT_MAX_ENTITY_TOKENS
+    assert first_param.max_relation_tokens == LIGHTRAG_DEFAULT_MAX_RELATION_TOKENS
+    assert first_param.max_total_tokens == LIGHTRAG_DEFAULT_MAX_TOTAL_TOKENS
 
     assert [c.chunk_id for c in results] == [
         "verorab_001_c_0001",
@@ -383,3 +403,162 @@ def test_hybrid_lightrag_rejects_invalid_fusion():
         HybridLightRAGRetriever(
             config=RetrievalConfig(mode="hybrid_lightrag", lightrag_fusion="bad_mode")  # type: ignore[arg-type]
         )
+
+
+def test_standalone_lightrag_defaults_match_lightrag_package_and_isolate_hybrid():
+    standalone_cfg = RetrievalConfig(mode="lightrag")
+    assert standalone_cfg.lightrag_mode == LIGHTRAG_DEFAULT_MODE == "mix"
+    assert standalone_cfg.lightrag_top_k == LIGHTRAG_DEFAULT_TOP_K == 40
+    assert standalone_cfg.lightrag_chunk_top_k == LIGHTRAG_DEFAULT_CHUNK_TOP_K == 20
+    assert standalone_cfg.lightrag_max_entity_tokens == LIGHTRAG_DEFAULT_MAX_ENTITY_TOKENS == 6000
+    assert standalone_cfg.lightrag_max_relation_tokens == LIGHTRAG_DEFAULT_MAX_RELATION_TOKENS == 8000
+    assert standalone_cfg.lightrag_max_total_tokens == LIGHTRAG_DEFAULT_MAX_TOTAL_TOKENS == 30000
+
+    # LightRAGRetriever() without explicit config uses standalone defaults
+    default_retriever = LightRAGRetriever(rag=_FakeLightRAG({"data": {}}))
+    assert default_retriever.config.mode == "lightrag"
+    assert default_retriever.config.lightrag_mode == "mix"
+    assert default_retriever.config.lightrag_top_k == 40
+    assert default_retriever.config.lightrag_chunk_top_k == 20
+
+    # Hybrid LightRAG keeps compact defaults unchanged
+    hybrid_cfg = RetrievalConfig(mode="hybrid_lightrag")
+    assert hybrid_cfg.lightrag_mode == HYBRID_LIGHTRAG_DEFAULT_MODE == "hybrid"
+    assert hybrid_cfg.lightrag_top_k == HYBRID_LIGHTRAG_DEFAULT_TOP_K == 20
+    assert hybrid_cfg.lightrag_chunk_top_k == HYBRID_LIGHTRAG_DEFAULT_CHUNK_TOP_K == 5
+    assert hybrid_cfg.lightrag_max_entity_tokens == HYBRID_LIGHTRAG_DEFAULT_MAX_ENTITY_TOKENS == 1500
+    assert hybrid_cfg.lightrag_max_relation_tokens == HYBRID_LIGHTRAG_DEFAULT_MAX_RELATION_TOKENS == 1500
+    assert hybrid_cfg.lightrag_max_total_tokens == LIGHTRAG_DEFAULT_MAX_TOTAL_TOKENS == 30000
+
+    # Explicit overrides always take precedence in standalone mode
+    override_cfg = RetrievalConfig(
+        mode="lightrag",
+        lightrag_mode="local",
+        lightrag_top_k=10,
+        lightrag_chunk_top_k=8,
+        lightrag_max_entity_tokens=2000,
+        lightrag_max_relation_tokens=2500,
+        lightrag_max_total_tokens=16000,
+    )
+    assert override_cfg.lightrag_mode == "local"
+    assert override_cfg.lightrag_top_k == 10
+    assert override_cfg.lightrag_chunk_top_k == 8
+    assert override_cfg.lightrag_max_entity_tokens == 2000
+    assert override_cfg.lightrag_max_relation_tokens == 2500
+    assert override_cfg.lightrag_max_total_tokens == 16000
+
+    with pytest.raises(ValueError, match="lightrag_top_k must be positive"):
+        RetrievalConfig(mode="lightrag", lightrag_top_k=0)
+
+    # Verify alignment with local LightRAG/ constants when present
+    lightrag_dir = Path(__file__).resolve().parents[1] / "LightRAG"
+    if lightrag_dir.is_dir():
+        import sys
+
+        if str(lightrag_dir) not in sys.path:
+            sys.path.insert(0, str(lightrag_dir))
+        from lightrag.base import QueryParam
+        from lightrag.constants import (
+            DEFAULT_CHUNK_TOP_K,
+            DEFAULT_MAX_ENTITY_TOKENS,
+            DEFAULT_MAX_RELATION_TOKENS,
+            DEFAULT_MAX_TOTAL_TOKENS,
+            DEFAULT_TOP_K,
+        )
+
+        assert standalone_cfg.lightrag_mode == QueryParam.mode
+        assert standalone_cfg.lightrag_top_k == DEFAULT_TOP_K
+        assert standalone_cfg.lightrag_chunk_top_k == DEFAULT_CHUNK_TOP_K
+        assert standalone_cfg.lightrag_max_entity_tokens == DEFAULT_MAX_ENTITY_TOKENS
+        assert standalone_cfg.lightrag_max_relation_tokens == DEFAULT_MAX_RELATION_TOKENS
+        assert standalone_cfg.lightrag_max_total_tokens == DEFAULT_MAX_TOTAL_TOKENS
+
+
+def test_standalone_lightrag_rerank_adapter_and_skip_rerank_control():
+    import copy
+
+    class _FakeRerankerModel:
+        def __init__(self, scores: Any) -> None:
+            self._scores = scores
+            self.calls: list[list[list[str]]] = []
+
+        def compute_score(self, pairs: list[list[str]], **kwargs: Any) -> Any:
+            self.calls.append(pairs)
+            return self._scores
+
+    class _FakeReranker:
+        def __init__(self, scores: Any) -> None:
+            self.model = _FakeRerankerModel(scores)
+
+    adapter = _LocalBGERerankAdapter(
+        model_path="models/bge-reranker",
+        reranker=_FakeReranker([0.2, 0.9, 0.5]),
+    )
+    assert copy.deepcopy(adapter) is adapter
+    assert asyncio.run(adapter("query", [])) == []
+
+    ranked = asyncio.run(adapter("query", ["d0", "d1", "d2"], top_n=2))
+    assert ranked == [
+        {"index": 1, "relevance_score": 0.9},
+        {"index": 2, "relevance_score": 0.5},
+    ]
+
+    single_adapter = _LocalBGERerankAdapter(
+        model_path="models/bge-reranker",
+        reranker=_FakeReranker(0.75),
+    )
+    assert asyncio.run(single_adapter("query", ["only"])) == [
+        {"index": 0, "relevance_score": 0.75}
+    ]
+
+    # Standalone retriever requests chunk_top_k=20, enables rerank by default, preserves rerank_score,
+    # and respects skip_rerank=True and top_k=5 cutoff
+    fake_rag = _FakeLightRAG(
+        response={
+            "data": {
+                "entities": [],
+                "relationships": [],
+                "chunks": [
+                    {"chunk_id": f"chunk-{i}", "content": f"Text {i}", "rerank_score": 0.9 - i * 0.05}
+                    for i in range(7)
+                ],
+            }
+        }
+    )
+    with LightRAGRetriever(config=RetrievalConfig(mode="lightrag"), rag=fake_rag, chunk_id_map={}) as ret:
+        # Without explicit top_k, retrieve() requests chunk_top_k=20 and cuts to config.top_k (5)
+        chunks_default_top_k = ret.retrieve("Liều dùng?")
+        chunks = ret.retrieve("Liều dùng?", top_k=5)
+        ret.retrieve("Liều dùng?", top_k=5, skip_rerank=True)
+
+    assert len(chunks_default_top_k) == 5
+    assert len(chunks) == 5
+    assert chunks[0].rerank_score == pytest.approx(0.9)
+    assert chunks[0].score == pytest.approx(0.9)
+
+    _, param_default = fake_rag.calls[0]
+    assert param_default.mode == "mix"
+    assert param_default.top_k == 40
+    assert param_default.chunk_top_k == 20
+    assert param_default.max_entity_tokens == 6000
+    assert param_default.max_relation_tokens == 8000
+    assert param_default.max_total_tokens == 30000
+    assert param_default.enable_rerank is True
+
+    _, param_skipped = fake_rag.calls[2]
+    assert param_skipped.enable_rerank is False
+
+    # Inside hybrid_lightrag mode, LightRAG internal rerank stays disabled to prevent double reranking
+    hybrid_lr_sub = LightRAGRetriever(
+        config=RetrievalConfig(mode="hybrid_lightrag"),
+        rag=fake_rag,
+        chunk_id_map={},
+    )
+    hybrid_lr_sub.retrieve_components("Liều dùng?", top_k=5)
+    _, param_hybrid = fake_rag.calls[3]
+    assert param_hybrid.enable_rerank is False
+    assert param_hybrid.mode == "hybrid"
+    assert param_hybrid.top_k == 20
+    assert param_hybrid.chunk_top_k == 5
+    assert param_hybrid.max_entity_tokens == 1500
+    assert param_hybrid.max_relation_tokens == 1500

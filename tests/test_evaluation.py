@@ -919,6 +919,55 @@ def test_cli_lightrag_flags_and_metadata(monkeypatch):
     with pytest.raises(SystemExit):
         cli.parse_args()
 
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "vacxis-eval",
+            "--retrieval-only",
+            "--retriever-mode",
+            "lightrag",
+            "--lightrag-max-entity-tokens",
+            "0",
+        ],
+    )
+    with pytest.raises(SystemExit):
+        cli.parse_args()
+
+    # Standalone lightrag resolves to LightRAG/ package defaults when flags are omitted
+    monkeypatch.setattr(
+        "sys.argv",
+        ["vacxis-eval", "--retrieval-only", "--retriever-mode", "lightrag"],
+    )
+    standalone_args = cli.parse_args()
+    standalone_summary = EvaluationSummary()
+    cli._record_retrieval_run(standalone_summary, standalone_args)
+    standalone_run = standalone_summary.metadata["run"]
+    assert standalone_run["retriever"] == "lightrag"
+    assert standalone_run["lightrag_mode"] == "mix"
+    assert standalone_run["lightrag_top_k"] == 40
+    assert standalone_run["lightrag_chunk_top_k"] == 20
+    assert standalone_run["lightrag_max_entity_tokens"] == 6000
+    assert standalone_run["lightrag_max_relation_tokens"] == 8000
+    assert standalone_run["lightrag_max_total_tokens"] == 30000
+    assert standalone_run["skip_rerank"] is False
+
+    # Hybrid lightrag keeps compact defaults when flags are omitted
+    monkeypatch.setattr(
+        "sys.argv",
+        ["vacxis-eval", "--retrieval-only", "--retriever-mode", "hybrid_lightrag"],
+    )
+    hybrid_args = cli.parse_args()
+    hybrid_summary = EvaluationSummary()
+    cli._record_retrieval_run(hybrid_summary, hybrid_args)
+    hybrid_run = hybrid_summary.metadata["run"]
+    assert hybrid_run["retriever"] == "hybrid_lightrag"
+    assert hybrid_run["lightrag_mode"] == "hybrid"
+    assert hybrid_run["lightrag_top_k"] == 20
+    assert hybrid_run["lightrag_chunk_top_k"] == 5
+    assert hybrid_run["lightrag_max_entity_tokens"] == 1500
+    assert hybrid_run["lightrag_max_relation_tokens"] == 1500
+    assert hybrid_run["lightrag_max_total_tokens"] == 30000
+
 
 def test_ir_metrics_alias_matching_preserves_ranks_and_bounds():
     from vacxis_capstone_fa26.evaluation.ir_metrics import compute_query_ir_metrics
