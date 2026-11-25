@@ -29,7 +29,7 @@ def add_lightrag_arguments(parser: argparse.ArgumentParser) -> None:
         "--lightrag-fusion",
         choices=_LIGHTRAG_FUSIONS,
         default=RetrievalConfig.lightrag_fusion,
-        help="Fusion strategy when using hybrid_lightrag mode",
+        help="Fusion strategy when using hybrid_lightrag mode (default: rrf_rerank)",
     )
     parser.add_argument(
         "--lightrag-working-dir",
@@ -47,25 +47,25 @@ def add_lightrag_arguments(parser: argparse.ArgumentParser) -> None:
         "--lightrag-top-k",
         type=int,
         default=None,
-        help="Number of graph entities/relationships retrieved by LightRAG (default: 40 for lightrag, 20 for hybrid_lightrag)",
+        help="Number of graph entities/relationships retrieved by LightRAG (default: 40 for lightrag, 30 for hybrid_lightrag)",
     )
     parser.add_argument(
         "--lightrag-chunk-top-k",
         type=int,
         default=None,
-        help="Number of document chunks retrieved by LightRAG (default: 20 for lightrag, 5 for hybrid_lightrag)",
+        help="Number of document chunks retrieved by LightRAG (default: 20 for lightrag and hybrid_lightrag)",
     )
     parser.add_argument(
         "--lightrag-max-entity-tokens",
         type=int,
         default=None,
-        help="Token budget for LightRAG entity context (default: 6000 for lightrag, 1500 for hybrid_lightrag)",
+        help="Token budget for LightRAG entity context (default: 6000 for lightrag, 3000 for hybrid_lightrag)",
     )
     parser.add_argument(
         "--lightrag-max-relation-tokens",
         type=int,
         default=None,
-        help="Token budget for LightRAG relationship context (default: 8000 for lightrag, 1500 for hybrid_lightrag)",
+        help="Token budget for LightRAG relationship context (default: 8000 for lightrag, 3000 for hybrid_lightrag)",
     )
     parser.add_argument(
         "--lightrag-max-total-tokens",

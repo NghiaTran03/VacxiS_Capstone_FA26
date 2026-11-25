@@ -18,12 +18,12 @@ LIGHTRAG_DEFAULT_MAX_ENTITY_TOKENS = 6000
 LIGHTRAG_DEFAULT_MAX_RELATION_TOKENS = 8000
 LIGHTRAG_DEFAULT_MAX_TOTAL_TOKENS = 30000
 
-# Compact LightRAG defaults for hybrid_lightrag alongside table-aware dual chunks
+# Balanced LightRAG defaults for hybrid_lightrag alongside table-aware dual chunks
 HYBRID_LIGHTRAG_DEFAULT_MODE: LightRAGQueryMode = "hybrid"
-HYBRID_LIGHTRAG_DEFAULT_TOP_K = 20
-HYBRID_LIGHTRAG_DEFAULT_CHUNK_TOP_K = 5
-HYBRID_LIGHTRAG_DEFAULT_MAX_ENTITY_TOKENS = 1500
-HYBRID_LIGHTRAG_DEFAULT_MAX_RELATION_TOKENS = 1500
+HYBRID_LIGHTRAG_DEFAULT_TOP_K = 30
+HYBRID_LIGHTRAG_DEFAULT_CHUNK_TOP_K = 20
+HYBRID_LIGHTRAG_DEFAULT_MAX_ENTITY_TOKENS = 3000
+HYBRID_LIGHTRAG_DEFAULT_MAX_RELATION_TOKENS = 3000
 HYBRID_LIGHTRAG_DEFAULT_MAX_TOTAL_TOKENS = 30000
 
 
@@ -78,7 +78,7 @@ class RetrievalConfig:
     lightrag_max_relation_tokens: int | None = None
     lightrag_max_total_tokens: int | None = None
     lightrag_include_chunks: bool = True
-    lightrag_fusion: LightRAGFusionMode = "context_append"
+    lightrag_fusion: LightRAGFusionMode = "rrf_rerank"
     chunks_parquet_path: str | Path = "chunks_storage/chunks.parquet"
 
     def __post_init__(self) -> None:

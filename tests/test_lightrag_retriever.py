@@ -421,13 +421,14 @@ def test_standalone_lightrag_defaults_match_lightrag_package_and_isolate_hybrid(
     assert default_retriever.config.lightrag_top_k == 40
     assert default_retriever.config.lightrag_chunk_top_k == 20
 
-    # Hybrid LightRAG keeps compact defaults unchanged
+    # Hybrid LightRAG uses balanced rrf_rerank defaults
     hybrid_cfg = RetrievalConfig(mode="hybrid_lightrag")
+    assert hybrid_cfg.lightrag_fusion == "rrf_rerank"
     assert hybrid_cfg.lightrag_mode == HYBRID_LIGHTRAG_DEFAULT_MODE == "hybrid"
-    assert hybrid_cfg.lightrag_top_k == HYBRID_LIGHTRAG_DEFAULT_TOP_K == 20
-    assert hybrid_cfg.lightrag_chunk_top_k == HYBRID_LIGHTRAG_DEFAULT_CHUNK_TOP_K == 5
-    assert hybrid_cfg.lightrag_max_entity_tokens == HYBRID_LIGHTRAG_DEFAULT_MAX_ENTITY_TOKENS == 1500
-    assert hybrid_cfg.lightrag_max_relation_tokens == HYBRID_LIGHTRAG_DEFAULT_MAX_RELATION_TOKENS == 1500
+    assert hybrid_cfg.lightrag_top_k == HYBRID_LIGHTRAG_DEFAULT_TOP_K == 30
+    assert hybrid_cfg.lightrag_chunk_top_k == HYBRID_LIGHTRAG_DEFAULT_CHUNK_TOP_K == 20
+    assert hybrid_cfg.lightrag_max_entity_tokens == HYBRID_LIGHTRAG_DEFAULT_MAX_ENTITY_TOKENS == 3000
+    assert hybrid_cfg.lightrag_max_relation_tokens == HYBRID_LIGHTRAG_DEFAULT_MAX_RELATION_TOKENS == 3000
     assert hybrid_cfg.lightrag_max_total_tokens == LIGHTRAG_DEFAULT_MAX_TOTAL_TOKENS == 30000
 
     # Explicit overrides always take precedence in standalone mode
@@ -558,7 +559,7 @@ def test_standalone_lightrag_rerank_adapter_and_skip_rerank_control():
     _, param_hybrid = fake_rag.calls[3]
     assert param_hybrid.enable_rerank is False
     assert param_hybrid.mode == "hybrid"
-    assert param_hybrid.top_k == 20
-    assert param_hybrid.chunk_top_k == 5
-    assert param_hybrid.max_entity_tokens == 1500
-    assert param_hybrid.max_relation_tokens == 1500
+    assert param_hybrid.top_k == 30
+    assert param_hybrid.chunk_top_k == 20
+    assert param_hybrid.max_entity_tokens == 3000
+    assert param_hybrid.max_relation_tokens == 3000
