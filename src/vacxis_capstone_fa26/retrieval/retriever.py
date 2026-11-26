@@ -5,6 +5,7 @@ from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import replace
 import logging
+from time import perf_counter
 from typing import Any, Sequence, TYPE_CHECKING
 
 import torch
@@ -150,6 +151,7 @@ class VacxisRetriever:
             )
 
         # 1. Encode query with BGE-M3
+        embed_started = perf_counter()
         embed_output = self.embed_model.encode(
             [query],
             batch_size=1,
@@ -158,6 +160,7 @@ class VacxisRetriever:
             return_sparse=True,
             return_colbert_vecs=False,
         )
+        logger.info("BGE-M3 encoded 1 query in %.2fs.", perf_counter() - embed_started)
         dense_vec = embed_output["dense_vecs"][0].tolist()
         sparse_weights = embed_output["lexical_weights"][0]
 
@@ -230,6 +233,7 @@ class VacxisRetriever:
         effective_embed_batch_size = (
             self.config.embed_batch_size if batch_size is None else batch_size
         )
+        embed_started = perf_counter()
         embed_output = run_with_oom_backoff(
             lambda bs: self.embed_model.encode(
                 query_list,
@@ -241,6 +245,11 @@ class VacxisRetriever:
             ),
             batch_size=effective_embed_batch_size,
             operation="VacxisRetriever.batch_retrieve",
+        )
+        logger.info(
+            "BGE-M3 encoded %d queries in %.2fs.",
+            len(query_list),
+            perf_counter() - embed_started,
         )
         if len(embed_output["dense_vecs"]) != len(query_list) or len(embed_output["lexical_weights"]) != len(query_list):
             raise ValueError("Expected one embedding per query.")

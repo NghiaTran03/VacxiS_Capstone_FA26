@@ -590,6 +590,57 @@ def test_retriever_batch_retrieve_uses_config_batch_sizes_and_oom_backoff():
     assert mock_reranker.batch_rerank.call_args.kwargs["batch_size"] == 48
 
 
+def test_retriever_and_reranker_log_inference_timing(caplog):
+    """Verify BGE-M3 encoding and BGE-Reranker scoring emit INFO timing logs."""
+    import logging
+
+    dense_mock = MagicMock()
+    dense_mock.tolist.return_value = [0.1] * 1024
+    mock_embed = MagicMock()
+    mock_embed.encode.side_effect = lambda texts, **kw: {
+        "dense_vecs": [dense_mock for _ in texts],
+        "lexical_weights": [{"1": 0.5} for _ in texts],
+    }
+    cand = RetrievedChunk(
+        chunk_id="c1",
+        doc_id="d1",
+        doc_title="Doc 1",
+        category="cat",
+        parent_header="",
+        header="H1",
+        content_type="text",
+        text="Sample text",
+        score=0.5,
+        rrf_score=0.5,
+    )
+    mock_searcher = MagicMock()
+    mock_searcher.search.return_value = [cand]
+    mock_searcher.batch_search.return_value = [[cand], [cand]]
+
+    mock_reranker_model = MagicMock()
+    mock_reranker_model.compute_score.side_effect = lambda pairs, **kw: [0.9 for _ in pairs]
+    reranker = BGEReranker.__new__(BGEReranker)
+    reranker.model = mock_reranker_model
+    reranker.use_fp16 = False
+    reranker.model_path = "mock-reranker"
+
+    retriever = VacxisRetriever(
+        config=RetrievalConfig(top_k=5),
+        embed_model=mock_embed,
+        reranker=reranker,
+        hybrid_searcher=mock_searcher,
+    )
+
+    with caplog.at_level(logging.INFO):
+        retriever.retrieve("q1", top_k=5)
+        retriever.batch_retrieve(["q1", "q2"], top_k=5)
+
+    assert "BGE-M3 encoded 1 query in " in caplog.text
+    assert "BGE-M3 encoded 2 queries in " in caplog.text
+    assert "BGE-Reranker scored 1 candidate pair(s) across 1 query(ies)" in caplog.text
+    assert "BGE-Reranker scored 2 candidate pair(s) across 2 query(ies)" in caplog.text
+
+
 @pytest.mark.integration
 def test_full_pipeline_integration():
     """End-to-end integration test with live Qdrant and local models."""

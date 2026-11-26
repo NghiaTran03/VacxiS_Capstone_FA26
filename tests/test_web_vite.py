@@ -343,35 +343,41 @@ def test_cli_parse_args_and_main_wiring(monkeypatch, capsys, tmp_path):
     assert pipeline_factory.call_args.kwargs["query_planner"] is planner
     stdout = capsys.readouterr().out
     assert "Retriever: hybrid_lightrag" in stdout
-    assert "Verbose planner logging: enabled" in stdout
+    assert "Verbose server logging: enabled" in stdout
     uvicorn_run.assert_called_once_with("fake-app", host="127.0.0.1", port=8001)
     pipeline.__exit__.assert_called_once()
 
 
 def test_configure_logging_toggles_handler_without_duplicates():
+    root_logger = logging.getLogger()
     pipeline_logger = logging.getLogger(web_vite.PLANNER_PIPELINE_LOGGER)
+    original_root_level = root_logger.level
     try:
         web_vite.configure_logging(False)
         web_vite.configure_logging(True)
         web_vite.configure_logging(True)
         tagged = [
             handler
-            for handler in pipeline_logger.handlers
+            for handler in root_logger.handlers
             if getattr(handler, web_vite._VERBOSE_HANDLER_ATTR, False)
         ]
+        assert root_logger.level == logging.INFO
         assert pipeline_logger.level == logging.DEBUG
         assert len(tagged) == 1
+        assert tagged[0].level == logging.DEBUG
 
         web_vite.configure_logging(False)
         tagged_after = [
             handler
-            for handler in pipeline_logger.handlers
+            for handler in root_logger.handlers
             if getattr(handler, web_vite._VERBOSE_HANDLER_ATTR, False)
         ]
+        assert root_logger.level == original_root_level
         assert pipeline_logger.level == logging.NOTSET
         assert tagged_after == []
     finally:
         web_vite.configure_logging(False)
+        root_logger.setLevel(original_root_level)
 
 
 def test_preview_with_empty_corpus_exits_cleanly(monkeypatch):

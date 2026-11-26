@@ -24,32 +24,42 @@ CONVERSATIONS_RELATIVE_DIR = Path("data") / "web_vite_conversations"
 FRONTEND_DIST_RELATIVE_DIR = Path("web-vite") / "dist"
 PLANNER_PIPELINE_LOGGER = "vacxis_capstone_fa26.generation.pipeline"
 _VERBOSE_HANDLER_ATTR = "_vacxis_web_vite_verbose_handler"
+_PREV_ROOT_LEVEL_ATTR = "_vacxis_web_vite_prev_root_level"
 
 
 def configure_logging(verbose: bool) -> None:
-    """Configure verbose terminal logging for the query planner pipeline."""
+    """Configure verbose terminal logging for retrieval and query planner pipelines."""
+    root_logger = logging.getLogger()
     pipeline_logger = logging.getLogger(PLANNER_PIPELINE_LOGGER)
     existing_handlers = [
         handler
-        for handler in pipeline_logger.handlers
+        for handler in root_logger.handlers
         if getattr(handler, _VERBOSE_HANDLER_ATTR, False)
     ]
     if verbose:
-        pipeline_logger.setLevel(logging.DEBUG)
         if not existing_handlers:
+            prev_level = root_logger.level
             handler = logging.StreamHandler()
             handler.setLevel(logging.DEBUG)
             handler.setFormatter(
                 logging.Formatter(
-                    "%(asctime)s %(levelname)s [%(name)s] %(message)s",
+                    "%(asctime)s [%(levelname)s] %(name)s — %(message)s",
                     datefmt="%H:%M:%S",
                 )
             )
             setattr(handler, _VERBOSE_HANDLER_ATTR, True)
-            pipeline_logger.addHandler(handler)
+            setattr(handler, _PREV_ROOT_LEVEL_ATTR, prev_level)
+            root_logger.addHandler(handler)
+        root_logger.setLevel(logging.INFO)
+        pipeline_logger.setLevel(logging.DEBUG)
     else:
+        restored_level: int | None = None
         for handler in existing_handlers:
-            pipeline_logger.removeHandler(handler)
+            if restored_level is None:
+                restored_level = getattr(handler, _PREV_ROOT_LEVEL_ATTR, None)
+            root_logger.removeHandler(handler)
+        if restored_level is not None:
+            root_logger.setLevel(restored_level)
         pipeline_logger.setLevel(logging.NOTSET)
 
 
@@ -114,7 +124,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             print(f"* LightRAG fusion: {retrieval.lightrag_fusion}", flush=True)
             if args.verbose:
-                print("* Verbose planner logging: enabled", flush=True)
+                print("* Verbose server logging: enabled", flush=True)
 
         def run_turn(query: str, **options):
             nonlocal pipeline

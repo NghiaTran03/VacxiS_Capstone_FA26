@@ -88,9 +88,13 @@ def test_run_turn_logs_retrieve_plan_at_debug(caplog):
             history=(ConversationMessage("user", "Tôi muốn hỏi về Verorab"),),
         )
 
-    assert "QueryPlanner output:" in caplog.text
-    raw_json = caplog.text.split("QueryPlanner output:\n", 1)[1]
-    payload = json.loads(raw_json)
+    plan_records = [
+        rec.getMessage()
+        for rec in caplog.records
+        if rec.getMessage().startswith("QueryPlanner output:")
+    ]
+    assert len(plan_records) == 1
+    payload = json.loads(plan_records[0].split("QueryPlanner output:\n", 1)[1])
     assert payload["action"] == "retrieve"
     assert payload["model"] == "test/planner-model"
     assert payload["original_query"] == original
@@ -112,9 +116,13 @@ def test_run_turn_logs_clarify_plan_at_debug(caplog):
     with caplog.at_level(logging.DEBUG, logger="vacxis_capstone_fa26.generation.pipeline"):
         pipeline.run_turn("Bé tiêm loại này được không?")
 
-    assert "QueryPlanner output:" in caplog.text
-    raw_json = caplog.text.split("QueryPlanner output:\n", 1)[1]
-    payload = json.loads(raw_json)
+    plan_records = [
+        rec.getMessage()
+        for rec in caplog.records
+        if rec.getMessage().startswith("QueryPlanner output:")
+    ]
+    assert len(plan_records) == 1
+    payload = json.loads(plan_records[0].split("QueryPlanner output:\n", 1)[1])
     assert payload["action"] == "clarify"
     assert payload["clarification_question"] == question
     assert "resolved_query" not in payload
@@ -123,10 +131,63 @@ def test_run_turn_logs_clarify_plan_at_debug(caplog):
 def test_run_turn_does_not_log_plan_at_info(caplog):
     retriever, generator, planner = Mock(), Mock(), Mock()
     planner.model = "test/planner-model"
-    planner.plan.return_value = ClarifyPlan("Bạn đang hỏi về vắc xin nào?")
+    planner.plan.return_value = RetrievePlan("Verorab là gì?", ("Verorab là gì?",), "Verorab là gì?")
+    retriever.retrieve.return_value = [SimpleNamespace(chunk_id="c1", text="Sample")]
+    generator.generate.return_value = GeneratedAnswer("Verorab là gì?", "Answer")
 
     pipeline = VacxisRAGPipeline(retriever, generator, query_planner=planner)
     with caplog.at_level(logging.INFO, logger="vacxis_capstone_fa26.generation.pipeline"):
-        pipeline.run_turn("Bé tiêm loại này được không?")
+        pipeline.run_turn("Verorab là gì?")
 
     assert "QueryPlanner output:" not in caplog.text
+    assert "Retrieved chunks after rerank" not in caplog.text
+
+
+def test_run_turn_logs_retrieved_chunks_at_debug(caplog):
+    retriever, generator, planner = Mock(), Mock(), Mock()
+    planner.model = "test/planner-model"
+    planner.plan.return_value = RetrievePlan("Verorab là gì?", ("Verorab là gì?",), "Verorab là gì?")
+    long_text = "Nội dung chi tiết về vắc xin Verorab. " * 10
+    chunks = [
+        SimpleNamespace(
+            chunk_id="verorab_c_0001",
+            doc_id="verorab_001",
+            doc_title="Hướng dẫn sử dụng Verorab",
+            header="Chỉ định",
+            rerank_score=0.98765,
+            rrf_score=0.0321,
+            score=0.98765,
+            text=long_text,
+        ),
+        SimpleNamespace(
+            chunk_id="verorab_c_0002",
+            doc_id="verorab_001",
+            doc_title="Hướng dẫn sử dụng Verorab",
+            header="Liều dùng",
+            rerank_score=0.81234,
+            rrf_score=0.021,
+            score=0.81234,
+            text="Tiêm bắp 0,5 ml.",
+        ),
+    ]
+    retriever.retrieve.return_value = chunks
+    generator.generate.return_value = GeneratedAnswer("Verorab là gì?", "Answer")
+
+    pipeline = VacxisRAGPipeline(retriever, generator, query_planner=planner)
+    with caplog.at_level(logging.DEBUG, logger="vacxis_capstone_fa26.generation.pipeline"):
+        pipeline.run_turn("Verorab là gì?")
+
+    chunk_records = [
+        rec.getMessage()
+        for rec in caplog.records
+        if rec.getMessage().startswith("Retrieved chunks after rerank")
+    ]
+    assert len(chunk_records) == 1
+    payload = json.loads(chunk_records[0].split("\n", 1)[1])
+    assert len(payload) == 2
+    assert payload[0]["rank"] == 1
+    assert payload[0]["chunk_id"] == "verorab_c_0001"
+    assert payload[0]["rerank_score"] == 0.9877
+    assert payload[0]["text_preview"].endswith("…")
+    assert payload[1]["rank"] == 2
+    assert payload[1]["text_preview"] == "Tiêm bắp 0,5 ml."

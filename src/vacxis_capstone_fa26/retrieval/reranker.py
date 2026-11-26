@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import replace
 import logging
 from pathlib import Path
+from time import perf_counter
 from typing import Sequence
 
 import torch
@@ -129,6 +130,7 @@ class BGEReranker:
         if not all_pairs:
             return [[] for _ in range(num_queries)]
 
+        started = perf_counter()
         scores = run_with_oom_backoff(
             lambda bs: self.model.compute_score(
                 all_pairs,
@@ -137,6 +139,13 @@ class BGEReranker:
             ),
             batch_size=effective_batch_size,
             operation="BGEReranker.batch_rerank",
+        )
+        logger.info(
+            "BGE-Reranker scored %d candidate pair(s) across %d query(ies) in %.2fs (top_k=%d).",
+            len(all_pairs),
+            num_queries,
+            perf_counter() - started,
+            top_k,
         )
 
         if hasattr(scores, "tolist"):

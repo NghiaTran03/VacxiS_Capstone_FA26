@@ -54,6 +54,39 @@ def _log_query_plan(
     )
 
 
+def _round_score(value: Any) -> float | None:
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return round(float(value), 4)
+    return None
+
+
+def _log_retrieved_chunks(chunks: Sequence[Any]) -> None:
+    """Emit a structured debug log of the final chunks passed to generation."""
+    if not logger.isEnabledFor(logging.DEBUG):
+        return
+    items: list[dict[str, Any]] = []
+    for rank, chunk in enumerate(chunks, start=1):
+        raw_text = get_chunk_field(chunk, "text", "")
+        collapsed = " ".join(str(raw_text).split()) if raw_text else ""
+        preview = f"{collapsed[:160]}…" if len(collapsed) > 160 else collapsed
+        items.append({
+            "rank": rank,
+            "chunk_id": get_chunk_field(chunk, "chunk_id", ""),
+            "doc_id": get_chunk_field(chunk, "doc_id", ""),
+            "doc_title": get_chunk_field(chunk, "doc_title", ""),
+            "header": get_chunk_field(chunk, "header", ""),
+            "rerank_score": _round_score(get_chunk_field(chunk, "rerank_score", None)),
+            "rrf_score": _round_score(get_chunk_field(chunk, "rrf_score", None)),
+            "score": _round_score(get_chunk_field(chunk, "score", None)),
+            "text_preview": preview,
+        })
+    logger.debug(
+        "Retrieved chunks after rerank (%d):\n%s",
+        len(items),
+        json.dumps(items, ensure_ascii=False, indent=2),
+    )
+
+
 class VacxisRAGPipeline:
     """End-to-end RAG orchestrator for Vietnamese Vaccine Information."""
 
@@ -152,6 +185,7 @@ class VacxisRAGPipeline:
                 raise ValueError("Expected one retrieval group per search query.")
             chunks = self._merge_query_results(groups, limit)
 
+        _log_retrieved_chunks(chunks)
         if on_progress is not None:
             on_progress("generating", len(chunks))
         answer = self.generator.generate(query=plan.resolved_query, chunks=chunks)
