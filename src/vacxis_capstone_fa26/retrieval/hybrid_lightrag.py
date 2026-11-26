@@ -251,9 +251,10 @@ class HybridLightRAGRetriever:
         top_k_sparse: int | None = None,
         rrf_top_k: int | None = None,
         skip_rerank: bool | None = None,
-        batch_size: int = 16,
+        batch_size: int | None = None,
         query_max_length: int = 512,
         *,
+        rerank_batch_size: int | None = None,
         merge_table_chunks: bool | None = None,
         on_rerank: Callable[[], None] | None = None,
     ) -> list[list[RetrievedChunk]]:
@@ -268,6 +269,9 @@ class HybridLightRAGRetriever:
         k = top_k if top_k is not None else self.config.top_k
         k_rrf = rrf_top_k if rrf_top_k is not None else self.config.rrf_top_k
         should_skip_rerank = skip_rerank if skip_rerank is not None else self.config.skip_rerank
+        effective_embed_batch_size = (
+            self.config.embed_batch_size if batch_size is None else batch_size
+        )
 
         if self.config.lightrag_fusion == "context_append":
             hybrid_groups = self.hybrid_retriever.batch_retrieve(
@@ -277,8 +281,9 @@ class HybridLightRAGRetriever:
                 top_k_sparse=top_k_sparse,
                 rrf_top_k=k_rrf,
                 skip_rerank=should_skip_rerank,
-                batch_size=batch_size,
+                batch_size=effective_embed_batch_size,
                 query_max_length=query_max_length,
+                rerank_batch_size=rerank_batch_size,
                 merge_table_chunks=merge_table_chunks,
                 on_rerank=on_rerank,
             )
@@ -303,7 +308,7 @@ class HybridLightRAGRetriever:
             top_k_sparse=top_k_sparse,
             rrf_top_k=effective_rrf_top_k,
             skip_rerank=True,
-            batch_size=batch_size,
+            batch_size=effective_embed_batch_size,
             query_max_length=query_max_length,
             merge_table_chunks=merge_table_chunks,
         )
@@ -328,10 +333,14 @@ class HybridLightRAGRetriever:
         if not should_skip_rerank and any(fused_groups):
             if on_rerank is not None:
                 on_rerank()
+            rerank_kwargs: dict[str, Any] = {}
+            if rerank_batch_size is not None:
+                rerank_kwargs["batch_size"] = rerank_batch_size
             ranked_groups = self.hybrid_retriever.reranker.batch_rerank(
                 queries=query_list,
                 candidates_list=fused_groups,
                 top_k=k,
+                **rerank_kwargs,
             )
         else:
             ranked_groups = [group[:k] for group in fused_groups]

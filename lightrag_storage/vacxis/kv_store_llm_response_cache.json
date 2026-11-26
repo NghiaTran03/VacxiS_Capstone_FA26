@@ -45448,5 +45448,25 @@
     "create_time": 1795601734,
     "update_time": 1795601734,
     "_id": "mix:keywords:f630ece9791db5837fe5b902f584e415"
+  },
+  "hybrid:keywords:81393b5fcb5d658c2fbefc4f71e30bed": {
+    "return": "{\"high_level_keywords\": [\"Ti\\u00eam ch\\u1ee7ng m\\u1edf r\\u1ed9ng\", \"l\\u1ecbch ti\\u00eam ch\\u1ee7ng\", \"ti\\u00eam \\u0111\\u1ed3ng th\\u1eddi\"], \"low_level_keywords\": [\"TCMR\", \"bOPV\", \"v\\u1eafc xin\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Trong chương trình Tiêm chủng mở rộng (TCMR), bé cần tiêm hai đợt bOPV uống 2 giọt theo lịch nào và có thể tiêm đồng thời những loại vắc xin nào?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795668428,
+    "update_time": 1795668428,
+    "_id": "hybrid:keywords:81393b5fcb5d658c2fbefc4f71e30bed"
   }
 }

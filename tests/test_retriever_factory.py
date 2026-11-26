@@ -79,7 +79,9 @@ def test_bm25_and_dense_protocol_compatibility():
     assert [[c["chunk_id"] for c in group] for group in batch] == [["c1"], ["c2"]]
 
     model, client = Mock(), Mock()
-    model.encode.return_value = {"dense_vecs": [SimpleNamespace(tolist=lambda: [0.1, 0.9])]}
+    model.encode.side_effect = lambda texts, **kw: {
+        "dense_vecs": [SimpleNamespace(tolist=lambda: [0.1, 0.9]) for _ in texts]
+    }
     client.query_points.return_value = SimpleNamespace(
         points=[SimpleNamespace(id=1, score=0.9, payload={"chunk_id": "c1", "text": "Text 1"})]
     )

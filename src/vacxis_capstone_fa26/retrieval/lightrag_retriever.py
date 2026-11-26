@@ -19,12 +19,17 @@ import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from vacxis_capstone_fa26.indexing.table_summarizer import group_and_merge_document_chunks
+from vacxis_capstone_fa26.retrieval.batching import run_with_oom_backoff
 from vacxis_capstone_fa26.retrieval.lightrag_embedder import (
     DENSE_DIM,
     LocalBGEM3Embedder,
     is_local_bge_m3_model,
 )
-from vacxis_capstone_fa26.retrieval.schemas import RetrievalConfig, RetrievedChunk
+from vacxis_capstone_fa26.retrieval.schemas import (
+    DEFAULT_RERANK_BATCH_SIZE,
+    RetrievalConfig,
+    RetrievedChunk,
+)
 
 logger = logging.getLogger("vacxis.retrieval.lightrag_retriever")
 
@@ -85,9 +90,11 @@ class _LocalBGERerankAdapter:
         model_path: str | Path,
         *,
         reranker: Any | None = None,
-        batch_size: int = 32,
+        batch_size: int = DEFAULT_RERANK_BATCH_SIZE,
         normalize: bool = True,
     ) -> None:
+        if type(batch_size) is not int or batch_size < 1:
+            raise ValueError("batch_size must be a positive integer.")
         self.model_path = str(model_path)
         self._reranker = reranker
         self.batch_size = batch_size
@@ -98,7 +105,10 @@ class _LocalBGERerankAdapter:
         if self._reranker is None:
             from vacxis_capstone_fa26.retrieval.reranker import BGEReranker
 
-            self._reranker = BGEReranker(model_path=self.model_path)
+            self._reranker = BGEReranker(
+                model_path=self.model_path,
+                batch_size=self.batch_size,
+            )
         return self._reranker
 
     def rerank_sync(
@@ -112,10 +122,14 @@ class _LocalBGERerankAdapter:
         pairs = [[query, doc] for doc in documents]
         with self._lock:
             reranker = self._get_reranker()
-            raw_scores = reranker.model.compute_score(
-                pairs,
+            raw_scores = run_with_oom_backoff(
+                lambda bs: reranker.model.compute_score(
+                    pairs,
+                    batch_size=bs,
+                    normalize=self.normalize,
+                ),
                 batch_size=self.batch_size,
-                normalize=self.normalize,
+                operation="LightRAG.rerank",
             )
 
         if hasattr(raw_scores, "tolist"):
@@ -495,7 +509,7 @@ class LightRAGRetriever:
             if is_local_bge_m3_model(embed_model_name):
                 local_embedder = LocalBGEM3Embedder(
                     model_path=self.config.embed_model_path,
-                    batch_size=32,
+                    batch_size=self.config.embed_batch_size,
                     max_length=8192,
                     embed_model=self._embed_model,
                 )
@@ -546,6 +560,7 @@ class LightRAGRetriever:
                 _LocalBGERerankAdapter(
                     model_path=self.config.reranker_model_path,
                     reranker=self._reranker,
+                    batch_size=self.config.rerank_batch_size,
                 )
                 if self.config.mode == "lightrag"
                 else None

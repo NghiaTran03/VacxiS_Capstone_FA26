@@ -438,3 +438,52 @@ def test_spans_split_sentences_skips_html_table_markup():
     assert len(extracted) == 1
     assert "<table>" not in extracted[0]
     assert "Liều tiêm bắp tiêu chuẩn" in extracted[0]
+
+
+def test_indexer_default_batch_size_and_oom_backoff(tmp_path: Path):
+    """Verify indexer defaults to batch_size=64 and backs off on CUDA OOM."""
+    import numpy as np
+    import torch
+    from vacxis_capstone_fa26.indexing.indexer import EMBEDDING_BATCH_SIZE, ingest_to_qdrant
+
+    assert EMBEDDING_BATCH_SIZE == 64
+
+    parquet_path = tmp_path / "chunks.parquet"
+    table = pa.Table.from_pydict(
+        {
+            "chunk_id": ["c1", "c2"],
+            "doc_id": ["d1", "d1"],
+            "doc_title": ["Doc 1", "Doc 1"],
+            "category": ["cat", "cat"],
+            "parent_header": ["", ""],
+            "header": ["H1", "H2"],
+            "content_type": ["text", "text"],
+            "text": ["Text 1", "Text 2"],
+            "metadata": [{"has_table": False}, {"has_table": False}],
+        }
+    )
+    pq.write_table(table, str(parquet_path))
+
+    seen_batch_sizes: list[int] = []
+
+    class _OOMEmbedModel:
+        def encode(self, texts, *, batch_size, **kwargs):
+            seen_batch_sizes.append(batch_size)
+            if batch_size == 64:
+                raise torch.cuda.OutOfMemoryError("CUDA out of memory")
+            return {
+                "dense_vecs": np.ones((len(texts), 1024), dtype=np.float32),
+                "lexical_weights": [{"1": 0.5} for _ in texts],
+            }
+
+    mock_client = MagicMock()
+    mock_client.get_collections.return_value.collections = []
+    mock_client.get_collection.return_value.points_count = 2
+
+    count = ingest_to_qdrant(
+        parquet_path=parquet_path,
+        client=mock_client,
+        embed_model=_OOMEmbedModel(),
+    )
+    assert count == 2
+    assert seen_batch_sizes == [64, 32]

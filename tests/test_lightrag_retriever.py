@@ -562,3 +562,42 @@ def test_standalone_lightrag_rerank_adapter_and_skip_rerank_control():
     assert param_hybrid.chunk_top_k == 5
     assert param_hybrid.max_entity_tokens == 1500
     assert param_hybrid.max_relation_tokens == 1500
+
+
+def test_lightrag_embedder_and_rerank_adapter_default_batch_size_and_oom_backoff():
+    from types import SimpleNamespace
+    import torch
+    from vacxis_capstone_fa26.retrieval.lightrag_retriever import _LocalBGERerankAdapter
+
+    embed_batches: list[int] = []
+
+    class _OOMEmbedModel:
+        def encode(self, texts, *, batch_size, **kwargs):
+            embed_batches.append(batch_size)
+            if batch_size == 64:
+                raise torch.cuda.OutOfMemoryError("CUDA out of memory")
+            return {"dense_vecs": np.ones((len(texts), DENSE_DIM), dtype=np.float32)}
+
+    embedder = LocalBGEM3Embedder(embed_model=_OOMEmbedModel())
+    assert embedder.batch_size == 64
+    vecs = embedder.encode_sync(["q1", "q2"])
+    assert vecs.shape == (2, DENSE_DIM)
+    assert embed_batches == [64, 32]
+
+    rerank_batches: list[int] = []
+
+    class _OOMRerankModel:
+        def compute_score(self, pairs, *, batch_size, normalize):
+            rerank_batches.append(batch_size)
+            if batch_size == 64:
+                raise torch.cuda.OutOfMemoryError("CUDA out of memory")
+            return [0.8 for _ in pairs]
+
+    adapter = _LocalBGERerankAdapter(
+        model_path="models/bge-reranker",
+        reranker=SimpleNamespace(model=_OOMRerankModel()),
+    )
+    assert adapter.batch_size == 64
+    ranked = adapter.rerank_sync("q", ["doc1", "doc2"])
+    assert len(ranked) == 2
+    assert rerank_batches == [64, 32]

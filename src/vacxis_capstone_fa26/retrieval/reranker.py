@@ -8,7 +8,11 @@ from typing import Sequence
 
 import torch
 
-from vacxis_capstone_fa26.retrieval.schemas import RetrievedChunk
+from vacxis_capstone_fa26.retrieval.batching import run_with_oom_backoff
+from vacxis_capstone_fa26.retrieval.schemas import (
+    DEFAULT_RERANK_BATCH_SIZE,
+    RetrievedChunk,
+)
 
 logger = logging.getLogger("vacxis.retrieval.reranker")
 
@@ -22,14 +26,19 @@ class BGEReranker:
         self,
         model_path: str | Path = DEFAULT_RERANKER_PATH,
         use_fp16: bool | None = None,
+        batch_size: int = DEFAULT_RERANK_BATCH_SIZE,
     ) -> None:
         """Initialize FlagReranker model.
 
         Args:
             model_path: Path to local BGE-reranker directory or model name.
             use_fp16: Whether to use FP16 half-precision. Defaults to torch.cuda.is_available().
+            batch_size: Default batch size for cross-encoder inference.
         """
+        if type(batch_size) is not int or batch_size < 1:
+            raise ValueError("batch_size must be a positive integer.")
         self.model_path = str(model_path)
+        self.batch_size = batch_size
         if use_fp16 is None:
             self.use_fp16 = torch.cuda.is_available()
         else:
@@ -49,7 +58,7 @@ class BGEReranker:
         query: str,
         candidates: Sequence[RetrievedChunk],
         top_k: int = 5,
-        batch_size: int = 32,
+        batch_size: int | None = None,
         normalize: bool = True,
     ) -> list[RetrievedChunk]:
         """Compute cross-encoder relevance scores for query and candidates.
@@ -58,7 +67,7 @@ class BGEReranker:
             query: User search query string.
             candidates: Sequence of retrieved candidate chunks from prior stage.
             top_k: Number of highest-ranked chunks to return.
-            batch_size: Batch size for cross-encoder inference.
+            batch_size: Optional override batch size for cross-encoder inference.
             normalize: Whether to apply sigmoid/normalization to scores (range [0, 1]).
 
         Returns:
@@ -78,7 +87,7 @@ class BGEReranker:
         queries: Sequence[str],
         candidates_list: Sequence[Sequence[RetrievedChunk]],
         top_k: int = 5,
-        batch_size: int = 32,
+        batch_size: int | None = None,
         normalize: bool = True,
     ) -> list[list[RetrievedChunk]]:
         """Compute cross-encoder relevance scores across multiple queries in a batched manner.
@@ -87,7 +96,7 @@ class BGEReranker:
             queries: Sequence of user search query strings.
             candidates_list: Sequence of candidate chunk sequences per query.
             top_k: Number of highest-ranked chunks to return per query.
-            batch_size: Batch size for cross-encoder inference.
+            batch_size: Optional override batch size for cross-encoder inference.
             normalize: Whether to apply sigmoid/normalization to scores (range [0, 1]).
 
         Returns:
@@ -95,6 +104,14 @@ class BGEReranker:
         """
         if len(queries) != len(candidates_list):
             raise ValueError("Expected one candidate group per query.")
+        effective_batch_size = (
+            batch_size
+            if batch_size is not None
+            else getattr(self, "batch_size", DEFAULT_RERANK_BATCH_SIZE)
+        )
+        if type(effective_batch_size) is not int or effective_batch_size < 1:
+            raise ValueError("batch_size must be a positive integer.")
+
         num_queries = len(queries)
         if num_queries == 0:
             return []
@@ -112,10 +129,14 @@ class BGEReranker:
         if not all_pairs:
             return [[] for _ in range(num_queries)]
 
-        scores = self.model.compute_score(
-            all_pairs,
-            batch_size=batch_size,
-            normalize=normalize,
+        scores = run_with_oom_backoff(
+            lambda bs: self.model.compute_score(
+                all_pairs,
+                batch_size=bs,
+                normalize=normalize,
+            ),
+            batch_size=effective_batch_size,
+            operation="BGEReranker.batch_rerank",
         )
 
         if hasattr(scores, "tolist"):

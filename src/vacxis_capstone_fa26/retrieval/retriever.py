@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from FlagEmbedding import BGEM3FlagModel
 
 from vacxis_capstone_fa26.indexing.table_summarizer import merge_table_fragments
+from vacxis_capstone_fa26.retrieval.batching import run_with_oom_backoff
 from vacxis_capstone_fa26.retrieval.hybrid_searcher import HybridSearcher
 from vacxis_capstone_fa26.retrieval.reranker import BGEReranker
 from vacxis_capstone_fa26.retrieval.schemas import RetrievalConfig, RetrievedChunk
@@ -90,7 +91,10 @@ class VacxisRetriever:
         """Get or initialize reranker."""
         self._ensure_initialized()
         if self._reranker is None:
-            self._reranker = BGEReranker(model_path=self.config.reranker_model_path)
+            self._reranker = BGEReranker(
+                model_path=self.config.reranker_model_path,
+                batch_size=self.config.rerank_batch_size,
+            )
         return self._reranker
 
     def retrieve(
@@ -193,9 +197,10 @@ class VacxisRetriever:
         top_k_sparse: int | None = None,
         rrf_top_k: int | None = None,
         skip_rerank: bool | None = None,
-        batch_size: int = 16,
+        batch_size: int | None = None,
         query_max_length: int = 512,
         *,
+        rerank_batch_size: int | None = None,
         merge_table_chunks: bool | None = None,
         on_rerank: Callable[[], None] | None = None,
     ) -> list[list[RetrievedChunk]]:
@@ -208,8 +213,9 @@ class VacxisRetriever:
             top_k_sparse: Sparse search candidate count.
             rrf_top_k: RRF candidate count.
             skip_rerank: If True, bypass cross-encoder reranking.
-            batch_size: Batch size for BGE-M3 query encoding.
+            batch_size: Optional override batch size for BGE-M3 query encoding.
             query_max_length: Token length truncation for query encoding.
+            rerank_batch_size: Optional override batch size for cross-encoder reranking.
             merge_table_chunks: If True, merge split table chunks sharing (doc_id, header) before reranking.
 
         Returns:
@@ -221,13 +227,20 @@ class VacxisRetriever:
         query_list = list(queries)
         if any(not isinstance(q, str) or not q.strip() for q in query_list):
             raise ValueError("Batch queries must be nonblank strings.")
-        embed_output = self.embed_model.encode(
-            query_list,
-            batch_size=batch_size,
-            max_length=query_max_length,
-            return_dense=True,
-            return_sparse=True,
-            return_colbert_vecs=False,
+        effective_embed_batch_size = (
+            self.config.embed_batch_size if batch_size is None else batch_size
+        )
+        embed_output = run_with_oom_backoff(
+            lambda bs: self.embed_model.encode(
+                query_list,
+                batch_size=bs,
+                max_length=query_max_length,
+                return_dense=True,
+                return_sparse=True,
+                return_colbert_vecs=False,
+            ),
+            batch_size=effective_embed_batch_size,
+            operation="VacxisRetriever.batch_retrieve",
         )
         if len(embed_output["dense_vecs"]) != len(query_list) or len(embed_output["lexical_weights"]) != len(query_list):
             raise ValueError("Expected one embedding per query.")
@@ -273,10 +286,14 @@ class VacxisRetriever:
         if not should_skip_rerank:
             if on_rerank is not None and any(all_candidates):
                 on_rerank()
+            rerank_kwargs: dict[str, Any] = {}
+            if rerank_batch_size is not None:
+                rerank_kwargs["batch_size"] = rerank_batch_size
             return self.reranker.batch_rerank(
                 queries=query_list,
                 candidates_list=all_candidates,
                 top_k=k,
+                **rerank_kwargs,
             )
 
         return [cands[:k] for cands in all_candidates]

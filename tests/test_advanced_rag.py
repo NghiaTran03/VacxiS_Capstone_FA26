@@ -221,3 +221,29 @@ def test_advanced_generation_and_retrieval_evaluation_share_factory(monkeypatch,
     assert evaluated[0]["GENERATED_ANSWER"]["retrieved_chunk_ids"] == ["c1"]
     assert factory.call_count == 2
     assert retriever.__exit__.call_count == 2
+
+
+def test_dense_batch_retrieve_encodes_in_single_batch_with_config_batch_size_and_oom_backoff():
+    import torch
+
+    retriever, model, client = make_retriever(top_k=1)
+    seen_batch_sizes = []
+
+    def fake_encode(texts, *, batch_size, **kwargs):
+        seen_batch_sizes.append(batch_size)
+        if batch_size == 64:
+            raise torch.cuda.OutOfMemoryError("CUDA out of memory")
+        return {
+            "dense_vecs": [SimpleNamespace(tolist=lambda: [0.1, 0.9]) for _ in texts]
+        }
+
+    model.encode.side_effect = fake_encode
+
+    results = retriever.batch_retrieve(["q1", "   ", "q2"])
+    assert len(results) == 3
+    assert len(results[0]) == 1
+    assert results[1] == []
+    assert len(results[2]) == 1
+    assert seen_batch_sizes == [64, 32]
+    assert model.encode.call_args.args[0] == ["q1", "q2"]
+    assert client.query_points.call_count == 2

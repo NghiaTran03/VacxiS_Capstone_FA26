@@ -9,11 +9,14 @@ from typing import Any
 
 import numpy as np
 
+from vacxis_capstone_fa26.retrieval.batching import run_with_oom_backoff
+from vacxis_capstone_fa26.retrieval.schemas import DEFAULT_EMBED_BATCH_SIZE
+
 logger = logging.getLogger("vacxis.retrieval.lightrag_embedder")
 
 DENSE_DIM = 1024
 DEFAULT_MODEL_PATH = Path("models/bge-m3")
-DEFAULT_ENCODE_BATCH_SIZE = 32
+DEFAULT_ENCODE_BATCH_SIZE = DEFAULT_EMBED_BATCH_SIZE
 DEFAULT_MAX_LENGTH = 8192
 
 _LOCAL_BGE_M3_ALIASES = frozenset({"baai/bge-m3", "bge-m3", "models/bge-m3"})
@@ -40,7 +43,12 @@ class LocalBGEM3Embedder:
         *,
         embed_model: Any | None = None,
     ) -> None:
-        if batch_size < 1 or max_length < 1:
+        if (
+            type(batch_size) is not int
+            or batch_size < 1
+            or type(max_length) is not int
+            or max_length < 1
+        ):
             raise ValueError("batch_size and max_length must be positive integers.")
         self.model_path = str(model_path)
         self.batch_size = batch_size
@@ -76,13 +84,18 @@ class LocalBGEM3Embedder:
             return np.empty((0, DENSE_DIM), dtype=np.float32)
 
         with self._lock:
-            output = self._get_model().encode(
-                texts,
+            model = self._get_model()
+            output = run_with_oom_backoff(
+                lambda bs: model.encode(
+                    texts,
+                    batch_size=bs,
+                    max_length=self.max_length,
+                    return_dense=True,
+                    return_sparse=False,
+                    return_colbert_vecs=False,
+                ),
                 batch_size=self.batch_size,
-                max_length=self.max_length,
-                return_dense=True,
-                return_sparse=False,
-                return_colbert_vecs=False,
+                operation="LocalBGEM3Embedder.encode",
             )
 
         vectors = np.asarray(output["dense_vecs"], dtype=np.float32)

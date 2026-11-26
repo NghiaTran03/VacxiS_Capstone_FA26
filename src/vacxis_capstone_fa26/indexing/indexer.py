@@ -15,7 +15,11 @@ from vacxis_capstone_fa26.indexing.table_pipeline import (
     TableStrategy,
     prepare_records_for_indexing,
 )
-from vacxis_capstone_fa26.retrieval.schemas import RetrievalConfig
+from vacxis_capstone_fa26.retrieval.batching import run_with_oom_backoff
+from vacxis_capstone_fa26.retrieval.schemas import (
+    DEFAULT_EMBED_BATCH_SIZE,
+    RetrievalConfig,
+)
 import logging
 from pathlib import Path
 import time
@@ -43,7 +47,7 @@ DEFAULT_QDRANT_HOST = RetrievalConfig.qdrant_host
 DEFAULT_QDRANT_PORT = RetrievalConfig.qdrant_port
 
 DENSE_DIM = 1024
-EMBEDDING_BATCH_SIZE = 16
+EMBEDDING_BATCH_SIZE = DEFAULT_EMBED_BATCH_SIZE
 EMBEDDING_MAX_LENGTH = 1024
 MEGA_BATCH_SIZE = 500
 QDRANT_UPSERT_BATCH = 64
@@ -264,13 +268,17 @@ def ingest_to_qdrant(
                 texts.append(text)
 
             # 5b. Generate Dense + Sparse embeddings
-            output = model.encode(
-                texts,
+            output = run_with_oom_backoff(
+                lambda bs: model.encode(
+                    texts,
+                    batch_size=bs,
+                    max_length=embedding_max_length,
+                    return_dense=True,
+                    return_sparse=True,
+                    return_colbert_vecs=False,
+                ),
                 batch_size=embedding_batch_size,
-                max_length=embedding_max_length,
-                return_dense=True,
-                return_sparse=True,
-                return_colbert_vecs=False,
+                operation="indexer.encode",
             )
 
             dense_vecs = output["dense_vecs"]

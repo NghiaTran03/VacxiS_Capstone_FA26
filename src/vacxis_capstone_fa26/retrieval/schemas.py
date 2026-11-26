@@ -10,6 +10,9 @@ RetrieverMode = Literal["naive", "advanced", "hybrid", "lightrag", "hybrid_light
 LightRAGQueryMode = Literal["local", "global", "hybrid", "mix", "naive"]
 LightRAGFusionMode = Literal["context_append", "rrf_rerank"]
 
+DEFAULT_EMBED_BATCH_SIZE = 64
+DEFAULT_RERANK_BATCH_SIZE = 64
+
 # Standalone LightRAG defaults aligned with LightRAG/lightrag/constants.py & QueryParam
 LIGHTRAG_DEFAULT_MODE: LightRAGQueryMode = "mix"
 LIGHTRAG_DEFAULT_TOP_K = 40
@@ -59,6 +62,8 @@ class RetrievalConfig:
     qdrant_port: int = 6333
     embed_model_path: str | Path = "models/bge-m3"
     reranker_model_path: str | Path = "models/bge-reranker"
+    embed_batch_size: int = DEFAULT_EMBED_BATCH_SIZE
+    rerank_batch_size: int = DEFAULT_RERANK_BATCH_SIZE
     top_k_dense: int = 50
     top_k_sparse: int = 50
     rrf_k: int = 60
@@ -115,6 +120,10 @@ class RetrievalConfig:
                 if is_standalone
                 else HYBRID_LIGHTRAG_DEFAULT_MAX_TOTAL_TOKENS
             )
+        for field_name in ("embed_batch_size", "rerank_batch_size"):
+            value = getattr(self, field_name)
+            if type(value) is not int or value < 1:
+                raise ValueError(f"{field_name} must be a positive integer.")
         for field_name in (
             "lightrag_top_k",
             "lightrag_chunk_top_k",
