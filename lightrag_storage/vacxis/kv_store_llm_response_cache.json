@@ -45468,5 +45468,45 @@
     "create_time": 1795668428,
     "update_time": 1795668428,
     "_id": "hybrid:keywords:81393b5fcb5d658c2fbefc4f71e30bed"
+  },
+  "hybrid:keywords:dde28517670931e3e114b5dbd2a5e2d0": {
+    "return": "{\"high_level_keywords\": [\"h\\u01b0\\u1edbng d\\u1eabn\", \"v\\u1eafc xin\"], \"low_level_keywords\": [\"verobab\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Hướng dẫn tìm hiểu vắc xin verobab.",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795669731,
+    "update_time": 1795669731,
+    "_id": "hybrid:keywords:dde28517670931e3e114b5dbd2a5e2d0"
+  },
+  "hybrid:keywords:797428127e838be805d52634d415acaa": {
+    "return": "{\"high_level_keywords\": [\"h\\u01b0\\u1edbng d\\u1eabn s\\u1eed d\\u1ee5ng\", \"v\\u1eafc xin d\\u1ea1i\"], \"low_level_keywords\": [\"v\\u1eafc xin d\\u1ea1i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Hướng dẫn sử dụng vắc xin dại.",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795671557,
+    "update_time": 1795671557,
+    "_id": "hybrid:keywords:797428127e838be805d52634d415acaa"
   }
 }

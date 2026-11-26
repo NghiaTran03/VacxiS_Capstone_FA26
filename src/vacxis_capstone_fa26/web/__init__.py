@@ -11,9 +11,7 @@ import logging
 import os
 from pathlib import Path
 from queue import Empty, SimpleQueue
-import re
 from time import perf_counter
-from urllib.parse import urlencode
 from uuid import uuid4
 
 import gradio as gr
@@ -23,6 +21,7 @@ from ..llm import LLMError, validate_config
 from ..query import Clarification, ClarifyPlan, ConversationMessage, QueryPlanner
 from ..retrieval.schemas import RetrievalConfig
 from .documents import Documents, citation, create_server
+from .citations import format_sources
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +40,7 @@ document.addEventListener('click', (event) => {
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
 }, true);
-"""
+""" + Path(__file__).with_name("citations.js").read_text(encoding="utf-8")
 
 CSS = """
 .gradio-container { width: 100% !important; max-width: 1320px !important; margin: auto; }
@@ -57,11 +56,13 @@ CSS = """
 #vacxis-conversations label span { white-space: normal; overflow-wrap: anywhere; }
 #vacxis-source-events { display: none; }
 #vacxis-chat { border: 0; }
-#vacxis-chat a[href^="/documents?"] {
-    display: inline-block; padding: .25rem .65rem; border: 1px solid var(--border-color-primary);
-    border-radius: .5rem; text-decoration: none; margin-top: .3rem;
-    color: var(--body-text-color); background: var(--background-fill-secondary);
-}
+#vacxis-chat .vacxis-citation { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px; margin: 0 2px; border-radius: 6px; font-size: 11px; line-height: 1; vertical-align: super; text-decoration: none; color: var(--body-text-color); background: var(--background-fill-primary); border: 1px solid var(--border-color-primary); cursor: pointer; }
+#vacxis-chat .vacxis-citation:focus-visible { outline: 2px solid var(--body-text-color); outline-offset: 2px; }
+.vacxis-source-preview { position: fixed; z-index: 10000; width: min(360px, calc(100vw - 24px)); box-sizing: border-box; padding: 18px; border: 1px solid var(--border-color-primary); border-radius: 14px; background: var(--background-fill-secondary); color: var(--body-text-color); box-shadow: 0 12px 36px #0004; font-size: 13px; line-height: 1.5; }
+.vacxis-source-preview .source-title { display: block; font-size: 14px; }
+.vacxis-source-preview .source-heading { color: var(--body-text-color-subdued); margin: 6px 0 10px; }
+.vacxis-source-preview .source-excerpt { max-height: 190px; overflow: auto; white-space: pre-wrap; }
+.vacxis-source-preview > a, .vacxis-source-preview > span { display: block; margin-top: 12px; text-align: right; color: var(--body-text-color); font-size: 12px; }
 #vacxis-composer { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; border: 1px solid var(--border-color-primary); border-radius: 14px; padding: 10px; }
 #vacxis-composer > * { min-width: 0 !important; }
 #vacxis-composer textarea { border: 0; box-shadow: none; }
@@ -108,18 +109,8 @@ def _display(messages: list[dict], chat_id: str | None) -> list[dict]:
     display = []
     for message in messages:
         text = message["content"]
-        links = []
-        sources = message.get("sources", [])
-        used_chunks = list(dict.fromkeys(source["chunk_id"] for source in sources if source.get("chunk_id")))
-        for number, source in enumerate(sources, start=1):
-            label = re.sub(r"([\\`*_{}\[\]()<>#!|])", r"\\\1", source["doc_title"] or "Tài liệu vắc xin")
-            parameters = {"doc": source.get("doc_id", ""), "chunk": source.get("chunk_id", "")}
-            if len(used_chunks) > 1:
-                parameters["used"] = used_chunks
-            params = urlencode(parameters, doseq=True)
-            links.append(f"[\\[{number}\\] {label} ↗](/documents?{params}#citation)")
-        if links:
-            text += "\n\n" + "  \n".join(links)
+        if message["role"] == "assistant":
+            text = format_sources(text, message.get("sources", []))
         display.append({"role": message["role"], "content": text, "metadata": message.get("metadata", {})})
     return display
 

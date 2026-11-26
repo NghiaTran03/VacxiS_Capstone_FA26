@@ -1,7 +1,9 @@
 """Cover elapsed progress, compact clarification and full-source document links."""
 
 from copy import deepcopy
+from html import unescape
 import json
+import re
 from time import sleep
 from urllib.parse import parse_qs, urlsplit
 from unittest.mock import Mock
@@ -81,7 +83,7 @@ def test_categories_are_collapsible_and_only_cited_category_is_marked_open(docum
 def test_all_categories_cited_in_one_answer_are_marked_on_each_source_link(documents):
     sources = documents.rows("vax_a_001")
     message = _display([{"role": "assistant", "content": "Answer", "sources": sources}], "session")[0]
-    assert message["content"].count("used=vax_a_001_c_0000&used=vax_a_001_c_0001") == 2
+    assert unescape(message["content"]).count("used=vax_a_001_c_0000&used=vax_a_001_c_0001") == 2
     html = documents.page("vax_a_001", "vax_a_001_c_0001", [row["chunk_id"] for row in sources])
     assert html.count('class="used-marker"') == 2
     assert 'data-category="thông tin chung" open' in html
@@ -145,7 +147,7 @@ def test_legacy_corpus_without_category_uses_header_classification(documents):
 def test_sources_resolve_on_mounted_server_and_invalid_citations_return_404(documents):
     source = documents.rows("vax_a_001")[1]
     messages = _display([{"role": "assistant", "content": "Answer", "sources": [source]}], "session")
-    url = messages[0]["content"].split("](")[-1].rstrip(")")
+    url = unescape(re.search(r'href="([^"]+)"', messages[0]["content"]).group(1))
     params = parse_qs(urlsplit(url).query)
     assert params == {"doc": [source["doc_id"]], "chunk": [source["chunk_id"]]}
     assert urlsplit(url).fragment == "citation"
