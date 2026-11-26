@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from contextlib import ExitStack
+import logging
 from pathlib import Path
 import threading
 
@@ -21,6 +22,35 @@ DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8001
 CONVERSATIONS_RELATIVE_DIR = Path("data") / "web_vite_conversations"
 FRONTEND_DIST_RELATIVE_DIR = Path("web-vite") / "dist"
+PLANNER_PIPELINE_LOGGER = "vacxis_capstone_fa26.generation.pipeline"
+_VERBOSE_HANDLER_ATTR = "_vacxis_web_vite_verbose_handler"
+
+
+def configure_logging(verbose: bool) -> None:
+    """Configure verbose terminal logging for the query planner pipeline."""
+    pipeline_logger = logging.getLogger(PLANNER_PIPELINE_LOGGER)
+    existing_handlers = [
+        handler
+        for handler in pipeline_logger.handlers
+        if getattr(handler, _VERBOSE_HANDLER_ATTR, False)
+    ]
+    if verbose:
+        pipeline_logger.setLevel(logging.DEBUG)
+        if not existing_handlers:
+            handler = logging.StreamHandler()
+            handler.setLevel(logging.DEBUG)
+            handler.setFormatter(
+                logging.Formatter(
+                    "%(asctime)s %(levelname)s [%(name)s] %(message)s",
+                    datefmt="%H:%M:%S",
+                )
+            )
+            setattr(handler, _VERBOSE_HANDLER_ATTR, True)
+            pipeline_logger.addHandler(handler)
+    else:
+        for handler in existing_handlers:
+            pipeline_logger.removeHandler(handler)
+        pipeline_logger.setLevel(logging.NOTSET)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -39,6 +69,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--preview",
         action="store_true",
         help="Preview UI using sample extractive responses without model services",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Enable verbose QueryPlanner output in server logs (enabled by default; pass --no-verbose to disable)",
     )
     args = parser.parse_args(argv)
     if not 1 <= args.port <= 65535:
@@ -61,6 +98,7 @@ def default_retrieval_config(project_root: Path, chunks_path: Path) -> Retrieval
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    configure_logging(args.verbose)
     project_root = args.project_root.resolve()
     chunks_path = args.chunks if args.chunks.is_absolute() else project_root / args.chunks
     retrieval = default_retrieval_config(project_root, chunks_path)
@@ -75,6 +113,8 @@ def main(argv: list[str] | None = None) -> int:
                 flush=True,
             )
             print(f"* LightRAG fusion: {retrieval.lightrag_fusion}", flush=True)
+            if args.verbose:
+                print("* Verbose planner logging: enabled", flush=True)
 
         def run_turn(query: str, **options):
             nonlocal pipeline

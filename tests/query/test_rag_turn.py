@@ -1,3 +1,5 @@
+import json
+import logging
 from types import SimpleNamespace
 from unittest.mock import Mock
 
@@ -5,7 +7,9 @@ import pytest
 
 from vacxis_capstone_fa26.generation.pipeline import VacxisRAGPipeline
 from vacxis_capstone_fa26.generation.schemas import GeneratedAnswer
-from vacxis_capstone_fa26.query import Clarification, ClarifyPlan, QueryPlanner, RetrievePlan
+from vacxis_capstone_fa26.query import (
+    Clarification, ClarifyPlan, ConversationMessage, QueryPlanner, RetrievePlan,
+)
 
 
 def test_clarify_skips_retrieval_and_generation():
@@ -63,3 +67,66 @@ def test_batch_handles_empty_groups_and_caps_final_chunks():
 
     VacxisRAGPipeline(retriever, generator, query_planner=planner).run_turn("Original", top_k=1)
     generator.generate.assert_called_once_with(query="Original", chunks=[chunk])
+
+
+def test_run_turn_logs_retrieve_plan_at_debug(caplog):
+    retriever, generator, planner = Mock(), Mock(), Mock()
+    planner.model = "test/planner-model"
+    original = "Bé 14 tháng tiêm loại này được không?"
+    resolved = "Hướng dẫn sử dụng Verorab cho trẻ 14 tháng."
+    queries = (resolved, "Liều dùng Verorab cho trẻ nhỏ")
+    planner.plan.return_value = RetrievePlan(original, queries, resolved)
+    retriever.batch_retrieve.return_value = [[SimpleNamespace(chunk_id="c1")], [SimpleNamespace(chunk_id="c2")]]
+    retriever.config.top_k = 2
+    generator.generate.return_value = GeneratedAnswer(resolved, "Answer")
+
+    pipeline = VacxisRAGPipeline(retriever, generator, query_planner=planner)
+    with caplog.at_level(logging.DEBUG, logger="vacxis_capstone_fa26.generation.pipeline"):
+        pipeline.run_turn(
+            original,
+            clarifications=(Clarification("Bạn hỏi vắc xin nào?", "Verorab"),),
+            history=(ConversationMessage("user", "Tôi muốn hỏi về Verorab"),),
+        )
+
+    assert "QueryPlanner output:" in caplog.text
+    raw_json = caplog.text.split("QueryPlanner output:\n", 1)[1]
+    payload = json.loads(raw_json)
+    assert payload["action"] == "retrieve"
+    assert payload["model"] == "test/planner-model"
+    assert payload["original_query"] == original
+    assert payload["resolved_query"] == resolved
+    assert payload["search_queries"] == list(queries)
+    assert payload["history_included"] == 1
+    assert payload["history_supplied"] == 1
+    assert payload["clarifications_count"] == 1
+    assert isinstance(payload["latency_s"], float)
+
+
+def test_run_turn_logs_clarify_plan_at_debug(caplog):
+    retriever, generator, planner = Mock(), Mock(), Mock()
+    planner.model = "test/planner-model"
+    question = "Bạn đang hỏi về vắc xin nào?"
+    planner.plan.return_value = ClarifyPlan(question)
+
+    pipeline = VacxisRAGPipeline(retriever, generator, query_planner=planner)
+    with caplog.at_level(logging.DEBUG, logger="vacxis_capstone_fa26.generation.pipeline"):
+        pipeline.run_turn("Bé tiêm loại này được không?")
+
+    assert "QueryPlanner output:" in caplog.text
+    raw_json = caplog.text.split("QueryPlanner output:\n", 1)[1]
+    payload = json.loads(raw_json)
+    assert payload["action"] == "clarify"
+    assert payload["clarification_question"] == question
+    assert "resolved_query" not in payload
+
+
+def test_run_turn_does_not_log_plan_at_info(caplog):
+    retriever, generator, planner = Mock(), Mock(), Mock()
+    planner.model = "test/planner-model"
+    planner.plan.return_value = ClarifyPlan("Bạn đang hỏi về vắc xin nào?")
+
+    pipeline = VacxisRAGPipeline(retriever, generator, query_planner=planner)
+    with caplog.at_level(logging.INFO, logger="vacxis_capstone_fa26.generation.pipeline"):
+        pipeline.run_turn("Bé tiêm loại này được không?")
+
+    assert "QueryPlanner output:" not in caplog.text

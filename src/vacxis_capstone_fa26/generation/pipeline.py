@@ -4,6 +4,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import asdict, replace
 from itertools import zip_longest
+import json
+import logging
 from time import perf_counter
 from types import TracebackType
 from typing import Any, Sequence
@@ -15,6 +17,41 @@ from vacxis_capstone_fa26.query import (
     Clarification, ClarifyPlan, ConversationMemoryConfig, ConversationMessage, QueryPlanner,
 )
 from vacxis_capstone_fa26.query.memory import limit_history
+
+logger = logging.getLogger(__name__)
+
+
+def _log_query_plan(
+    plan: Any,
+    *,
+    original_query: str,
+    planner_model: Any,
+    planner_latency: float,
+    history_included: int,
+    history_supplied: int,
+    clarifications_count: int,
+) -> None:
+    """Emit a structured debug log for the query planner decision."""
+    if not logger.isEnabledFor(logging.DEBUG):
+        return
+    payload: dict[str, Any] = {
+        "action": getattr(plan, "action", None),
+        "model": planner_model if isinstance(planner_model, str) else None,
+        "latency_s": round(planner_latency, 3),
+        "history_included": history_included,
+        "history_supplied": history_supplied,
+        "clarifications_count": clarifications_count,
+        "original_query": original_query,
+    }
+    if isinstance(plan, ClarifyPlan):
+        payload["clarification_question"] = plan.clarification_question
+    else:
+        payload["resolved_query"] = plan.resolved_query
+        payload["search_queries"] = list(plan.search_queries)
+    logger.debug(
+        "QueryPlanner output:\n%s",
+        json.dumps(payload, ensure_ascii=False, indent=2),
+    )
 
 
 class VacxisRAGPipeline:
@@ -85,6 +122,15 @@ class VacxisRAGPipeline:
         started = perf_counter()
         plan = self.query_planner.plan(original_query, clarifications, history=selected)
         planner_latency = perf_counter() - started
+        _log_query_plan(
+            plan,
+            original_query=original_query,
+            planner_model=getattr(self.query_planner, "model", None),
+            planner_latency=planner_latency,
+            history_included=len(selected),
+            history_supplied=len(history),
+            clarifications_count=len(clarifications),
+        )
         if isinstance(plan, ClarifyPlan):
             return plan
 

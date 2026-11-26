@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict
 import json
+import logging
 from time import sleep
 from unittest.mock import MagicMock, Mock
 
@@ -297,6 +298,10 @@ def test_cli_parse_args_and_main_wiring(monkeypatch, capsys, tmp_path):
     assert args.host == "127.0.0.1"
     assert args.port == 8001
     assert args.preview is False
+    assert args.verbose is True
+    assert web_vite.parse_args(["-v"]).verbose is True
+    assert web_vite.parse_args(["--verbose"]).verbose is True
+    assert web_vite.parse_args(["--no-verbose"]).verbose is False
 
     for removed_flag in ("--share", "--data-dir", "--top-k", "--skip-rerank"):
         with pytest.raises(SystemExit):
@@ -326,16 +331,47 @@ def test_cli_parse_args_and_main_wiring(monkeypatch, capsys, tmp_path):
         return "fake-app"
 
     monkeypatch.setattr(web_vite, "create_api_app", fake_create_api)
-    assert web_vite.main(["--project-root", str(tmp_path)]) == 0
+    try:
+        assert web_vite.main(["--project-root", str(tmp_path)]) == 0
+    finally:
+        web_vite.configure_logging(False)
 
     config = pipeline_factory.call_args.kwargs["retrieval_config"]
     assert config.mode == "hybrid_lightrag"
     assert config.collection_name == "VacxiS_Capstone_FA26_table_dual"
     assert config.lightrag_fusion == "rrf_rerank"
     assert pipeline_factory.call_args.kwargs["query_planner"] is planner
-    assert "Retriever: hybrid_lightrag" in capsys.readouterr().out
+    stdout = capsys.readouterr().out
+    assert "Retriever: hybrid_lightrag" in stdout
+    assert "Verbose planner logging: enabled" in stdout
     uvicorn_run.assert_called_once_with("fake-app", host="127.0.0.1", port=8001)
     pipeline.__exit__.assert_called_once()
+
+
+def test_configure_logging_toggles_handler_without_duplicates():
+    pipeline_logger = logging.getLogger(web_vite.PLANNER_PIPELINE_LOGGER)
+    try:
+        web_vite.configure_logging(False)
+        web_vite.configure_logging(True)
+        web_vite.configure_logging(True)
+        tagged = [
+            handler
+            for handler in pipeline_logger.handlers
+            if getattr(handler, web_vite._VERBOSE_HANDLER_ATTR, False)
+        ]
+        assert pipeline_logger.level == logging.DEBUG
+        assert len(tagged) == 1
+
+        web_vite.configure_logging(False)
+        tagged_after = [
+            handler
+            for handler in pipeline_logger.handlers
+            if getattr(handler, web_vite._VERBOSE_HANDLER_ATTR, False)
+        ]
+        assert pipeline_logger.level == logging.NOTSET
+        assert tagged_after == []
+    finally:
+        web_vite.configure_logging(False)
 
 
 def test_preview_with_empty_corpus_exits_cleanly(monkeypatch):

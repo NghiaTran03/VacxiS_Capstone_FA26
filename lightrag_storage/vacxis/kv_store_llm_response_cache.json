@@ -45608,5 +45608,25 @@
     "create_time": 1795679336,
     "update_time": 1795679336,
     "_id": "hybrid:keywords:4f83acb64dab86d53dc16a342858bb2b"
+  },
+  "hybrid:keywords:e04cdad5e418b058579733e9d07f53a3": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam v\\u1eafc xin\"], \"low_level_keywords\": [\"Abrysvo\", \"2 th\\u00e1ng tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Bé 2 tháng tuổi có nên tiêm vắc xin Abrysvo không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795680488,
+    "update_time": 1795680488,
+    "_id": "hybrid:keywords:e04cdad5e418b058579733e9d07f53a3"
   }
 }
