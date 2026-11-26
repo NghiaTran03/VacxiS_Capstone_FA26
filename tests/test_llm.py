@@ -11,6 +11,7 @@ from vacxis_capstone_fa26 import llm
 from vacxis_capstone_fa26.generation.generator import MedicalGenerator
 from vacxis_capstone_fa26.generation.schemas import GenerationConfig
 from vacxis_capstone_fa26.query import QueryPlanner
+from vacxis_capstone_fa26.query.planner import QUERY_PLAN_RESPONSE_FORMAT
 
 
 def chat_response(content="Answer [c1].", finish_reason="stop"):
@@ -145,11 +146,14 @@ def test_dry_run_never_creates_client(monkeypatch):
 
 def test_planner_uses_shared_transport(router):
     result, requests, _ = router
-    result["body"] = chat_response('{"action":"clarify","clarification_question":"Tên vắc xin?"}')
+    result["body"] = chat_response(
+        '{"action":"clarify","resolved_query":null,"additional_queries":null,"clarification_question":"Tên vắc xin?"}'
+    )
     assert QueryPlanner().plan("Loại này?").clarification_question == "Tên vắc xin?"
     body = json.loads(requests[0].content)
     assert body["model"] == "fixture/planner"
-    assert body["response_format"] == {"type": "json_object"}
+    assert body["response_format"] == QUERY_PLAN_RESPONSE_FORMAT
+    assert body["provider"] == {"require_parameters": True}
 
 
 def test_removed_refine_flag_is_rejected():

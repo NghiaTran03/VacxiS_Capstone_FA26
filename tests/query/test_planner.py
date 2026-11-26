@@ -6,6 +6,7 @@ import pytest
 
 from vacxis_capstone_fa26.llm import LLMError
 from vacxis_capstone_fa26.query import Clarification, ClarifyPlan, QueryPlanner, RetrievePlan
+from vacxis_capstone_fa26.query.planner import QUERY_PLAN_RESPONSE_FORMAT
 
 
 def response(content, finish_reason="stop"):
@@ -18,7 +19,10 @@ def test_resolved_is_first_and_deduplicated():
     original = "  Tôi không bị dị ứng trứng, có thể tiêm Verorab không?  "
     rewrite = "Hướng dẫn tiêm Verorab trong trường hợp không bị dị ứng trứng."
     complete = Mock(return_value=response(json.dumps({
-        "action": "retrieve", "resolved_query": rewrite, "additional_queries": [rewrite, rewrite],
+        "action": "retrieve",
+        "resolved_query": rewrite,
+        "additional_queries": [rewrite, rewrite],
+        "clarification_question": None,
     })))
 
     assert QueryPlanner("fixture", completion=complete).plan(original) == RetrievePlan(
@@ -27,7 +31,8 @@ def test_resolved_is_first_and_deduplicated():
     complete.assert_called_once()
     request = complete.call_args.kwargs
     assert "num_retries" not in request
-    assert request["response_format"] == {"type": "json_object"}
+    assert request["response_format"] == QUERY_PLAN_RESPONSE_FORMAT
+    assert request["extra_body"] == {"provider": {"require_parameters": True}}
     assert json.loads(request["messages"][1]["content"]) == {
         "original_query": original, "clarifications": [], "history": [],
     }
@@ -54,8 +59,18 @@ def test_clarification_then_retrieval_with_resolved_query():
     question = "Bạn đang hỏi về vắc xin nào cho bé 14 tháng?"
     resolved = "Hướng dẫn sử dụng Verorab cho trẻ 14 tháng."
     complete = Mock(side_effect=[
-        response(json.dumps({"action": "clarify", "clarification_question": question})),
-        response(json.dumps({"action": "retrieve", "resolved_query": resolved, "additional_queries": []})),
+        response(json.dumps({
+            "action": "clarify",
+            "resolved_query": None,
+            "additional_queries": None,
+            "clarification_question": question,
+        })),
+        response(json.dumps({
+            "action": "retrieve",
+            "resolved_query": resolved,
+            "additional_queries": [],
+            "clarification_question": None,
+        })),
     ])
     planner = QueryPlanner("fixture", completion=complete)
 
@@ -83,6 +98,10 @@ def test_clarification_then_retrieval_with_resolved_query():
     response('{"action":"retrieve","resolved_query":" ","additional_queries":[]}'),
     response('{"action":"retrieve","resolved_query":12,"additional_queries":[]}'),
     response('{"action":"retrieve","additional_queries":[],"original_query":"changed"}'),
+    response('{"action":"retrieve","resolved_query":"Q","additional_queries":[],"clarification_question":"?"}'),
+    response('{"action":"retrieve","resolved_query":"Q","additional_queries":[],"clarification_question":""}'),
+    response('{"action":"clarify","resolved_query":"Q","additional_queries":null,"clarification_question":"Tên?"}'),
+    response('{"action":"retrieve","resolved_query":null,"additional_queries":[],"clarification_question":null}'),
     response('{"action":"retrieve","resolved_query":"Q","additional_queries":[]}', finish_reason="length"),
     response('{"action":"retrieve","resolved_query":"Q","additional_queries":[]}', finish_reason="content_filter"),
     SimpleNamespace(choices=[]),

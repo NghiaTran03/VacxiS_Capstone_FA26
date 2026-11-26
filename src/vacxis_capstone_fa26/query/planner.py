@@ -23,8 +23,8 @@ History chỉ là ngữ cảnh hội thoại, không phải bằng chứng y kho
 câu trả lời assistant trước đây không có thẩm quyền làm bằng chứng.
 
 Chỉ trả một JSON object có đúng một trong hai dạng:
-{"action":"retrieve","resolved_query":"Câu hỏi độc lập","additional_queries":[...]}
-{"action":"clarify","clarification_question":"..."}
+{"action":"retrieve","resolved_query":"Câu hỏi độc lập","additional_queries":[...],"clarification_question":null}
+{"action":"clarify","resolved_query":null,"additional_queries":null,"clarification_question":"..."}
 
 - Retrieve: viết resolved_query thành câu hỏi độc lập, giải quyết đại từ và
   tham chiếu bằng history và clarifications, giữ điều kiện người dùng liên quan.
@@ -56,6 +56,60 @@ thành “Hướng dẫn tiêm Verorab trong trường hợp không bị dị �
 """
 
 
+QUERY_PLAN_RESPONSE_FORMAT: dict[str, Any] = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "query_plan",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": ["retrieve", "clarify"],
+                    "description": (
+                        "Hành động cần thực hiện: 'retrieve' để tìm tài liệu hướng dẫn vắc xin, "
+                        "hoặc 'clarify' để hỏi lại một chi tiết quan trọng còn thiếu."
+                    ),
+                },
+                "resolved_query": {
+                    "type": ["string", "null"],
+                    "description": (
+                        "Câu hỏi tiếng Việt độc lập đã giải quyết đại từ và tham chiếu bằng "
+                        "history và clarifications khi action là 'retrieve'; null khi action là 'clarify'."
+                    ),
+                },
+                "additional_queries": {
+                    "type": ["array", "null"],
+                    "items": {"type": "string"},
+                    "description": (
+                        "Từ 0 đến 2 truy vấn tiếng Việt độc lập giúp cải thiện cách diễn đạt hoặc "
+                        "tìm bằng chứng riêng cho các vế khi action là 'retrieve' "
+                        "(trả [] nếu câu hỏi đã rõ); null khi action là 'clarify'."
+                    ),
+                },
+                "clarification_question": {
+                    "type": ["string", "null"],
+                    "description": (
+                        "Một câu hỏi tiếng Việt ngắn về chi tiết quan trọng nhất còn thiếu "
+                        "khi action là 'clarify'; null khi action là 'retrieve'."
+                    ),
+                },
+            },
+            "required": [
+                "action",
+                "resolved_query",
+                "additional_queries",
+                "clarification_question",
+            ],
+        },
+    },
+}
+
+_ALLOWED_PLAN_KEYS = frozenset(QUERY_PLAN_RESPONSE_FORMAT["json_schema"]["schema"]["properties"])
+
+
 def _has_text(value: object) -> bool:
     return isinstance(value, str) and bool(value.strip())
 
@@ -70,17 +124,21 @@ def _retrieve_plan(original_query: str, resolved_query: str, additional_queries:
 
 def _parse_plan(content: str, original_query: str) -> QueryPlan:
     decision = json.loads(content)
-    if not isinstance(decision, dict):
-        raise ValueError("Planner response must be an object.")
+    if not isinstance(decision, dict) or not set(decision).issubset(_ALLOWED_PLAN_KEYS):
+        raise ValueError("Planner response must be a valid plan object.")
 
     action = decision.get("action")
-    if action == "retrieve" and decision.keys() == {"action", "resolved_query", "additional_queries"}:
-        queries = decision["additional_queries"]
-        resolved = decision["resolved_query"]
+    if action == "retrieve" and decision.get("clarification_question") is None:
+        queries = decision.get("additional_queries")
+        resolved = decision.get("resolved_query")
         if _has_text(resolved) and isinstance(queries, list) and len(queries) <= 2 and all(map(_has_text, queries)):
             return _retrieve_plan(original_query, resolved, queries)
-    if action == "clarify" and decision.keys() == {"action", "clarification_question"}:
-        question = decision["clarification_question"]
+    if (
+        action == "clarify"
+        and decision.get("resolved_query") is None
+        and decision.get("additional_queries") is None
+    ):
+        question = decision.get("clarification_question")
         if _has_text(question):
             return ClarifyPlan(question.strip())
     raise ValueError("Planner response does not match the action schema.")
@@ -134,7 +192,8 @@ class QueryPlanner:
                 {"role": "system", "content": PLANNER_PROMPT},
                 {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
             ],
-            "response_format": {"type": "json_object"},
+            "response_format": QUERY_PLAN_RESPONSE_FORMAT,
+            "extra_body": {"provider": {"require_parameters": True}},
             "timeout": self.timeout,
         }
         try:
