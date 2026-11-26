@@ -51,13 +51,13 @@ def preview_responder(documents: Documents):
         excerpts = [row["text"].partition("\n")[2] or row["text"] for row in sources]
         answer = "**Phản hồi mẫu để xem trước giao diện.**\n\nCác đoạn tài liệu liên quan để bạn mở và đối chiếu\n\n"
         snippets = []
-        for text in excerpts:
+        for source, text in zip(sources, excerpts, strict=True):
             extractor = _ExcerptText()
             extractor.feed(text)
             extractor.close()
             snippet = " ".join(" ".join(extractor.parts).split())[:350]
             snippet = re.sub(r"([\\`*_{}\[\]()<>#!|])", r"\\\1", snippet)
-            snippets.append(f"> {snippet}…")
+            snippets.append(f"> {snippet}… [{source['chunk_id']}]")
         answer += "\n\n".join(snippets)
         return GeneratedAnswer(query=query, answer=answer, cited_chunks=sources, model="ui-preview")
 
