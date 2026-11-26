@@ -34,3 +34,6 @@ models/
 .gradio/
 qdrant_storage/
 neo4j/
+web-vite/node_modules/
+web-vite/dist/
+data/web_vite_conversations/

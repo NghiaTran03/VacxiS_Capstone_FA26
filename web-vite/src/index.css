@@ -1,0 +1,160 @@
+:root {
+  color-scheme: light dark;
+  --page: light-dark(#fafaf9, #141416);
+  --surface: light-dark(#ffffff, #1e1f22);
+  --surface-subtle: light-dark(#f4f4f5, #27282c);
+  --surface-hover: light-dark(#ececef, #2f3136);
+  --text: light-dark(#1f2328, #eceef2);
+  --muted: light-dark(#606770, #9aa0a6);
+  --line: light-dark(#e2e4e8, #363940);
+  --accent: light-dark(#2563eb, #60a5fa);
+  --accent-hover: light-dark(#1d4ed8, #3b82f6);
+  --accent-soft: light-dark(#eff6ff, #1e2a3b);
+  --accent-border: light-dark(#bfdbfe, #2f4b70);
+  --used: light-dark(#286547, #9ac9b0);
+  --used-bg: light-dark(#f1f5f2, #1f2b24);
+  --danger-bg: light-dark(#fef2f2, #381e20);
+  --danger-border: light-dark(#fecaca, #6e2d32);
+  --danger-text: light-dark(#b91c1c, #fca5a5);
+  --warning-bg: light-dark(#fffbeb, #2e2718);
+  --warning-border: light-dark(#fde68a, #5c4b23);
+  --warning-text: light-dark(#92400e, #fcd34d);
+  --shadow: light-dark(0 12px 32px rgba(15, 23, 42, 0.14), 0 12px 36px rgba(0, 0, 0, 0.5));
+
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  line-height: 1.55;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--page);
+  color: var(--text);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a {
+  color: var(--accent);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+.markdown-content {
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.markdown-content p {
+  margin: 0 0 12px 0;
+}
+
+.markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  margin: 16px 0 8px 0;
+  line-height: 1.35;
+}
+
+.markdown-content h1:first-child,
+.markdown-content h2:first-child,
+.markdown-content h3:first-child,
+.markdown-content h4:first-child,
+.markdown-content h5:first-child,
+.markdown-content h6:first-child {
+  margin-top: 0;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin: 0 0 12px 0;
+  padding-left: 22px;
+}
+
+.markdown-content li {
+  margin: 4px 0;
+}
+
+.markdown-content pre {
+  background: var(--surface-subtle);
+  border: 1px solid var(--line);
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 0 0 12px 0;
+}
+
+.markdown-content code {
+  background: var(--surface-subtle);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+.markdown-content pre code {
+  background: none;
+  padding: 0;
+}
+
+.markdown-content blockquote {
+  margin: 0 0 12px 0;
+  padding: 6px 14px;
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+  background: var(--surface-subtle);
+  border-radius: 0 6px 6px 0;
+}
+
+.markdown-content table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+  max-width: 100%;
+  margin: 0 0 12px 0;
+}
+
+.markdown-content th,
+.markdown-content td {
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.markdown-content th {
+  background: var(--surface-subtle);
+  font-weight: 600;
+}

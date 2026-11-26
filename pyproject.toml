@@ -25,6 +25,7 @@ dependencies = [
 [project.scripts]
 vacxis-pipeline = "vacxis_capstone_fa26.cli:main"
 vacxis-web = "vacxis_capstone_fa26.web:main"
+vacxis-web-vite = "vacxis_capstone_fa26.web_vite:main"
 vacxis-capstone-fa26 = "vacxis_capstone_fa26:main"
 generate-test-dataset = "vacxis_capstone_fa26.testdata.cli:main"
 vacxis-retrieval = "vacxis_capstone_fa26.retrieval.cli:main"
@@ -44,6 +45,7 @@ retrieval = [
     "qdrant-client>=1.19.1",
 ]
 web = ["gradio>=6.31.0", "markdown-it-py>=4.0.0"]
+web-vite = ["fastapi>=0.115.0", "uvicorn>=0.30.0", "markdown-it-py>=4.0.0"]
 # GPU-only extra for the query-driven dataset path (Colab/Kaggle).
 # Not in the core deps so CPU/offline environments stay lightweight and the
 # module remains importable without vLLM installed.

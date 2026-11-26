@@ -45508,5 +45508,105 @@
     "create_time": 1795671557,
     "update_time": 1795671557,
     "_id": "hybrid:keywords:797428127e838be805d52634d415acaa"
+  },
+  "hybrid:keywords:f23cbbbb890769bb211ac5ce06906032": {
+    "return": "{\"high_level_keywords\": [\"h\\u01b0\\u1edbng d\\u1eabn an to\\u00e0n\", \"ti\\u00eam ch\\u1ee7ng\"], \"low_level_keywords\": [\"M-M-R II\", \"ph\\u1ee5 n\\u1eef mang thai\", \"ph\\u1ee5 n\\u1eef \\u0111ang cho con b\\u00fa\", \"tr\\u1ebb s\\u01a1 sinh\", \"l\\u00e1i xe\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Hướng dẫn an toàn tiêm M-M-R II cho phụ nữ mang thai, phụ nữ đang cho con bú, trẻ sơ sinh và người cần lái xe.",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795678458,
+    "update_time": 1795678458,
+    "_id": "hybrid:keywords:f23cbbbb890769bb211ac5ce06906032"
+  },
+  "hybrid:keywords:87bd4827d30becd975a7ea4e4d470558": {
+    "return": "{\"high_level_keywords\": [\"an to\\u00e0n\", \"ph\\u1ee5 n\\u1eef mang thai\", \"ph\\u1ee5 n\\u1eef \\u0111ang cho con b\\u00fa\"], \"low_level_keywords\": [\"M-M-R II\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "M-M-R II có an toàn cho phụ nữ mang thai và phụ nữ đang cho con bú không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795678460,
+    "update_time": 1795678460,
+    "_id": "hybrid:keywords:87bd4827d30becd975a7ea4e4d470558"
+  },
+  "hybrid:keywords:2d9e3aab57a951cf148673023b16699f": {
+    "return": "{\"high_level_keywords\": [\"\\u1ea3nh h\\u01b0\\u1edfng sau ti\\u00eam\", \"kh\\u1ea3 n\\u0103ng l\\u00e1i xe\"], \"low_level_keywords\": [\"M-M-R II\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "M-M-R II có thể ảnh hưởng đến khả năng lái xe sau tiêm không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795678465,
+    "update_time": 1795678465,
+    "_id": "hybrid:keywords:2d9e3aab57a951cf148673023b16699f"
+  },
+  "hybrid:keywords:dcb137bf58b81e16fac68c2bac1c7c81": {
+    "return": "{\"high_level_keywords\": [\"h\\u01b0\\u1edbng d\\u1eabn ti\\u00eam\", \"k\\u1ef9 thu\\u1eadt ti\\u00eam\", \"l\\u1ecbch ti\\u00eam\", \"ch\\u1ed1ng ch\\u1ec9 \\u0111\\u1ecbnh\", \"\\u0111\\u01b0\\u1eddng d\\u00f9ng\"], \"low_level_keywords\": [\"Infanrix IPV-Hib\", \"ti\\u00eam t\\u0129nh m\\u1ea1ch\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Hướng dẫn tiêm Infanrix IPV-Hib: đường dùng, kỹ thuật tiêm, lịch tiêm, chống chỉ định và có cấm tiêm tĩnh mạch không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795678907,
+    "update_time": 1795678907,
+    "_id": "hybrid:keywords:dcb137bf58b81e16fac68c2bac1c7c81"
+  },
+  "hybrid:keywords:4f83acb64dab86d53dc16a342858bb2b": {
+    "return": "{\"high_level_keywords\": [\"ti\\u00eam v\\u1eafc xin\", \"ti\\u1ebfp x\\u00fac m\\u00e1u\", \"khuy\\u1ebfn c\\u00e1o ti\\u00eam ch\\u1ee7ng\"], \"low_level_keywords\": [\"Hepavax-Gene TF\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Người làm việc tiếp xúc máu có nên tiêm vắc xin Hepavax‑Gene TF không?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795679336,
+    "update_time": 1795679336,
+    "_id": "hybrid:keywords:4f83acb64dab86d53dc16a342858bb2b"
   }
 }
