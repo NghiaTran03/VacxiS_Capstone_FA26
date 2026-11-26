@@ -68,7 +68,7 @@ def _log_retrieved_chunks(chunks: Sequence[Any]) -> None:
     for rank, chunk in enumerate(chunks, start=1):
         raw_text = get_chunk_field(chunk, "text", "")
         collapsed = " ".join(str(raw_text).split()) if raw_text else ""
-        preview = f"{collapsed[:160]}…" if len(collapsed) > 160 else collapsed
+        preview = f"{collapsed[:300]}…" if len(collapsed) > 300 else collapsed
         items.append({
             "rank": rank,
             "chunk_id": get_chunk_field(chunk, "chunk_id", ""),

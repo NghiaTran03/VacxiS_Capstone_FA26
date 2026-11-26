@@ -45628,5 +45628,65 @@
     "create_time": 1795680488,
     "update_time": 1795680488,
     "_id": "hybrid:keywords:e04cdad5e418b058579733e9d07f53a3"
+  },
+  "hybrid:keywords:4e2c0cb415580a63f60fe2a157803e21": {
+    "return": "{\"high_level_keywords\": [\"chu\\u1ea9n b\\u1ecb v\\u1eafc xin\", \"b\\u1ea3o qu\\u1ea3n v\\u1eafc xin\", \"ti\\u00eau h\\u1ee7y v\\u1eafc xin\", \"t\\u1ef7 l\\u1ec7 ti\\u00eau ch\\u1ea3y sau ti\\u00eam\"], \"low_level_keywords\": [\"Menactra\", \"12 tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Hướng dẫn chuẩn bị, bảo quản, tiêu hủy vắc xin Menactra cho người 12 tuổi và tỷ lệ tiêu chảy sau tiêm Menactra ở trẻ 12 tuổi.",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795682161,
+    "update_time": 1795682161,
+    "_id": "hybrid:keywords:4e2c0cb415580a63f60fe2a157803e21"
+  },
+  "hybrid:keywords:572941e12ff05a82ac5ddd38010d2f94": {
+    "return": "{\"high_level_keywords\": [\"t\\u00e0i li\\u1ec7u h\\u01b0\\u1edbng d\\u1eabn\", \"chu\\u1ea9n b\\u1ecb\", \"b\\u1ea3o qu\\u1ea3n\", \"ti\\u00eau h\\u1ee7y\", \"v\\u1eafc xin\"], \"low_level_keywords\": [\"Menactra\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Tài liệu hướng dẫn chuẩn bị, bảo quản và tiêu hủy vắc xin Menactra",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795682164,
+    "update_time": 1795682164,
+    "_id": "hybrid:keywords:572941e12ff05a82ac5ddd38010d2f94"
+  },
+  "hybrid:keywords:39ce6cfe3be8832367ae317d4142df40": {
+    "return": "{\"high_level_keywords\": [\"t\\u1ef7 l\\u1ec7 ti\\u00eau ch\\u1ea3y\", \"v\\u1eafc xin\", \"tr\\u1ebb em\", \"sau ti\\u00eam\"], \"low_level_keywords\": [\"Menactra\", \"12 tu\\u1ed5i\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "Tỷ lệ tiêu chảy sau tiêm vắc xin Menactra ở trẻ 12 tuổi",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 20,
+      "chunk_top_k": 5,
+      "max_entity_tokens": 1500,
+      "max_relation_tokens": 1500,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": false
+    },
+    "create_time": 1795682167,
+    "update_time": 1795682167,
+    "_id": "hybrid:keywords:39ce6cfe3be8832367ae317d4142df40"
   }
 }
